@@ -61,12 +61,7 @@ class Main(object):
         cmds.rowColumnLayout(nc=2, cw=[(1, 20)], bgc=(0.2,0.2,0.2), p=entries) # Objects
         cmds.text(l="Attributes", h=20, p=entries)
         cmds.separator(p=entries)
-        s.attrWrapper = cmds.rowLayout(
-            nc=5,
-            cw=[(1,20),(2,150),(3,70),(4,60),(5,60)],
-            cal=[(1,"center"),(2,"left"),(3,"left"),(4,"center"),(5,"center")],
-            bgc=(0.15,0.15,0.15),
-            p=entries)
+        s.attrWrapper = cmds.scrollLayout(p=entries, h=300, cr=True, bgc=(0.2,0.2,0.2))
         cmds.showWindow(win)
 
     def clear(s, element):
@@ -90,11 +85,17 @@ class Main(object):
                 def setmin(val): attr.min = val
                 def setmax(val): attr.max = val
                 attr = s.attrs[at]
-                cmds.button(p=s.attrWrapper, l="X", h=20, bgc=(0.4,0.4,0.4), c=lambda x: (s.attrs.pop(at), s.displayAttr()))
-                cmds.text(p=s.attrWrapper, l=attr.obj, bgc=(0.2,0.2,0.2))
-                cmds.text(p=s.attrWrapper, l=cmds.attributeQuery(attr.attr, n=attr.obj, nn=True), bgc=(0.2,0.2,0.2))
-                cmds.floatField(v=attr.min, pre=3, p=s.attrWrapper, cc=lambda x: setmin(x))
-                cmds.floatField(v=attr.max, pre=3, p=s.attrWrapper, cc=lambda x: setmax(x))
+                cmds.rowLayout(
+                    nc=5,
+                    cw=[(1,20),(2,150),(3,70),(4,60),(5,60)],
+                    cal=[(1,"center"),(2,"left"),(3,"left"),(4,"center"),(5,"center")],
+                    bgc=(0.15,0.15,0.15),
+                    p=s.attrWrapper)
+                cmds.button(l="X", h=20, bgc=(0.4,0.4,0.4), c=lambda x: (s.attrs.pop(at), s.displayAttr()))
+                cmds.text(l=attr.obj)
+                cmds.text(l=cmds.attributeQuery(attr.attr, n=attr.obj, nn=True))
+                cmds.floatField(v=attr.min, pre=3, cc=lambda x: setmin(x))
+                cmds.floatField(v=attr.max, pre=3, cc=lambda x: setmax(x))
             for k in s.attrs:
                 addBtn(k)
 
