@@ -44,7 +44,7 @@ class Main(object):
         s.attrs = {} # Attributes
 
         if cmds.window(name, ex=True): cmds.deleteUI(name)
-        win = cmds.window(name, rtf=True, t="Attribute Snap")
+        win = cmds.window(name, rtf=True, t="Attribute Snap", s=False)
         row = cmds.rowColumnLayout(nc=2)
 
         cmds.columnLayout(adj=True, w=120, p=row) # Buttons
@@ -58,10 +58,10 @@ class Main(object):
         entries = cmds.columnLayout(adj=True, w=400, p=row)
         cmds.text(l="Object Pairs", h=20, p=entries)
         cmds.separator(p=entries)
-        s.objWrapper = cmds.scrollLayout(p=entries, h=300, cr=True, bgc=(0.2,0.2,0.2))
+        s.objWrapper = cmds.scrollLayout(p=entries, h=70, cr=True, bgc=(0.2,0.2,0.2))
         cmds.text(l="Attributes", h=20, p=entries)
         cmds.separator(p=entries)
-        s.attrWrapper = cmds.scrollLayout(p=entries, h=300, cr=True, bgc=(0.2,0.2,0.2))
+        s.attrWrapper = cmds.scrollLayout(p=entries, h=70, cr=True, bgc=(0.2,0.2,0.2))
         cmds.showWindow(win)
 
     def clear(s, element):
