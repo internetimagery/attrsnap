@@ -58,7 +58,7 @@ class Main(object):
         entries = cmds.columnLayout(adj=True, w=400, p=row)
         cmds.text(l="Object Pairs", h=20, p=entries)
         cmds.separator(p=entries)
-        cmds.rowColumnLayout(nc=2, cw=[(1, 20)], bgc=(0.2,0.2,0.2), p=entries) # Objects
+        s.objWrapper = cmds.scrollLayout(p=entries, h=300, cr=True, bgc=(0.2,0.2,0.2))
         cmds.text(l="Attributes", h=20, p=entries)
         cmds.separator(p=entries)
         s.attrWrapper = cmds.scrollLayout(p=entries, h=300, cr=True, bgc=(0.2,0.2,0.2))
@@ -68,6 +68,20 @@ class Main(object):
         try: cmds.deleteUI(cmds.layout(element, q=True, ca=True))
         except RuntimeError: pass
 
+    def addObj(s):
+        pass
+
+    def displayObj(s):
+        s.clear(s.objWrapper)
+        if s.objs:
+            def addObj(o):
+                cmds.rowColumnLayout(p=s.objWrapper, nc=2, cw=[(1, 20)], bgc=(0.2,0.2,0.2)) # Objects
+                cmds.button(l="X", bgc=(0.4,0.4,0.4), c=lambda x: (s.objs.remove(o), s.displayObj()))
+                cmds.columnLayout(adj=True)
+                cmds.text(l=o[0], h=20)
+                cmds.text(l=o[1], h=20)
+            for obj in s.objs:
+                addObj(obj)
     def addAttr(s):
         objs = cmds.ls(sl=True, type="transform")
         if objs:
