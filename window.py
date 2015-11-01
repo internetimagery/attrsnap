@@ -40,7 +40,7 @@ class Attr(object):
 class Main(object):
     def __init__(s):
         name = "AttrGUI"
-        s.objs = [] # Objects
+        s.objs = set() # Objects
         s.attrs = {} # Attributes
 
         if cmds.window(name, ex=True): cmds.deleteUI(name)
@@ -49,7 +49,7 @@ class Main(object):
 
         cmds.columnLayout(adj=True, w=120, p=row) # Buttons
         cmds.text(l="Load up two Objects", h=20)
-        cmds.button(l="Load Object Pair", h=30)
+        cmds.button(l="Load Object Pair", h=30, c=lambda x: s.addObj())
         cmds.button(l="Load Attributes", h=30, c=lambda x: s.addAttr())
         cmds.floatFieldGrp(el="Accuracy", v1=0.001, cw2=(60,60), pre=3)
         cmds.intFieldGrp(el="Steps", v1=10, cw2=(60,60))
@@ -69,8 +69,12 @@ class Main(object):
         except RuntimeError: pass
 
     def addObj(s):
-        pass
-
+        sel = cmds.ls(sl=True, type="transform")
+        if len(sel) == 2:
+            s.objs.add(frozenset(sel))
+            s.displayObj()
+        else:
+            raise RuntimeError, "You must select exactly two objects"
     def displayObj(s):
         s.clear(s.objWrapper)
         if s.objs:
@@ -78,8 +82,7 @@ class Main(object):
                 cmds.rowColumnLayout(p=s.objWrapper, nc=2, cw=[(1, 20)], bgc=(0.2,0.2,0.2)) # Objects
                 cmds.button(l="X", bgc=(0.4,0.4,0.4), c=lambda x: (s.objs.remove(o), s.displayObj()))
                 cmds.columnLayout(adj=True)
-                cmds.text(l=o[0], h=20)
-                cmds.text(l=o[1], h=20)
+                for a in o: cmds.text(l=a, h=20)
             for obj in s.objs:
                 addObj(obj)
     def addAttr(s):
