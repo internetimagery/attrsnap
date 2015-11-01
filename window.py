@@ -51,9 +51,9 @@ class Main(object):
         cmds.text(l="Load up two Objects", h=20)
         cmds.button(l="Load Object Pair", h=30, c=lambda x: s.addObj())
         cmds.button(l="Load Attributes", h=30, c=lambda x: s.addAttr())
-        cmds.floatFieldGrp(el="Accuracy", v1=0.001, cw2=(60,60), pre=3)
-        cmds.intFieldGrp(el="Steps", v1=10, cw2=(60,60))
-        cmds.button(l="Run Snap!", h=60)
+        s.accuracy = cmds.floatFieldGrp(el="Accuracy", v1=0.001, cw2=(60,60), pre=3)
+        s.steps = cmds.intFieldGrp(el="Steps", v1=10, cw2=(60,60))
+        cmds.button(l="Run Snap!", h=60, c=lambda x: s.runScan())
 
         entries = cmds.columnLayout(adj=True, w=400, p=row)
         cmds.text(l="Object Pairs", h=20, p=entries)
@@ -75,6 +75,7 @@ class Main(object):
             s.displayObj()
         else:
             raise RuntimeError, "You must select exactly two objects"
+
     def displayObj(s):
         s.clear(s.objWrapper)
         if s.objs:
@@ -85,6 +86,7 @@ class Main(object):
                 for a in o: cmds.text(l=a, h=20)
             for obj in s.objs:
                 addObj(obj)
+
     def addAttr(s):
         objs = cmds.ls(sl=True, type="transform")
         if objs:
@@ -115,5 +117,21 @@ class Main(object):
                 cmds.floatField(v=attr.max, pre=3, cc=lambda x: setmax(x))
             for k in s.attrs:
                 addBtn(k)
+
+    def runScan(s):
+        if not s.objs: raise RuntimeError, "No Objects Selected"
+        if not s.attrs: raise RuntimeError, "No Attributes Selected"
+        slider = mel.eval("$tmp = $gPlayBackSlider")
+        if cmds.timeControl(slider, q=True, rangeVisible=True):
+            framerange = cmds.timeControl(slider, q=True, rangeArray=True)
+        else:
+            framerange = [cmds.currentTime(q=True)]*2
+        accuracy = cmds.floatFieldGrp(s.accuracy, q=True, v1=True)
+        steps = cmds.intFieldGrp(s.steps, q=True, v1=True)
+        print "Running scan:"
+        print "Frames %s" % framerange
+        print "Accuracy", accuracy
+        print "Steps", steps
+
 
 Main()
