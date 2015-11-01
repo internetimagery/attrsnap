@@ -35,9 +35,16 @@ class Progress(object):
     def __exit__(s, *err):
         if cmds.window(s.win, ex=True): cmds.deleteUI(s.win)
 
-with Progress("prog") as p:
-    for i in range(100):
-        time.sleep(0.1)
-        print i
-        p.update(i)
-        if p.canceled: break
+class Marker(object):
+    def __init__(s, objs):
+        s.objs = objs
+    def __enter__(s):
+        s.locators = dict((c, cmds.spaceLocator()[0]) for c in set(b for a in s.objs for b in a))
+        for a, b in s.locators.items(): cmds.pointConstraint(a, b)
+    def __exit__(s, *err):
+        for a, b in s.locators.items():
+            if cmds.objExists(b): cmds.delete(b)
+
+class Undo(object):
+    def __enter__(s): cmds.undoInfo(openChunk=True)
+    def __exit__(s, *err): cmds.undoInfo(closeChunk=True)
