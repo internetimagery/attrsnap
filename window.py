@@ -1,5 +1,6 @@
 # window
 
+import warn
 import maya.cmds as cmds
 
 class Attr(object):
@@ -49,11 +50,11 @@ class Main(object):
 
         cmds.columnLayout(adj=True, w=120, p=row) # Buttons
         cmds.text(l="Load up two Objects", h=20)
-        cmds.button(l="Load Object Pair", h=30, c=lambda x: s.addObj())
-        cmds.button(l="Load Attributes", h=30, c=lambda x: s.addAttr())
+        cmds.button(l="Load Object Pair", h=30, c=lambda x: warn(s.addObj))
+        cmds.button(l="Load Attributes", h=30, c=lambda x: warn(s.addAttr))
         s.accuracy = cmds.floatFieldGrp(el="Accuracy", v1=0.001, cw2=(60,60), pre=3)
         s.steps = cmds.intFieldGrp(el="Steps", v1=10, cw2=(60,60))
-        cmds.button(l="Run Snap!", h=60, c=lambda x: s.runScan())
+        cmds.button(l="Run Snap!", h=60, c=lambda x: warn(s.runScan))
 
         entries = cmds.columnLayout(adj=True, w=400, p=row)
         cmds.text(l="Object Pairs", h=20, p=entries)
@@ -128,6 +129,7 @@ class Main(object):
             framerange = [cmds.currentTime(q=True)]*2
         accuracy = cmds.floatFieldGrp(s.accuracy, q=True, v1=True)
         steps = cmds.intFieldGrp(s.steps, q=True, v1=True)
+        attributes = dict((a, [b.min, b.max]) for a, b in s.attrs)
         print "Running scan:"
         print "Frames %s" % framerange
         print "Accuracy", accuracy
