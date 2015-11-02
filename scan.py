@@ -113,6 +113,7 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
         if longest < accuracy:
             break
     moves += 1 # Number of moves it takes to shrink longest range to zero
+    moves *= 2 # Lets beef it up a bit for accuracy.
     cmb = steps ** len(attrs) # Number of combinations per move
     progStep = 100.0 / (moves * cmb) # Ammount to step each time in progress
     # Run Through
@@ -125,86 +126,22 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
                         dist = distance(locs)
                         container[dist] = pos.copy()
                         prog.progress += progStep
-                    for i in range(moves): # Hard limit
+                    for i in range(moves): # Expected iteration ammount.
                         dist = {} # Container to hold distances
                         attrs = dict((a, chunks(b, steps)) for a, b in attrs.items())
                         position(attrs, lambda x: updateDistance(m, x, dist)) # Map positions
-                        attrs = dist[min([a for a in dist])] # Pick the shortest distance
-                        print "distance", min([a for a in dist]), attrs
+                        minDistance = min([a for a in dist])
+                        attrs = dist[minDistance] # Pick the shortest distance
                     # Set attribute
                     for at in attrs:
-                        cmds.setAttr(at, (attrs[at][1] - attrs[at][0]) * 0.5 + attrs[at][0] )
+                        cmds.setAttr(at, (attrs[at][1] - attrs[at][0]) * 0.5 + attrs[at][0])
+                    cmds.setKeyframe(attrs.keys())
+                    print "Narrowed to %s." % minDistance
+
 
 
         # raise NotImplementedError, "Stopping"
 
-at = {"pSphere1.tx": [3, 500], "pSphere1.tz": [-50, 700], "pSphere1.ty": [5, 30]}
+at = {"pSphere1.tx": [-30, 500], "pSphere1.tz": [-50, 700], "pSphere1.ty": [-52, 30]}
 ob = [["pSphere1", "pSphere2"]]
 Snap(at, ob)
-
-
-
-	# 	for i in range(step):
-	# 		snap = self.runbrute( attr, self.attr, [9999]*len(self.loc) )[0]['attr']
-	# 		for at in snap: #update limits
-	# 			self.attr[at] = snap[at]
-	# 	for at in self.attr: #set the attributes
-	# 		cmds.setAttr( at, ((self.attr[at][1]-self.attr[at][0])*0.5+self.attr[at][0]) )
-	# 		(obj, dot, attr) = at.rpartition('.')
-	# 		cmds.setKeyframe( obj, at=attr )
-	# 	self.progress.cancel()
-    #
-# 	#run through all combinations in cache checking distance
-# 	# i = position in attribute list
-# 	# at = attribute list
-# 	# cache = cache of all positions, ranges etc
-# 	# current = current combination, always updated
-# 	# snap = snapshot of current, when a shorter distance is found
-# 	# dist = the shortest distance working with currently
-#
-# 	#run through all combinations with brute force checking distance
-# 	def runbrute(self, at, limit, single_dist, total_dist = 9999, current = {}, snap = {}, i=0 ):
-# 		if self.working: #make sure we don't loop forever
-# 			step = (limit[at[i]][1]-limit[at[i]][0])*(1.0/(self.steps-1)) #get search incriment
-# 			cache = []
-# 			for s in range( self.steps ): #run through each step
-# 				self.progress.update( self.prog )
-# 				s=limit[at[i]][0]+s*step #each step
-# 				cmds.setAttr( at[i], s ) #set attribute
-# 				#get range to store
-# 				if s <= limit[at[i]][0]: #don't go below lower boundary
-# 					r = [s,(s+(step*2))]
-# 				elif s >= limit[at[i]][1]: # or upper boundary
-# 					r = [(s-(step*2)),s]
-# 				else:
-# 					r = [(s-step),(s+step)]
-# 				current[at[i]] = r #update attr list
-# 				if (i+1) < len(at):
-# 					(snap,current,single_dist,total_dist)=self.runbrute(at,limit,single_dist,total_dist,current,snap,(i+1))
-# 				entry = {'attr':current.copy(), 'loc':[]}
-# 				for n,p in enumerate(self.loc): #run through each object pair
-# 					entry['loc'].append([cmds.getAttr((p[0]['loc']+'.t'))[0],cmds.getAttr((p[1]['loc']+'.t'))[0]])
-# 				cache.append(entry)
-#
-# 			for i in range(len(cache)):
-# 				new_dist = 0.0
-# 				for p in range(len(cache[i]['loc'])):
-# 					new_dist+= Distance(cache[i]['loc'][p][0], cache[i]['loc'][p][1])
-# #					if i:
-# #						pass
-# #						p1 = cache[(i-1)]['loc'][o] #point 1
-# #						p2 = cache[i]['loc'][o] # point 2
-# #						a1 = cache[(i-1)]['attr'][at[i]]
-# #						a2 = cache[i]['attr'][at[i]]
-# #						at, pos, dist = self.LinearDistance(a1,p1,a2,p2)
-# #						if at: #if linear check picked up something, add that
-# #							new_dist+= dist
-# #						else: #otherwise back to brute force we go
-# #							new_dist+= Distance(o[0], o[1])
-# #					else:
-# #						new_dist+= Distance(o[0], o[1])
-# 				if new_dist < single_dist:
-# 					single_dist = new_dist
-# 					snap['attr'] = cache[i]['attr']
-# 					snap['loc'] = cache[i]['loc']
-# 		return snap, current, single_dist, total_dist
