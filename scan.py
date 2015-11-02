@@ -131,9 +131,12 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
                         position(attrs, lambda x: updateDistance(m, x, dist)) # Map positions
                         attrs = dist[min([a for a in dist])] # Pick the shortest distance
                         print "distance", min([a for a in dist]), attrs
+                    # Set attribute
+                    for at in attrs:
+                        cmds.setAttr(at, (attrs[at][1] - attrs[at][0]) * 0.5 + attrs[at][0] )
 
 
-        raise NotImplementedError, "Stopping"
+        # raise NotImplementedError, "Stopping"
 
 at = {"pSphere1.tx": [3, 500], "pSphere1.tz": [-50, 700], "pSphere1.ty": [5, 30]}
 ob = [["pSphere1", "pSphere2"]]
