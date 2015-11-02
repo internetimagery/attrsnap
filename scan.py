@@ -42,6 +42,16 @@ def position(movement, callback, keys=None, index=0, pos=None):
     else:
         callback(pos)
 
+class Timer(object):
+    verbose = False
+    def __init__(s, name):
+        from time import time
+        s.time = time
+        s.name = name
+    def __enter__(s): s.start = s.time()
+    def __exit__(s, *err):
+        if s.verbose: print "%s...\t\tElapsed time: %sms." % (s.name, (s.time() - s.start) * 1000)
+
 class AutoKey(object):
     """ Turn off Autokey """
     def __enter__(s):
@@ -126,16 +136,18 @@ def Snap(attrs, objs, frames, steps=10):
                         container[dist] = pos.copy()
                         prog.progress += progStep
                     for f in range(frameRange):
-                        cmds.currentTime(frames[0] + f)
-                        move = attrs.copy()
-                        for i in range(moves): # Expected iteration ammount.
-                            dist = {} # Container to hold distances
-                            move = dict((a, chunks(b, steps)) for a, b in move.items())
-                            position(move, lambda x: updateDistance(m, x, dist)) # Map positions
-                            minDistance = min([a for a in dist])
-                            move = dist[minDistance] # Pick the shortest distance
-                        # Set attribute
-                        for at in move:
-                            cmds.setAttr(at, (move[at][1] - move[at][0]) * 0.5 + move[at][0])
-                        cmds.setKeyframe(move.keys())
-                        print "Narrowed to %s." % minDistance
+                        with Timer("Snapping Frame"):
+                            cmds.currentTime(frames[0] + f)
+                            move = attrs.copy()
+                            for i in range(moves): # Expected iteration ammount.
+                                with Timer("Running Scan"):
+                                    dist = {} # Container to hold distances
+                                    move = dict((a, chunks(b, steps)) for a, b in move.items())
+                                    position(move, lambda x: updateDistance(m, x, dist)) # Map positions
+                                    minDistance = min([a for a in dist])
+                                    move = dist[minDistance] # Pick the shortest distance
+                            # Set attribute
+                            for at in move:
+                                cmds.setAttr(at, (move[at][1] - move[at][0]) * 0.5 + move[at][0])
+                            cmds.setKeyframe(move.keys())
+                            print "Narrowed to %s." % minDistance
