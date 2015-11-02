@@ -101,9 +101,6 @@ class Undo(object):
         cmds.undoInfo(closeChunk=True)
         if err[0]: cmds.undo()
 
-from pprint import pprint
-import time
-
 def Snap(attrs, objs, frames, accuracy=0.001, steps=10):
     steps = int(steps)
     # Estimate number of combinations
@@ -141,11 +138,3 @@ def Snap(attrs, objs, frames, accuracy=0.001, steps=10):
                             cmds.setAttr(at, (move[at][1] - move[at][0]) * 0.5 + move[at][0])
                         cmds.setKeyframe(move.keys())
                         print "Narrowed to %s." % minDistance
-
-
-
-        # raise NotImplementedError, "Stopping"
-
-at = {"pSphere1.tx": [-30, 500], "pSphere1.tz": [-50, 700], "pSphere1.ty": [-52, 30]}
-ob = [["pSphere1", "pSphere2"]]
-Snap(at, ob, [4, 10])

@@ -1,6 +1,7 @@
 # window
 
 import warn
+import scan
 import maya.cmds as cmds
 
 class Attr(object):
@@ -134,6 +135,7 @@ class Main(object):
         print "Frames %s" % framerange
         print "Accuracy", accuracy
         print "Steps", steps
+        scan.Snap(attributes, s.objs, framerange, accuracy, steps)
 
 
 Main()
