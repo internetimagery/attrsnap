@@ -67,18 +67,17 @@ class Progress(object):
         def fget(s):
             return s._progress
         def fset(s, v):
-            print "setting"
-            if v < 0:
+            s._progress = v
+            if s._progress < 0:
                 s._progress = 1
-            elif 100 < v:
+            elif 100 < s._progress:
                 s._progress = 100
-            else:
-                s._progress = v
             if cmds.layout(s.bar, ex=True):
-                cmds.columnLayout(s.bar, e=True, w=s._progress * 2)
+                if not int(s._progress) % 15: # Update on incriments of 15
+                    cmds.columnLayout(s.bar, e=True, w=s._progress * 2)
+                    cmds.refresh()
             else:
                 s.canceled = True
-            cmds.refresh()
         return locals()
     progress = property(**progress())
 
@@ -114,7 +113,7 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
             break
     moves += 1 # Number of moves it takes to shrink longest range to zero
     cmb = steps ** len(attrs) # Number of combinations per move
-    progStep = 100 / (moves * cmb) # Ammount to step each time in progress
+    progStep = 100.0 / (moves * cmb) # Ammount to step each time in progress
     # Run Through
     with Undo(): # Turn off Undo
         with AutoKey(): # Turn off Autokey
@@ -129,7 +128,8 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
                         dist = {} # Container to hold distances
                         attrs = dict((a, chunks(b, steps)) for a, b in attrs.items())
                         position(attrs, lambda x: updateDistance(m, x, dist)) # Map positions
-                        shortest = dist[min([a for a in dist])]
+                        attrs = dist[min([a for a in dist])]
+                        print "Distance", min([a for a in dist])
 
 
         raise NotImplementedError, "Stopping"
