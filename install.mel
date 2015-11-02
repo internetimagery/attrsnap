@@ -2,7 +2,7 @@
 // Edit the below:
 
 $name = "attrsnap"; // Name of script (folder)
-$shelf = "import attrsnap\nattrsnap.GUI()"; // Code to go in a shelf icon (if any)
+$shelf = "import attrsnap\nattrsnap.Main()"; // Code to go in a shelf icon (if any)
 $auto = ""; // Code in userSetup (if any)
 $repo = "attrsnap"; // Name of repo
 $user = "internetimagery"; // Owner of repo
