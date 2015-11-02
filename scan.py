@@ -1,20 +1,49 @@
 # Check with brute force the distance of objects
 import math
-import time
 import maya.cmds as cmds
-from pprint import pprint
 
-def distance(objs):
-    pos = [[cmds.xform(b, q=True, ws=True, t=True) for b in a] for a in objs]
-    return math.sqrt(sum([(a[0][b] - a[1][b])**2 for a in pos for b in range(3)]))
+def distance(locs):
+    """ Calculate Distances """
+    pos = [[cmds.xform(b, q=True, t=True) for b in a] for a in locs]
+    return sum([ math.sqrt(sum([(a[0][b] - a[1][b]) ** 2 for b in range(3)])) for a in pos])
 
 def chunks(range_, steps):
-    if not steps: raise RuntimeError, "Cannot have a zero stepsize."
+    """ Split range into usable chunks """
+    if steps < 3: raise RuntimeError, "Step Size is too low"
     scale = (range_[1] - range_[0]) * (1.0 / (steps - 1.0))
     return [a * scale + range_[0] for a in range(steps)]
 
+def position(movement, callback, keys=None, index=0, pos=None):
+    """ Position attributes in all combinations """
+    if not keys: keys = movement.keys()
+    if not pos: pos = {}
+    if index < len(keys):
+        attr = keys[index]
+        positions = movement[attr]
+        for i in range(len(positions)):
+            curr = positions[i]
+            cmds.setAttr(attr, curr)
+            try: # Middle
+                v1 = positions[i - 1]
+                v2 = positions[i + 1]
+            except IndexError:
+                try: # Start
+                    v1 = curr
+                    v2 = positions[i + 1]
+                except IndexError: # End
+                    v1 = positions[i - 1]
+                    v2 = curr
+            pos[attr] = [v1, v2]
+            position(movement, callback,
+                keys=keys,
+                index=index + 1,
+                pos=pos
+                )
+    else:
+        callback(pos)
 
 class AutoKey(object):
+    """ Turn off Autokey """
     def __enter__(s):
         s.state = cmds.autoKeyframe(q=True, st=True)
         cmds.autoKeyframe(st=False)
@@ -22,6 +51,7 @@ class AutoKey(object):
         cmds.autoKeyframe(st=s.state)
 
 class Progress(object):
+    """ Display Progress """
     def __init__(s, title):
         s.title = title
         s.canceled = False
@@ -42,6 +72,7 @@ class Progress(object):
         if cmds.window(s.win, ex=True): cmds.deleteUI(s.win)
 
 class Marker(object):
+    """ Mark Objects """
     def __init__(s, objs):
         s.objs = objs
     def __enter__(s):
@@ -53,10 +84,42 @@ class Marker(object):
             if cmds.objExists(b): cmds.delete(b)
 
 class Undo(object):
+    """ Turn off Undo """
     def __enter__(s): cmds.undoInfo(openChunk=True)
-    def __exit__(s, *err): cmds.undoInfo(closeChunk=True)
+    def __exit__(s, *err):
+        cmds.undoInfo(closeChunk=True)
+        if err[0]: cmds.undo()
 
-print chunks([3,400], 20)
+from pprint import pprint
+
+def Snap(attrs, objs, accuracy=0.001, steps=10):
+    steps = int(steps)
+    # Get widest range
+    longest = max([b[1] - b[0] for a, b in attrs.items()])
+    # Estimate number of combinations
+    cmb = steps ** len(attrs)
+    # Run Through
+    def updateDistance(locs, pos, container):
+        print pos
+        dist = distance(locs)
+        container[dist] = pos.copy()
+    with Undo(): # Turn off Undo
+        with AutoKey(): # Turn off Autokey
+            with Marker(objs) as m: # Mark Objects
+                move = attrs
+                for i in range(1): # Hard limit
+                    dist = {} # Container to hold distances
+                    move = dict((a, chunks(b, steps)) for a, b in move.items())
+                    position(move, lambda x: updateDistance(m, x, dist)) # Map positions
+                    short = dist[min([a for a in dist])]
+
+
+        raise NotImplementedError, "Stopping"
+
+at = {"pSphere1.tx": [3, 500], "pSphere1.tz": [-50, 700], "pSphere1.ty": [5, 30]}
+ob = [["pSphere1", "pSphere2"]]
+Snap(at, ob)
+
 
     #
 	# #snap attributes with brute force
