@@ -21,19 +21,18 @@ def position(movement, callback, keys=None, index=0, pos=None):
         attr = keys[index]
         positions = movement[attr]
         for i in range(len(positions)):
-            curr = positions[i]
-            cmds.setAttr(attr, curr)
-            try: # Middle
+            v2 = positions[i]
+            try:
                 v1 = positions[i - 1]
-                v2 = positions[i + 1]
             except IndexError:
-                try: # Start
-                    v1 = curr
-                    v2 = positions[i + 1]
-                except IndexError: # End
-                    v1 = positions[i - 1]
-                    v2 = curr
-            pos[attr] = [v1, v2]
+                v1 = v2
+            try:
+                v3 = positions[i + 1]
+            except IndexError:
+                v3 = v2
+            if 0.002 < v3 - v1: # Cut off if the distance is so small it's neglidgable
+                cmds.setAttr(attr, v2)
+            pos[attr] = [v1, v3]
             position(movement, callback,
                 keys=keys,
                 index=index + 1,
@@ -55,21 +54,33 @@ class Progress(object):
     def __init__(s, title):
         s.title = title
         s.canceled = False
+        s._progress = 1
     def __enter__(s):
         s.win = cmds.window(t=s.title)
         cmds.columnLayout(w=200, bgc=(0.2,0.2,0.2))
         s.bar = cmds.columnLayout(w=1, h=40, bgc=(0.8,0.4,0.5))
         cmds.showWindow(s.win)
         return s
-    def update(s, progress):
-        if not progress: progress = 1
-        if cmds.layout(s.bar, ex=True):
-            cmds.columnLayout(s.bar, e=True, w=progress * 2)
-        else:
-            s.canceled = True
-        cmds.refresh()
     def __exit__(s, *err):
         if cmds.window(s.win, ex=True): cmds.deleteUI(s.win)
+    def progress():
+        def fget(s):
+            return s._progress
+        def fset(s, v):
+            print "setting"
+            if v < 0:
+                s._progress = 1
+            elif 100 < v:
+                s._progress = 100
+            else:
+                s._progress = v
+            if cmds.layout(s.bar, ex=True):
+                cmds.columnLayout(s.bar, e=True, w=s._progress * 2)
+            else:
+                s.canceled = True
+            cmds.refresh()
+        return locals()
+    progress = property(**progress())
 
 class Marker(object):
     """ Mark Objects """
@@ -91,27 +102,34 @@ class Undo(object):
         if err[0]: cmds.undo()
 
 from pprint import pprint
+import time
 
 def Snap(attrs, objs, accuracy=0.001, steps=10):
     steps = int(steps)
-    # Get widest range
-    longest = max([b[1] - b[0] for a, b in attrs.items()])
     # Estimate number of combinations
-    cmb = steps ** len(attrs)
+    longest = max([b[1] - b[0] for a, b in attrs.items()]) # Get widest range
+    for moves in range(100):
+        longest = (longest / (steps + 1)) * 2
+        if longest < accuracy:
+            break
+    moves += 1 # Number of moves it takes to shrink longest range to zero
+    cmb = steps ** len(attrs) # Number of combinations per move
+    progStep = 100 / (moves * cmb) # Ammount to step each time in progress
     # Run Through
-    def updateDistance(locs, pos, container):
-        print pos
-        dist = distance(locs)
-        container[dist] = pos.copy()
     with Undo(): # Turn off Undo
         with AutoKey(): # Turn off Autokey
             with Marker(objs) as m: # Mark Objects
-                move = attrs
-                for i in range(1): # Hard limit
-                    dist = {} # Container to hold distances
-                    move = dict((a, chunks(b, steps)) for a, b in move.items())
-                    position(move, lambda x: updateDistance(m, x, dist)) # Map positions
-                    short = dist[min([a for a in dist])]
+                with Progress("Snapping Objects") as prog:
+                    def updateDistance(locs, pos, container):
+                        if prog.canceled: raise SystemExit, "Canceled."
+                        dist = distance(locs)
+                        container[dist] = pos.copy()
+                        prog.progress += progStep
+                    for i in range(moves): # Hard limit
+                        dist = {} # Container to hold distances
+                        attrs = dict((a, chunks(b, steps)) for a, b in attrs.items())
+                        position(attrs, lambda x: updateDistance(m, x, dist)) # Map positions
+                        shortest = dist[min([a for a in dist])]
 
 
         raise NotImplementedError, "Stopping"
