@@ -129,7 +129,7 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
                         attrs = dict((a, chunks(b, steps)) for a, b in attrs.items())
                         position(attrs, lambda x: updateDistance(m, x, dist)) # Map positions
                         attrs = dist[min([a for a in dist])]
-                        print "Distance", min([a for a in dist])
+                        print len(dist)
 
 
         raise NotImplementedError, "Stopping"
