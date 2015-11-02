@@ -1,7 +1,8 @@
-# window
+# Main Window
 
 import warn
 import scan
+import maya.mel as mel
 import maya.cmds as cmds
 
 class Attr(object):
@@ -50,12 +51,10 @@ class Main(object):
         row = cmds.rowColumnLayout(nc=2)
 
         cmds.columnLayout(adj=True, w=120, p=row) # Buttons
-        cmds.text(l="Load up two Objects", h=20)
-        cmds.button(l="Load Object Pair", h=30, c=lambda x: warn(s.addObj))
-        cmds.button(l="Load Attributes", h=30, c=lambda x: warn(s.addAttr))
-        s.accuracy = cmds.floatFieldGrp(el="Accuracy", v1=0.001, cw2=(60,60), pre=3)
+        cmds.button(l="Load Object Pair", h=46, c=lambda x: warn(s.addObj))
+        cmds.button(l="Load Attributes", h=46, c=lambda x: warn(s.addAttr))
         s.steps = cmds.intFieldGrp(el="Steps", v1=10, cw2=(60,60))
-        cmds.button(l="Run Snap!", h=60, c=lambda x: warn(s.runScan))
+        cmds.button(l="Run Snap!", h=70, c=lambda x: warn(s.runScan))
 
         entries = cmds.columnLayout(adj=True, w=400, p=row)
         cmds.text(l="Object Pairs", h=20, p=entries)
@@ -128,13 +127,30 @@ class Main(object):
             framerange = cmds.timeControl(slider, q=True, rangeArray=True)
         else:
             framerange = [cmds.currentTime(q=True)]*2
-        accuracy = cmds.floatFieldGrp(s.accuracy, q=True, v1=True)
         steps = cmds.intFieldGrp(s.steps, q=True, v1=True)
-        attributes = dict((a, [b.min, b.max]) for a, b in s.attrs)
+        attributes = dict((a, [b.min, b.max]) for a, b in s.attrs.items())
+        if 2 < len(attributes):
+            if "Yes" != cmds.confirmDialog(
+                t="Quick Check",
+                m="The more attributes you add the longer the snap will take.\nAre you sure you wish to continue?",
+                button=["Yes", "No"],
+                defaultButton="Yes",
+                cancelButton="No",
+                dismissString="No"
+                ):
+                return
+        if 1 < len(s.objs):
+            if "Yes" != cmds.confirmDialog(
+                t="Quick Check",
+                m="Using more than one object pair is somewhat experimental.\nAre you sure you wish to continue?",
+                button=["Yes", "No"],
+                defaultButton="Yes",
+                cancelButton="No",
+                dismissString="No"
+                ):
+                return
         print "Running scan:"
-        print "Frames %s" % framerange
-        print "Accuracy", accuracy
-        print "Steps", steps
-        scan.Snap(attributes, s.objs, framerange, accuracy, steps)
-
-Main()
+        print "Frames: %s" % framerange
+        print "Steps: %s" % steps
+        print "-"*20
+        scan.Snap(attributes, s.objs, framerange, steps)

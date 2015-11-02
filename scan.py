@@ -73,7 +73,7 @@ class Progress(object):
             elif 100 < v:
                 v = 100
             if cmds.layout(s.bar, ex=True):
-                if int(v) is not int(s._progress) and not int(s._progress) % 10: # Update on incriments of 15
+                if int(v) is not int(s._progress) and not int(v) % 10 and 0 < v < 100: # Update on incriments of 15
                     cmds.columnLayout(s.bar, e=True, w=s._progress * 2)
                     cmds.refresh()
             else:
@@ -101,13 +101,13 @@ class Undo(object):
         cmds.undoInfo(closeChunk=True)
         if err[0]: cmds.undo()
 
-def Snap(attrs, objs, frames, accuracy=0.001, steps=10):
+def Snap(attrs, objs, frames, steps=10):
     steps = int(steps)
     # Estimate number of combinations
     longest = max([b[1] - b[0] for a, b in attrs.items()]) # Get widest range
     for moves in range(100):
         longest = (longest / (steps + 1)) * 2
-        if longest < accuracy:
+        if longest < 0.001:
             break
     moves += 1 # Number of moves it takes to shrink longest range to zero
     moves *= 2 # Lets beef it up a bit for accuracy.
