@@ -15,17 +15,18 @@ def chunks(range_, steps):
 
 def position(movement, callback, keys=None, index=0, pos=None):
     """ Position attributes in all combinations """
-    if not keys: keys = movement.keys()
-    if not pos: pos = {}
+    if not keys: keys = movement.keys() # Iterate in a specific order
+    if not pos: pos = {} # Save a snapshot of where we are
     if index < len(keys):
         attr = keys[index]
         positions = movement[attr]
-        for i in range(len(positions)):
+        numPositions = len(positions)
+        for i in range(numPositions):
             v2 = positions[i]
-            try:
-                v1 = positions[i - 1]
-            except IndexError:
+            if not i: # Start
                 v1 = v2
+            else:
+                v1 = positions[i - 1]
             try:
                 v3 = positions[i + 1]
             except IndexError:
@@ -128,8 +129,8 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
                         dist = {} # Container to hold distances
                         attrs = dict((a, chunks(b, steps)) for a, b in attrs.items())
                         position(attrs, lambda x: updateDistance(m, x, dist)) # Map positions
-                        attrs = dist[min([a for a in dist])]
-                        print len(dist)
+                        attrs = dist[min([a for a in dist])] # Pick the shortest distance
+                        print "distance", min([a for a in dist]), attrs
 
 
         raise NotImplementedError, "Stopping"
@@ -139,21 +140,7 @@ ob = [["pSphere1", "pSphere2"]]
 Snap(at, ob)
 
 
-    #
-	# #snap attributes with brute force
-	# def snapbrute(self):
-	# 	attr = self.attr.keys() #generate list of attributes
-	# 	longest = 0
-	# 	for at in self.attr: #get the largest range
-	# 		longest = max(longest, (self.attr[at][1]-self.attr[at][0]) )
-	# 	for step in range(30): #work out how many steps it will take to reach accuracy
-	# 		longest*=(1.0/self.steps)*2
-	# 		if longest < self.accuracy:
-	# 			break
-	# 	combination = 0
-	# 	for i in range(len(attr)): #work out the number of combinations
-	# 		combination+=self.steps**(len(attr)-i)
-	# 	self.prog = 1.0 / (combination*step) #progress bar step
+
 	# 	for i in range(step):
 	# 		snap = self.runbrute( attr, self.attr, [9999]*len(self.loc) )[0]['attr']
 	# 		for at in snap: #update limits
