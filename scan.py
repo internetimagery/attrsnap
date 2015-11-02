@@ -68,17 +68,17 @@ class Progress(object):
         def fget(s):
             return s._progress
         def fset(s, v):
-            s._progress = v
-            if s._progress < 0:
-                s._progress = 1
-            elif 100 < s._progress:
-                s._progress = 100
+            if v < 0:
+                v = 1
+            elif 100 < v:
+                v = 100
             if cmds.layout(s.bar, ex=True):
-                if not int(s._progress) % 15: # Update on incriments of 15
+                if int(v) is not int(s._progress) and not int(s._progress) % 10: # Update on incriments of 15
                     cmds.columnLayout(s.bar, e=True, w=s._progress * 2)
                     cmds.refresh()
             else:
                 s.canceled = True
+            s._progress = v
         return locals()
     progress = property(**progress())
 
@@ -104,7 +104,7 @@ class Undo(object):
 from pprint import pprint
 import time
 
-def Snap(attrs, objs, accuracy=0.001, steps=10):
+def Snap(attrs, objs, frames, accuracy=0.001, steps=10):
     steps = int(steps)
     # Estimate number of combinations
     longest = max([b[1] - b[0] for a, b in attrs.items()]) # Get widest range
@@ -115,7 +115,8 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
     moves += 1 # Number of moves it takes to shrink longest range to zero
     moves *= 2 # Lets beef it up a bit for accuracy.
     cmb = steps ** len(attrs) # Number of combinations per move
-    progStep = 100.0 / (moves * cmb) # Ammount to step each time in progress
+    frameRange = int(frames[1] - frames[0]) + 1
+    progStep = 100.0 / (moves * cmb * frameRange) # Ammount to step each time in progress
     # Run Through
     with Undo(): # Turn off Undo
         with AutoKey(): # Turn off Autokey
@@ -126,17 +127,20 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
                         dist = distance(locs)
                         container[dist] = pos.copy()
                         prog.progress += progStep
-                    for i in range(moves): # Expected iteration ammount.
-                        dist = {} # Container to hold distances
-                        attrs = dict((a, chunks(b, steps)) for a, b in attrs.items())
-                        position(attrs, lambda x: updateDistance(m, x, dist)) # Map positions
-                        minDistance = min([a for a in dist])
-                        attrs = dist[minDistance] # Pick the shortest distance
-                    # Set attribute
-                    for at in attrs:
-                        cmds.setAttr(at, (attrs[at][1] - attrs[at][0]) * 0.5 + attrs[at][0])
-                    cmds.setKeyframe(attrs.keys())
-                    print "Narrowed to %s." % minDistance
+                    for f in range(frameRange):
+                        cmds.currentTime(frames[0] + f)
+                        move = attrs.copy()
+                        for i in range(moves): # Expected iteration ammount.
+                            dist = {} # Container to hold distances
+                            move = dict((a, chunks(b, steps)) for a, b in move.items())
+                            position(move, lambda x: updateDistance(m, x, dist)) # Map positions
+                            minDistance = min([a for a in dist])
+                            move = dist[minDistance] # Pick the shortest distance
+                        # Set attribute
+                        for at in move:
+                            cmds.setAttr(at, (move[at][1] - move[at][0]) * 0.5 + move[at][0])
+                        cmds.setKeyframe(move.keys())
+                        print "Narrowed to %s." % minDistance
 
 
 
@@ -144,4 +148,4 @@ def Snap(attrs, objs, accuracy=0.001, steps=10):
 
 at = {"pSphere1.tx": [-30, 500], "pSphere1.tz": [-50, 700], "pSphere1.ty": [-52, 30]}
 ob = [["pSphere1", "pSphere2"]]
-Snap(at, ob)
+Snap(at, ob, [4, 10])
