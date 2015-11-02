@@ -61,6 +61,7 @@ class Progress(object):
         cmds.columnLayout(w=200, bgc=(0.2,0.2,0.2))
         s.bar = cmds.columnLayout(w=1, h=40, bgc=(0.8,0.4,0.5))
         cmds.showWindow(s.win)
+        cmds.refresh()
         return s
     def __exit__(s, *err):
         if cmds.window(s.win, ex=True): cmds.deleteUI(s.win)
@@ -73,7 +74,7 @@ class Progress(object):
             elif 100 < v:
                 v = 100
             if cmds.layout(s.bar, ex=True):
-                if int(v) is not int(s._progress) and not int(v) % 10 and 0 < v < 100: # Update on incriments of 15
+                if int(v) is not int(s._progress) and not int(v) % 10 and 1 < v < 100: # Update on incriments of 15
                     cmds.columnLayout(s.bar, e=True, w=s._progress * 2)
                     cmds.refresh()
             else:

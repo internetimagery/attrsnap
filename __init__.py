@@ -84,7 +84,7 @@ class Main(object):
                 cmds.rowColumnLayout(p=s.objWrapper, nc=2, cw=[(1, 20)], bgc=(0.2,0.2,0.2)) # Objects
                 cmds.button(l="X", bgc=(0.4,0.4,0.4), c=lambda x: (s.objs.remove(o), s.displayObj()))
                 cmds.columnLayout(adj=True)
-                for a in o: cmds.text(l=a, h=20)
+                for a in o: cmds.text(l=a, h=20, align="left")
             for obj in s.objs:
                 addObj(obj)
 
@@ -129,7 +129,7 @@ class Main(object):
             framerange = [cmds.currentTime(q=True)]*2
         steps = cmds.intFieldGrp(s.steps, q=True, v1=True)
         attributes = dict((a, [b.min, b.max]) for a, b in s.attrs.items())
-        if 2 < len(attributes):
+        if 3 < len(attributes):
             if "Yes" != cmds.confirmDialog(
                 t="Quick Check",
                 m="The more attributes you add the longer the snap will take.\nAre you sure you wish to continue?",
@@ -149,6 +149,7 @@ class Main(object):
                 dismissString="No"
                 ):
                 return
+        print "-"*20
         print "Running scan:"
         print "Frames: %s" % framerange
         print "Steps: %s" % steps
