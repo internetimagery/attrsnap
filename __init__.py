@@ -5,7 +5,7 @@ import scan
 import maya.mel as mel
 import maya.cmds as cmds
 
-scan.Timer.verbose = True
+scan.Timer.verbose = False
 
 class Attr(object):
     def __init__(s, obj, attr):

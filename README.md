@@ -12,7 +12,7 @@ Simply copy the folder into your scripts directory in Maya. The folder should be
 Within Maya, create a shelf icon with the following PYTHON code:
 
 	import attrsnap
-	attrsnap.GUI()
+	attrsnap.Main()
 
 ![Screenshot](screen.jpg)
 
@@ -31,6 +31,4 @@ Within Maya, create a shelf icon with the following PYTHON code:
 * Click "Run Scan" to begin snapping the objects.
 
 NOTE: Try not to have many rotation attributes at once. They can get unwieldy.
-NOTE: If the scan is not quite accurate enough, or is having some trouble. You can play with the values in "Accuracy" and "Steps" to narrow the search.
-
-
+NOTE: If the scan is not quite accurate enough, or is having some trouble. You can play with the values in "Steps" to narrow the search. The tradeoff is time.

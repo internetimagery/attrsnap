@@ -121,7 +121,7 @@ def Snap(attrs, objs, frames, steps=10):
         if longest < 0.001:
             break
     moves += 1 # Number of moves it takes to shrink longest range to zero
-    moves *= 2 # Lets beef it up a bit for accuracy.
+    moves = int(moves * 1.5) # Lets beef it up a bit for accuracy. Overkill!
     cmb = steps ** len(attrs) # Number of combinations per move
     frameRange = int(frames[1] - frames[0]) + 1
     progStep = 100.0 / (moves * cmb * frameRange) # Ammount to step each time in progress
