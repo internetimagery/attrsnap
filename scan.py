@@ -143,36 +143,33 @@ class Scanner(object):
             closest = start_node # Closest position so far
 
             print("Walking...")
-            try:
-                while len(to_visit):
-                    curr_step = heapq.heappop(to_visit)
-                    path_end = True
-                    stride = curr_step.stride
-                    for step in movement: # Check immediate surroundings
-                        new_move = tuple(stride * a + b for a, b in zip(step, curr_step))
-                        if new_move not in visited: # Don't backtrack
-                            visited.add(new_move)
-                            count += 1
-                            new_step = Node(new_move, curr_step)
-                            heapq.heappush(to_visit, new_step) # Mark as viable path
-                            if new_step < threshold: raise StopIteration
-                            if new_step < curr_step: # Are we closer?
-                                path_end = False # We have somewhere to go!
-                            if new_step < closest: # Are we closest we have ever been?
-                                closest = new_step
-                                success += 1
-                                cmds.refresh() # Update view
-                    if path_end: # Are we at a deadend?
-                        curr_step.stride *= 0.3 # Narrow Search
-                        if 0.001 < curr_step.stride:
-                            heapq.heappush(to_visit, curr_step)
+            while len(to_visit):
+                curr_step = heapq.heappop(to_visit)
+                path_end = True
+                stride = curr_step.stride
+                for step in movement: # Check immediate surroundings
+                    new_move = tuple(stride * a + b for a, b in zip(step, curr_step))
+                    if new_move not in visited: # Don't backtrack
+                        visited.add(new_move)
+                        count += 1
+                        new_step = Node(new_move, curr_step)
+                        heapq.heappush(to_visit, new_step) # Mark as viable path
+                        if new_step < threshold: break
+                        if new_step < curr_step: # Are we closer?
+                            path_end = False # We have somewhere to go!
+                        if new_step < closest: # Are we closest we have ever been?
+                            closest = new_step
+                            success += 1
+                            cmds.refresh() # Update view
+                if path_end: # Are we at a deadend?
+                    curr_step.stride *= 0.3 # Narrow Search
+                    if 0.001 < curr_step.stride:
+                        heapq.heappush(to_visit, curr_step)
 
-                    elapsed_time = time.time() - start_time
-                    if timeout < elapsed_time: # Important!
-                        print("Timed out...")
-                        break
-            except StopIteration:
-                print("Made it!")
+                elapsed_time = time.time() - start_time
+                if timeout < elapsed_time: # Important!
+                    print("Timed out...")
+                    break
             for at, pos in zip(attrs, closest):
                 at(pos); cmds.setKeyframe(at)
             total_time = (time.time() - start_time) * 1000
