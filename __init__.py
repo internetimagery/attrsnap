@@ -60,7 +60,7 @@ class Main(object):
             # Create window
             name = "AttrSnap2Win"
             if cmds.window(name, ex=True): cmds.deleteUI(name)
-            win = cmds.window(name, rtf=True, t="Attribute Snap (2)")
+            win = cmds.window(name, rtf=True, t="Attribute Snap")
             wrapper = cmds.columnLayout(adj=True)
             cmds.text("""
     <h4>Move two objects close together using arbitrary attributes.</h4>
