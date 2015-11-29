@@ -142,7 +142,7 @@ class Scanner(object):
                 # Record our start location.
                 base_position = tuple(a() for a in attrs) # Where we start from
                 base_distance = heuristic(base_position) # priority
-                base_stride = base_distance * 0.3 # Step length
+                base_stride = base_distance * 0.25 # Step length
                 start_node = (base_distance, base_position, base_stride)
 
                 visited = set() # Don't retrace our steps
@@ -150,34 +150,37 @@ class Scanner(object):
                 closest = start_node # Closest position so far
 
                 print("Walking...")
-                while len(to_visit):
-                    curr_dist, curr_pos, curr_stride = heapq.heappop(to_visit)
-                    path_end = True
-                    for step in movement: # Check immediate surroundings
-                        new_pos = tuple(curr_stride * a + b for a, b in zip(step, curr_pos))
-                        if new_pos not in visited: # Don't backtrack
-                            visited.add(new_pos)
-                            count += 1
-                            new_dist = heuristic(new_pos)
-                            new_node = (new_dist, new_pos, curr_stride)
-                            heapq.heappush(to_visit, new_node) # Mark on map
-                            if new_dist < threshold: break # We made it!
-                            if new_dist < curr_dist: # Are we closer?
-                                path_end = False # We have somewhere to go!
-                            if new_dist < closest[0]: # Are we the closest we have ever been?
-                                closest = new_node
-                                success += 1
-                                cmds.refresh() # Update view
-                    if path_end: # Are we at a deadend?
-                        new_stride = curr_stride * 0.3 # Narrow Search
-                        if 0.001 < new_stride:
-                            new_node = (curr_dist, curr_pos, new_stride)
-                            heapq.heappush(to_visit, new_node)
+                try:
+                    while len(to_visit):
+                        curr_dist, curr_pos, curr_stride = heapq.heappop(to_visit)
+                        path_end = True
+                        for step in movement: # Check immediate surroundings
+                            new_pos = tuple(curr_stride * a + b for a, b in zip(step, curr_pos))
+                            if new_pos not in visited: # Don't backtrack
+                                visited.add(new_pos)
+                                count += 1
+                                new_dist = heuristic(new_pos)
+                                new_node = (new_dist, new_pos, curr_stride)
+                                heapq.heappush(to_visit, new_node) # Mark on map
+                                if new_dist < threshold: raise StopIteration # We made it!
+                                if new_dist < curr_dist: # Are we closer?
+                                    path_end = False # We have somewhere to go!
+                                if new_dist < closest[0]: # Are we the closest we have ever been?
+                                    closest = new_node
+                                    success += 1
+                                    cmds.refresh() # Update view
+                        if path_end: # Are we at a deadend?
+                            new_stride = curr_stride * 0.5 # Narrow Search
+                            if 0.001 < new_stride:
+                                new_node = (curr_dist, curr_pos, new_stride)
+                                heapq.heappush(to_visit, new_node)
 
-                    elapsed_time = time.time() - start_time
-                    if timeout < elapsed_time: # Important!
-                        print("Timed out...")
-                        break
+                        elapsed_time = time.time() - start_time
+                        if timeout < elapsed_time: # Important!
+                            print("Timed out...")
+                            break
+                except StopIteration:
+                    print("Made it!")
                 for at, pos in zip(attrs, closest):
                     at(pos); cmds.setKeyframe(at)
                 total_time = (time.time() - start_time) * 1000
