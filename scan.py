@@ -14,6 +14,7 @@ from __future__ import division, print_function
 
 import time
 import heapq
+import operator
 import functools
 import itertools
 import contextlib
@@ -21,6 +22,16 @@ import collections
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
 from pprint import pprint as print
+
+@contextlib.contextmanager
+def temp_obj(num=1):
+    """ Create some temporary objects """
+    objs = [cmds.group(em=True) for a in range(num)]
+    try:
+        yield objs
+    finally:
+        for o in objs:
+            if cmds.objExists(o): cmds.delete(o)
 
 @contextlib.contextmanager
 def safe_state():
@@ -65,35 +76,6 @@ class Model(object):
         """ Get position of object """
         return om.MVector(cmds.xform(s.name, q=True, ws=True, rp=True))
 
-class Node(collections.Sequence):
-    """ Pathfinding node """
-    __slots__ = ("_pos", "_parent", "_distance")
-    objs = None # Object to track
-    attrs = None # Attributes
-    stride = None # Step length
-    stage = 0 # Stage of the scan
-    def __init__(s, position, parent=None):
-        s._parent = parent # Previous Node
-        s._distance = None # Distance from goal
-        s._pos = position # Location
-    def __getitem__(s, k): return s._pos[k]
-    def __repr__(s): return "Node :: %s" % repr(s._pos)
-    def __hash__(s): return hash(s._pos)
-    def __len__(s): return len(s._pos)
-    def __lt__(s, n):
-        try:
-            return s.distance < n.distance
-        except AttributeError:
-            return s.distance < n
-    @property
-    def distance(s): # Heuristic
-        dist = s._distance
-        if dist is None:
-            objA, objB = s.objs
-            for at, p in zip(s.attrs, s._pos): at(p) # Move into place
-            s._distance = dist = (objB() - objA()).length() # Get distance (heuristic)
-        return dist
-
 class Scanner(object):
     """ Scan through attributes """
     def __init__(s, objs, attrs):
@@ -103,79 +85,105 @@ class Scanner(object):
 
     def calibrate(s, attrs, objs):
         """ Work out how much each combination moves and normalize """
-        objA, objB = objs
-        startA, startB = objA(), objB()
         combinations = [(-1, 0, 1)]*len(attrs)
         start_position = [a() for a in attrs]
+        start_loc = [o() for o in objs]
         normalized = set()
         for c in itertools.product(*combinations):
             for at, offset, pos in zip(attrs, c, start_position): # Move attributes into place
                 at(pos + offset)
-            moveA = (objA() - startA).length() # Get distance moved
-            moveB = (objB() - startB).length()
-            total = moveA + moveB # Total distance moved
+            curr_loc = [o() for o in objs] # New Position
+            total = sum((a-b).length() for a, b in zip(curr_loc, start_loc))
             scale = (1 / total) if total else 0
             normalized.add(tuple(a * scale for a in c)) # Normalized movement
         for at, pos in zip(attrs, start_position): # Move us back to start
             at(pos)
         return list(normalized) # list for quicker iteration
 
+    def heuristic(s, position, center=None):
+        """ Suck all objects to the last selected """
+        objs, attrs = s.objs, s.attrs
+        # Move into location
+        for at, pos in zip(attrs, position): at(pos)
+
+        # Little computationally intensive...
+        if center is None: # Calculate on the fly
+            num = len(objs)
+            pos = [a() for a in objs]
+            vec = [pos[a-1] - pos[a] for a in range(num)]
+            step = 1/num
+            center = pos[-1] + reduce(operator.add, (step * a * b for a, b in enumerate(vec)))
+            distance = (center - pos[-1]).length()
+
+        # Quicker!
+        else:
+            center = om.MVector(cmds.xform(center, q=True, ws=True, t=True))
+            distance = (center - objs[-1]).length()
+        return distance
+
     def walk(s):
         """ Move to location """
         objs, attrs = s.objs, s.attrs
         movement = s.movement
+        heuristic = s.heuristic
 
         with safe_state():
-            start_time = time.time() # Start the clock!
-            timeout = 6 # Seconds
-            count = 0 # Combination count
-            success = 1 # Success count
-            threshold = 0.001 # How close is made it?
+            with temp_obj(1) as tmp:
+                start_time = time.time() # Start the clock!
+                timeout = 6 # Seconds
+                count = 0 # Combination count
+                success = 1 # Success count
+                threshold = 0.001 # How close is made it?
 
-            # Record our start location.
-            base_position = tuple(a() for a in attrs) # Where we start from
-            Node.objs, Node.attrs = objs, attrs # Initialize our nodes
-            start_node = Node(base_position) # Root node
-            Node.stride = start_node.distance * 0.3 # Step length
+                # Find center
+                center = tmp[0]
+                for o in objs: cmds.pointConstraint(o, center) # Position obj
 
-            visited = set() # Don't retrace our steps
-            to_visit = [start_node] # Where to next?
-            closest = start_node # Closest position so far
+                # Record our start location.
+                base_position = tuple(a() for a in attrs) # Where we start from
+                base_distance = heuristic(base_position) # priority
+                base_stride = base_distance * 0.3 # Step length
+                start_node = (base_distance, base_position, base_stride)
 
-            print("Walking...")
-            while len(to_visit):
-                curr_step = heapq.heappop(to_visit)
-                path_end = True
-                stride = curr_step.stride
-                for step in movement: # Check immediate surroundings
-                    new_move = tuple(stride * a + b for a, b in zip(step, curr_step))
-                    if new_move not in visited: # Don't backtrack
-                        visited.add(new_move)
-                        count += 1
-                        new_step = Node(new_move, curr_step)
-                        heapq.heappush(to_visit, new_step) # Mark as viable path
-                        if new_step < threshold: break
-                        if new_step < curr_step: # Are we closer?
-                            path_end = False # We have somewhere to go!
-                        if new_step < closest: # Are we closest we have ever been?
-                            closest = new_step
-                            success += 1
-                            cmds.refresh() # Update view
-                if path_end: # Are we at a deadend?
-                    curr_step.stride *= 0.3 # Narrow Search
-                    if 0.001 < curr_step.stride:
-                        heapq.heappush(to_visit, curr_step)
+                visited = set() # Don't retrace our steps
+                to_visit = [start_node] # Where to next?
+                closest = start_node # Closest position so far
 
-                elapsed_time = time.time() - start_time
-                if timeout < elapsed_time: # Important!
-                    print("Timed out...")
-                    break
-            for at, pos in zip(attrs, closest):
-                at(pos); cmds.setKeyframe(at)
-            total_time = (time.time() - start_time) * 1000
-            print("Travel complete with a time of %s ms." % total_time)
-            print("Finished with a distance of %s." % closest.distance)
-            print("Made %s attempts to get there with a time of %s ms per attempt." % (count, (total_time / count)))
+                print("Walking...")
+                while len(to_visit):
+                    curr_dist, curr_pos, curr_stride = heapq.heappop(to_visit)
+                    path_end = True
+                    for step in movement: # Check immediate surroundings
+                        new_pos = tuple(curr_stride * a + b for a, b in zip(step, curr_pos))
+                        if new_pos not in visited: # Don't backtrack
+                            visited.add(new_pos)
+                            count += 1
+                            new_dist = heuristic(new_pos)
+                            new_node = (new_dist, new_pos, curr_stride)
+                            heapq.heappush(to_visit, new_node) # Mark on map
+                            if new_dist < threshold: break # We made it!
+                            if new_dist < curr_dist: # Are we closer?
+                                path_end = False # We have somewhere to go!
+                            if new_dist < closest[0]: # Are we the closest we have ever been?
+                                closest = new_node
+                                success += 1
+                                cmds.refresh() # Update view
+                    if path_end: # Are we at a deadend?
+                        new_stride = curr_stride * 0.3 # Narrow Search
+                        if 0.001 < new_stride:
+                            new_node = (curr_dist, curr_pos, new_stride)
+                            heapq.heappush(to_visit, new_node)
+
+                    elapsed_time = time.time() - start_time
+                    if timeout < elapsed_time: # Important!
+                        print("Timed out...")
+                        break
+                for at, pos in zip(attrs, closest):
+                    at(pos); cmds.setKeyframe(at)
+                total_time = (time.time() - start_time) * 1000
+                print("Travel complete with a time of %s ms." % total_time)
+                print("Finished with a distance of %s." % closest[0])
+                print("Made %s attempts to get there with a time of %s ms per attempt." % (count, (total_time / count)))
 
 
 if __name__ == '__main__':
