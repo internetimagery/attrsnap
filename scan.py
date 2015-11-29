@@ -117,7 +117,7 @@ class Scanner(object):
 
         # Quicker!
         else:
-            center = om.MVector(cmds.xform(center, q=True, ws=True, t=True))
+            center = om.MVector(cmds.xform(center, q=True, ws=True, rp=True))
             distance = (center - objs[-1]).length()
         return distance
 
@@ -181,7 +181,7 @@ class Scanner(object):
                             break
                 except StopIteration:
                     print("Made it!")
-                for at, pos in zip(attrs, closest):
+                for at, pos in zip(attrs, closest[1]):
                     at(pos); cmds.setKeyframe(at)
                 total_time = (time.time() - start_time) * 1000
                 print("Travel complete with a time of %s ms." % total_time)

@@ -54,7 +54,7 @@ class Main(object):
     def __init__(s):
         with warn:
             s.objs = objs = cmds.ls(sl=True, type="transform") or [] # Grab selection
-            if len(objs) != 2: raise RuntimeError, "You must select two objects."
+            if len(objs) < 2: raise RuntimeError, "You must select at least two objects."
 
             s.attrs = set() # Empty attribute list
             # Create window
