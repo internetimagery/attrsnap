@@ -201,13 +201,13 @@ class Scanner(object):
                             # Move into location
                             for at, pos in zip(attrs, new_pos): at(pos)
 
+                            # Work out cost to move
                             new_dist = dist(objs1)
-                            new_offset = dist(objs2)
-
-                            moved = to_cost - new_offset - curr_offset
+                            new_offset = abs(dist(objs2) - to_cost)
+                            moved = abs(curr_offset - new_offset) * cost_scale
                             new_cost = curr_cost + moved
-                            print("CURRENT COST %s" % moved)
-                            new_priority = new_dist
+
+                            new_priority = new_cost + new_dist
 
                             new_node = (
                                 new_priority,
@@ -244,7 +244,6 @@ class Scanner(object):
                         break
             except StopIteration:
                 print("Made it!")
-            print("COST WAS %s" % to_cost)
             for at, pos in zip(attrs, closest):
                 at(pos); cmds.setKeyframe(at)
             total_time = (time.time() - start_time) * 1000
