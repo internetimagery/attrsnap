@@ -153,14 +153,13 @@ class Scanner(object):
             distance = (center - objs[-1]()).length()
         return distance
 
-    def walk(s):
+    def walk(s, timeout=6):
         """ Move to location """
         objs1, objs2, attrs = s.objs1, s.objs2, s.attrs
         movement = s.movement
 
         with safe_state():
             start_time = time.time() # Start the clock!
-            timeout = 6 # Seconds
             count = 0 # Combination count
             success = 1 # Success count
 
@@ -245,7 +244,7 @@ class Scanner(object):
                         break
             except StopIteration:
                 print("Made it!")
-            for at, pos in zip(attrs, closest):
+            for at, pos in zip(attrs, closest[1]):
                 at(pos); cmds.setKeyframe(at)
             total_time = (time.time() - start_time) * 1000
             print("Travel complete with a time of %s ms." % total_time)

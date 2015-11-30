@@ -57,6 +57,7 @@ class Main(object):
             if len(objs1) != 2: raise RuntimeError, "You must select two objects."
             s.objs2 = []
             s.attrs = set() # Empty attribute list
+            s.timeout = 6
             # Create window
             name = "AttrSnap2Win"
             if cmds.window(name, ex=True): cmds.deleteUI(name)
@@ -251,7 +252,7 @@ Remove this attribute.
         path = scan.Scanner(attrs, objs1, objs2)
         while frame_start <= frame_end:
             cmds.currentTime(frame_start)
-            path.walk()
+            path.walk(s.timeout)
             frame_start += 1
         print "Scan complete."
 
