@@ -189,6 +189,12 @@ class Scanner(object):
                 print("Finished with a distance of %s." % closest[0])
                 print("Made %s attempts to get there with a time of %s ms per attempt." % (count, (total_time / count)))
 
+# TODO:
+# Add secondary object check (pole vector)
+# Normalize distances to match main distance1. ie: dist1 / dist2
+# Add together to produce heuristic
+# Track distance1 and only allow nodes that get us closer (TEST THIS)
+# Perhaps add distance2 each step so the only decreasing distance is 1
 
 if __name__ == '__main__':
     # Test functionality
