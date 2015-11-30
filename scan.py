@@ -85,20 +85,21 @@ class Scanner(object):
 
     def calibrate(s, attrs, objs):
         """ Work out how much each combination moves and normalize """
-        combinations = [(-1, 0, 1)]*len(attrs)
-        start_position = [a() for a in attrs]
-        start_loc = [o() for o in objs]
-        normalized = set()
-        for c in itertools.product(*combinations):
-            for at, offset, pos in zip(attrs, c, start_position): # Move attributes into place
-                at(pos + offset)
-            curr_loc = [o() for o in objs] # New Position
-            total = sum((a-b).length() for a, b in zip(curr_loc, start_loc))
-            scale = (1 / total) if total else 0
-            normalized.add(tuple(a * scale for a in c)) # Normalized movement
-        for at, pos in zip(attrs, start_position): # Move us back to start
-            at(pos)
-        return list(normalized) # list for quicker iteration
+        with safe_state():
+            combinations = [(-1, 0, 1)]*len(attrs)
+            start_position = [a() for a in attrs]
+            start_loc = [o() for o in objs]
+            normalized = set()
+            for c in itertools.product(*combinations):
+                for at, offset, pos in zip(attrs, c, start_position): # Move attributes into place
+                    at(pos + offset)
+                curr_loc = [o() for o in objs] # New Position
+                total = sum((a-b).length() for a, b in zip(curr_loc, start_loc))
+                scale = (1 / total) if total else 0
+                normalized.add(tuple(a * scale for a in c)) # Normalized movement
+            for at, pos in zip(attrs, start_position): # Move us back to start
+                at(pos)
+            return list(normalized) # list for quicker iteration
 
     def heuristic(s, position, center=None):
         """ Suck all objects to the last selected """
@@ -118,7 +119,7 @@ class Scanner(object):
         # Quicker!
         else:
             center = om.MVector(cmds.xform(center, q=True, ws=True, rp=True))
-            distance = (center - objs[-1]).length()
+            distance = (center - objs[-1]()).length()
         return distance
 
     def walk(s):
@@ -141,7 +142,7 @@ class Scanner(object):
 
                 # Record our start location.
                 base_position = tuple(a() for a in attrs) # Where we start from
-                base_distance = heuristic(base_position) # priority
+                base_distance = heuristic(base_position, center) # priority
                 base_stride = base_distance * 0.25 # Step length
                 start_node = (base_distance, base_position, base_stride)
 
@@ -159,7 +160,7 @@ class Scanner(object):
                             if new_pos not in visited: # Don't backtrack
                                 visited.add(new_pos)
                                 count += 1
-                                new_dist = heuristic(new_pos)
+                                new_dist = heuristic(new_pos, center)
                                 new_node = (new_dist, new_pos, curr_stride)
                                 heapq.heappush(to_visit, new_node) # Mark on map
                                 if new_dist < threshold: raise StopIteration # We made it!

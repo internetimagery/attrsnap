@@ -176,10 +176,10 @@ Remove this attribute.
         # Alert if we have a lot of attributes
         if 3 < len(attrs) and not ask("The more attributes you add the longer the snap will take.\nAre you sure you wish to continue?"):
             return
-        # Alert if the objects are starting far apart
-        o1, o2 = [om.MVector(cmds.xform(o, q=True, ws=True, t=True)) for o in objs]
-        if 100 < (o2 - o1).length() and not ask("The objects are starting quite far away.\nMoving them closer to start will speed up the scan.\nDo you wish to contine as is?"):
+        # Ask if using more than two objects
+        if 2 < len(attrs) and not ask("Using more than two objects can be unpredictable.\nAre you sure you wish to continue?"):
             return
+
         # Run scan!
         print "Starting scan..."
         path = scan.Scanner(objs, attrs)
