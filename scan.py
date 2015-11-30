@@ -23,6 +23,10 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 from pprint import pprint as print
 
+def dist(objs): # Get distance between obj pair
+    """ get distance between objs """
+    return (objs[1]() - objs[0]()).length()
+
 def getNode(name):
     """ Get Node """
     sel = om.MSelectionList()
@@ -163,13 +167,10 @@ class Scanner(object):
             count = 0 # Combination count
             success = 1 # Success count
 
-            def dist(objs): # Get distance between obj pair
-                return (objs[1]() - objs[0]()).length()
-
             # Get our step cost
             to_goal = dist(objs1) # Get distance of main objs
-            to_cost = dist(objs2) # Get distance of secondary objs
-            cost_scale = (to_goal / to_cost) if to_goal and to_cost else 0
+            # to_cost = dist(objs2) # Get distance of secondary objs
+            # cost_scale = (to_goal / to_cost) if to_goal and to_cost else 0
 
             # Record our start location.
             start_position = tuple(a() for a in attrs) # Where we start from
@@ -178,9 +179,10 @@ class Scanner(object):
                 to_goal,
                 start_position,
                 start_stride,
-                to_goal,
-                0,
-                0)
+                # to_goal,
+                # 0,
+                # 0
+                )
 
             # Track our path
             visited = set() # Don't retrace our steps
@@ -190,7 +192,8 @@ class Scanner(object):
             print("Walking...")
             try:
                 while len(to_visit):
-                    curr_priority, curr_pos, curr_stride, curr_dist, curr_cost, curr_offset = heapq.heappop(to_visit)
+                    # curr_priority, curr_pos, curr_stride, curr_dist, curr_cost, curr_offset = heapq.heappop(to_visit)
+                    curr_priority, curr_pos, curr_stride = heapq.heappop(to_visit)
                     path_end = True
                     for step in movement: # Check immediate surroundings
                         new_pos = tuple(curr_stride * a + b for a, b in zip(step, curr_pos))
@@ -202,9 +205,10 @@ class Scanner(object):
 
                             # Work out cost to move
                             new_dist = dist(objs1)
-                            new_offset = abs(dist(objs2) - to_cost)
-                            moved = abs(curr_offset - new_offset) * cost_scale
-                            new_cost = curr_cost + moved
+                            # new_offset = abs(dist(objs2) - to_cost)
+                            # moved = abs(curr_offset - new_offset) * cost_scale
+                            # new_cost = curr_cost + moved
+                            new_cost = 0; new_offset = 0
 
                             new_priority = new_cost + new_dist
 
@@ -212,16 +216,16 @@ class Scanner(object):
                                 new_priority, # Raise to top of the stack
                                 new_pos, # Positional information
                                 curr_stride, # Step Length
-                                new_dist, # Distance from goal
-                                new_cost, # How far have we traveled?
-                                new_offset # Offset from our last move
+                                # new_dist, # Distance from goal
+                                # new_cost, # How far have we traveled?
+                                # new_offset # Offset from our last move
                                 )
 
-                            heapq.heappush(to_visit, new_node) # Mark on map
                             if new_dist < 0.001: raise StopIteration # We made it!
-                            if new_priority <= curr_priority: # Are we closer?
+                            if new_priority < curr_priority: # Are we closer?
                                 path_end = False # We have somewhere to go!
-                            if new_dist < closest[3]: # Are we the closest we have ever been?
+                                heapq.heappush(to_visit, new_node) # Mark on map
+                            if new_dist < closest[0]: # Are we the closest we have ever been?
                                 closest = new_node
                                 success += 1
                                 cmds.refresh() # Update view
@@ -232,9 +236,9 @@ class Scanner(object):
                                 curr_priority,
                                 curr_pos,
                                 new_stride,
-                                curr_dist,
-                                curr_cost,
-                                curr_offset
+                                # curr_dist,
+                                # curr_cost,
+                                # curr_offset
                             )
                             heapq.heappush(to_visit, new_node)
 
@@ -242,13 +246,15 @@ class Scanner(object):
                     if timeout < elapsed_time: # Important!
                         print("Timed out...")
                         break
+                else:
+                    print("Exhausted all options.")
             except StopIteration:
                 print("Made it!")
             for at, pos in zip(attrs, closest[1]):
                 at(pos); cmds.setKeyframe(at)
             total_time = (time.time() - start_time) * 1000
             print("Travel complete with a time of %s ms." % total_time)
-            print("Finished with a distance of %s." % closest[3])
+            print("Finished with a distance of %s." % closest[0])
             print("Made %s attempts to get there with a time of %s ms per attempt." % (count, (total_time / count)))
 
 # TODO:
