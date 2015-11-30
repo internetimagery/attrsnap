@@ -209,13 +209,14 @@ class Scanner(object):
 
                             new_priority = new_cost + new_dist
 
-                            new_node = (
-                                new_priority,
-                                new_pos,
-                                curr_stride,
-                                new_dist,
-                                new_cost,
-                                new_offset)
+                            new_node = ( # Build a new node
+                                new_priority, # Raise to top of the stack
+                                new_pos, # Positional information
+                                curr_stride, # Step Length
+                                new_dist, # Distance from goal
+                                new_cost, # How far have we traveled?
+                                new_offset # Offset from our last move
+                                )
 
                             heapq.heappush(to_visit, new_node) # Mark on map
                             if new_dist < 0.001: raise StopIteration # We made it!

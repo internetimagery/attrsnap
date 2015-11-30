@@ -53,15 +53,21 @@ class Main(object):
     """ Main Window """
     def __init__(s):
         with warn:
-            s.objs = objs = cmds.ls(sl=True, type="transform") or [] # Grab selection
-            if len(objs) < 2: raise RuntimeError, "You must select at least two objects."
-
+            s.objs1 = objs1 = cmds.ls(sl=True, type="transform") or [] # Grab selection
+            if len(objs1) != 2: raise RuntimeError, "You must select two objects."
+            s.objs2 = []
             s.attrs = set() # Empty attribute list
             # Create window
             name = "AttrSnap2Win"
             if cmds.window(name, ex=True): cmds.deleteUI(name)
             win = cmds.window(name, rtf=True, t="Attribute Snap")
             wrapper = cmds.columnLayout(adj=True)
+
+            menu = cmds.menuBarLayout()
+            more = cmds.menu(l="More Options...")
+            secondary = cmds.menuItem(l="Add a pair of secondary objects.", c=lambda x: warn(s.add_secondary))
+            timeout = cmds.menuItem(l="Set Timeout.", c=lambda x: warn(s.set_timeout))
+
             cmds.text("""
     <h4>Move two objects close together using arbitrary attributes.</h4>
 """)
@@ -98,9 +104,11 @@ Select this object.
                     c=lambda: warn(cmds.select, o, r=True),
                     p=row)
             obj_wrapper = cmds.columnLayout(adj=True, bgc=DARK)
-            for o in objs:
+            for o in objs1:
                 row = cmds.rowLayout(adj=1, nc=2, p=obj_wrapper)
                 add_obj(row, o)
+            # Secondary objs
+            s.secondary_wrapper = cmds.columnLayout(adj=True, p=wrapper)
             # Attributes
             cmds.button(l="Load Attributes", h=46, p=wrapper, c=lambda x: warn(s.add_attr))
             s.attr_wrapper = cmds.columnLayout(adj=True, p=wrapper)
@@ -108,6 +116,67 @@ Select this object.
             # Run Scan
             cmds.button(l="Run Snap!", h=70, p=wrapper, c=lambda x: warn(s.run_scan))
             cmds.showWindow(win)
+
+    def set_timeout(s):
+        """ Set timeout time """
+        raise NotImplementedError, "Not yet possible. But soon! :)"
+
+    def add_secondary(s):
+        """ Add Secondary objects """
+        sel = cmds.ls(sl=True, type="transform") or []
+        if len(sel) == 2:
+            if len(s.objs2) != 2:
+                s.objs2 = sel
+                s.display_objs()
+            else:
+                raise RuntimeError, "You already have two secondary objects."
+        else:
+            raise RuntimeError, "You need to select two objects."
+
+    def display_objs(s):
+        """ Refresh object display """
+        try:
+            cmds.deleteUI(cmds.layout(s.secondary_wrapper, q=True, ca=True))
+        except RuntimeError:
+            pass
+        wrapper = cmds.columnLayout(adj=True, p=s.secondary_wrapper, bgc=DARK)
+        cmds.separator()
+        def add_obj(obj):
+            def del_obj():
+                s.objs2 = []
+                s.display_objs()
+            row = cmds.rowLayout(nc=3, adj=1, p=wrapper)
+            cmds.iconTextStaticLabel(
+                st="iconAndTextHorizontal",
+                i="cube.png",
+                l=obj,
+                ann="""
+These two objects will influence the position of the others.
+""",
+                h=30)
+            cmds.iconTextButton(
+                st="iconAndTextHorizontal",
+                i="redSelect.png",
+                l="",
+                ann="""
+Select this object.
+""",
+                h=30,
+                c=lambda: warn(cmds.select, obj, r=True),
+                p=row)
+            cmds.iconTextButton(
+                st="iconAndTextHorizontal",
+                i="removeRenderable.png",
+                l="",
+                ann="""
+Clear these objects.
+""",
+                h=30,
+                c=lambda: del_obj(),
+                p=row)
+        for obj in s.objs2:
+            add_obj(obj)
+
 
     def add_attr(s):
         """ Add selected attributes to list """
@@ -158,9 +227,9 @@ Remove this attribute.
 
     def run_scan(s):
         """ Do the thing! """
-        attrs, objs = s.attrs, s.objs
+        attrs, objs1, objs2 = s.attrs, s.objs1, s.objs2
         # Valdate everything
-        for o in objs:
+        for o in objs1:
             if not cmds.objExists(o): raise RuntimeError, "%s could not be found." % o
         if not attrs: raise RuntimeError, "No attributes provided!"
         for o, at in attrs:
@@ -176,13 +245,10 @@ Remove this attribute.
         # Alert if we have a lot of attributes
         if 3 < len(attrs) and not ask("The more attributes you add the longer the snap will take.\nAre you sure you wish to continue?"):
             return
-        # Ask if using more than two objects
-        if 2 < len(attrs) and not ask("Using more than two objects can be unpredictable.\nAre you sure you wish to continue?"):
-            return
 
         # Run scan!
         print "Starting scan..."
-        path = scan.Scanner(objs, attrs)
+        path = scan.Scanner(attrs, objs1, objs2)
         while frame_start <= frame_end:
             cmds.currentTime(frame_start)
             path.walk()
