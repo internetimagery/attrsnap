@@ -124,7 +124,7 @@ Select this object.
 
     def add_secondary(s):
         """ Add Secondary objects """
-        raise NotImplementedError, "Feature coming soon!"
+        # raise NotImplementedError, "Feature coming soon!"
         sel = cmds.ls(sl=True, type="transform") or []
         if len(sel) == 2:
             if len(s.objs2) != 2:
