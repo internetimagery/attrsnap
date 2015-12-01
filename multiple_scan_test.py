@@ -23,7 +23,7 @@ import maya.cmds as cmds
 import maya.api.OpenMaya as om
 from pprint import pprint as print
 
-def distance(objs): # Get distance between obj pair
+def dist(objs): # Get distance between obj pair
     """ get distance between objs """
     return (objs[1]() - objs[0]()).length()
 
@@ -85,12 +85,38 @@ class Model(object):
         """ Get position of object """
         return s.transform.translation(om.MSpace.kWorld)
 
+class Node(collections.Sequence):
+    """ Path Node """
+    __slots__ = ("pos", "priority")
+    attrs = None # attributes
+    objs1 = None # Main objs
+    objs2 = None # Secondary objs
+    start2 = None # Start of Secondary
+    stride = 0 # Step length
+    def __init__(s, position, parent=None):
+        o1, o2, at = s.objs1, s.objs2, s.attrs
+        s.pos, s.parent = position, parent
+        # Move into location
+        for a, p in zip(at, position): a(p)
+        s.to_goal = (o1[1]() - o1[0]()).length() # Dist from man objs
+        s.to_cost = (o2[1]() - o2[0]()).length() # Dist from secondary
+
+        if parent: s.stride = parent.stride # Take our stride
+
+        s.pos = position # Position
+        s.priority = s.to_goal # priority
+    def __hash__(s): return hash(s.pos)
+    def __lt__(s, n): return s.priority < s.priority
+    def __getitem__(s, k): return s.pos[k]
+    def __len__(s): return len(s.pos)
+
 class Scanner(object):
     """ Scan through attributes """
-    def __init__(s, attrs, objs): # Primary / Secondary objs
-        s.objs = objs = [Model(o) for o in objs]
+    def __init__(s, attrs, objs1, objs2=None): # Primary / Secondary objs
+        s.objs1 = objs1 = [Model(o) for o in objs1]
+        s.objs2 = objs2 = [Model(o) for o in objs2] if objs2 else objs1
         s.attrs = attrs = [Attribute(o, at) for o, at in attrs]
-        s.movement = s.calibrate(attrs, objs)
+        s.movement = s.calibrate(attrs, set(objs1 + objs2))
 
     def calibrate(s, attrs, objs):
         """ Work out how much each combination moves and normalize """
@@ -110,9 +136,30 @@ class Scanner(object):
                 at(pos)
             return list(normalized) # list for quicker iteration
 
-    def walk(s, timeout=2.5):
-        """ Move to location """
+    def heuristic(s, position, center=None):
+        """ Suck all objects to the last selected """
         objs, attrs = s.objs, s.attrs
+        # Move into location
+        for at, pos in zip(attrs, position): at(pos)
+
+        # Little computationally intensive...
+        if center is None: # Calculate on the fly
+            num = len(objs)
+            pos = [a() for a in objs]
+            vec = [pos[a-1] - pos[a] for a in range(num)]
+            step = 1/num
+            center = pos[-1] + reduce(operator.add, (step * a * b for a, b in enumerate(vec)))
+            distance = (center - pos[-1]).length()
+
+        # Quicker!
+        else:
+            center = om.MVector(cmds.xform(center, q=True, ws=True, rp=True))
+            distance = (center - objs[-1]()).length()
+        return distance
+
+    def walk(s, timeout=6):
+        """ Move to location """
+        objs1, objs2, attrs = s.objs1, s.objs2, s.attrs
         movement = s.movement
 
         with safe_state():
@@ -121,7 +168,10 @@ class Scanner(object):
             success = 1 # Success count
 
             # Get our step cost
-            to_goal = distance(objs) # Get distance of main objs
+            to_goal = dist(objs1) # Get distance of main objs
+            to_cost = dist(objs2) # Get distance of secondary objs
+            cost_weight = 1 # How do we weight the cost?
+            cost_scale = (to_goal / to_cost) if to_goal and to_cost else 0
 
             # Record our start location.
             start_position = tuple(a() for a in attrs) # Where we start from
@@ -130,6 +180,9 @@ class Scanner(object):
                 to_goal,
                 start_position,
                 start_stride,
+                to_goal,
+                to_cost * cost_scale,
+                0
                 )
 
             # Track our path
@@ -140,7 +193,8 @@ class Scanner(object):
             print("Walking...")
             try:
                 while len(to_visit):
-                    curr_dist, curr_pos, curr_stride = heapq.heappop(to_visit)
+                    # curr_priority, curr_pos, curr_stride, curr_dist, curr_cost, curr_offset = heapq.heappop(to_visit)
+                    curr_priority, curr_pos, curr_stride, curr_dist, curr_dist2, curr_move = heapq.heappop(to_visit)
                     path_end = True
                     for step in movement: # Check immediate surroundings
                         new_pos = tuple(curr_stride * a + b for a, b in zip(step, curr_pos))
@@ -151,19 +205,25 @@ class Scanner(object):
                             for at, pos in zip(attrs, new_pos): at(pos)
 
                             # Work out cost to move
-                            new_dist = distance(objs)
+                            new_dist = dist(objs1)
+                            new_dist2 = dist(objs2) * cost_scale
+                            new_move = abs(new_dist2 - curr_dist2) + curr_move
+                            new_priority = cost_weight * new_move + new_dist
 
                             new_node = ( # Build a new node
-                                new_dist, # Raise to top of the stack
+                                new_priority, # Raise to top of the stack
                                 new_pos, # Positional information
                                 curr_stride, # Step Length
+                                new_dist, # Distance from goal
+                                new_dist2, # Distance from secondary
+                                new_move # How far have we traveled?
                                 )
-                            heapq.heappush(to_visit, new_node) # Mark on map
 
                             if new_dist < 0.001: raise StopIteration # We made it!
-                            if new_dist < curr_dist: # Are we closer?
+                            if new_priority < curr_priority: # Are we closer?
                                 path_end = False # We have somewhere to go!
-                            if new_dist < closest[0]: # Are we the closest we have ever been?
+                            heapq.heappush(to_visit, new_node) # Mark on map
+                            if new_dist < closest[3]: # Are we the closest we have ever been?
                                 closest = new_node
                                 success += 1
                                 cmds.refresh() # Update view
@@ -171,9 +231,12 @@ class Scanner(object):
                         new_stride = curr_stride * 0.5 # Narrow Search
                         if 0.001 < new_stride:
                             new_node = (
-                                curr_dist,
+                                curr_priority,
                                 curr_pos,
                                 new_stride,
+                                curr_dist,
+                                curr_dist2,
+                                curr_move
                             )
                             heapq.heappush(to_visit, new_node)
 
@@ -185,12 +248,23 @@ class Scanner(object):
                     print("Exhausted all options.")
             except StopIteration:
                 print("Made it!")
+            print("total distance :: %s" % to_goal)
             for at, pos in zip(attrs, closest[1]):
                 at(pos); cmds.setKeyframe(at)
             total_time = (time.time() - start_time) * 1000
             print("Travel complete with a time of %s ms." % total_time)
-            print("Finished with a distance of %s." % closest[0])
+            print("Finished with a distance of %s." % closest[3])
             print("Made %s attempts to get there with a time of %s ms per attempt." % (count, (total_time / count)))
+
+# TODO:
+# Add secondary object check (pole vector)
+# Normalize distances to match main distance1. ie: dist1 / dist2
+# Add together to produce heuristic
+# Track distance1 and only allow nodes that get us closer (TEST THIS)
+# Perhaps add distance2 each step so the only decreasing distance is 1
+
+
+
 
 if __name__ == '__main__':
     # Test functionality
@@ -202,7 +276,7 @@ if __name__ == '__main__':
             if cmds.objExists(o):
                 cmds.delete(o)
             cmds.polyCube(n=o)
-            random_pos = [random.random() * 20 - 10 for a in range(3)]
+            random_pos = [random.random() * 10 - 5 for a in range(3)]
             cmds.xform(o, t=random_pos)
         cmds.parent(objs[1], objs[0]) # Create lever action
         cmds.refresh()

@@ -124,7 +124,7 @@ Select this object.
 
     def add_secondary(s):
         """ Add Secondary objects """
-        # raise NotImplementedError, "Feature coming soon!"
+        raise NotImplementedError, "Feature coming soon!"
         sel = cmds.ls(sl=True, type="transform") or []
         if len(sel) == 2:
             if len(s.objs2) != 2:
@@ -244,16 +244,12 @@ Remove this attribute.
         else:
             frame_start, frame_end = [cmds.currentTime(q=True)]*2
 
-        # Alert if we have a lot of attributes
-        if 3 < len(attrs) and not ask("The more attributes you add the longer the snap will take.\nAre you sure you wish to continue?"):
-            return
-
         # Run scan!
         print "Starting scan..."
-        path = scan.Scanner(attrs, objs1, objs2)
+        path = scan.Scanner(attrs, objs1)
         while frame_start <= frame_end:
             cmds.currentTime(frame_start)
-            path.walk(s.timeout)
+            path.walk()
             frame_start += 1
         print "Scan complete."
 
