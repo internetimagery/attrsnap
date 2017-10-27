@@ -1,5 +1,6 @@
 # Perform matching.
 from __future__ import print_function, division
+# import collections
 import itertools
 import time
 import heapq
@@ -10,96 +11,140 @@ def refresh():
     import maya.cmds as cmds
     cmds.refresh()
 
-# TODO: Investigate any issues if "step" runs us up against min/max barriers...
-# TODO: Theoretically, calibrating a step next to a barrier would result in
-# TODO: no distance being recorded, and thus a step size of 0. Even though
-# TODO: the value may have movement further in the range of motion...
-def calibrate(s, group):
-    """ Determine how much of an impact each attribute has on our heuristic and thus our step size """
-    combinations = [(-1, 0, 1)]*len(attrs) # Set some standard movement.
-    root_value = group.get_values() # Get our initial attribute values
-    root_position = group.get_positions() # Get our initial object positions
-    normalized = set()
+Node = collections.namedtuple("Node", ["values", "stride"])
 
-    for combo in itertools.product(*combinations): # Jump through different step combos
-        step = (a + b for a, b in zip(root_value, combo)) # Calculate a step
-        group.set_values(step) # Set values to make a step
+class Task(object):
+    """ Ordered set of tasks """
+    def __init__(s, *heap):
+        s.heap = heapq.heapify(heap)
+        s.id = 0
+    def add(s, priority, task):
+        s.id += 1
+        heapq.heappush(s.heap, tuple(priority, s.id, task))
+    def get(s):
+        result = heapq.heappop(s.heap)
+        return result[0], result[2]
+    def __len__(s):
+        return len(s.heap)
 
-        new_position = group.get_positions() # Get new position
-        distance = group.get_distance(root_position, new_position) # Heuristic
-        scale = (1.0 / distance) if distance else 0
-        normalized.add(tuple(a * scale for a in combo)) # Normalize motion
 
-    # Return us back where we were.
-    group.set_values(root_position)
-    return list(normalized) # Convert to list for faster iteration later
+class Group(object):
+    """ A group of objects and attributes for matching """
+    def __init__(s, match_type, objs, *attributes):
+        s.match_type, s.objs, s.attributes = match_type, objs, attributes
 
-def match(groups, frame_start, frame_end, timeout=2.5, step_length=0.25, stop_threshold=0.001, refresh_interval=0.5):
+    def get_positions(s):
+        """ Get a list of positions / rotations from objects """
+        raise NotImplementedError()
+
+    def get_values(s):
+        """ Get a list of attribute values at the current time """
+        raise NotImplementedError()
+
+    def set_values(s, vals):
+        """ Set a list of values to each attribute """
+        raise NotImplementedError()
+
+    def get_distance(s, root_pos, curr_pos):
+        """ Calculate a distance value from two positionals """
+        raise NotImplementedError()
+
+    def keyframe(s, values):
+        """ Set a bunch of keyframes for each attribute """
+        raise NotImplementedError()
+
+    # TODO: Investigate any issues if "step" runs us up against min/max barriers...
+    # TODO: Theoretically, calibrating a step next to a barrier would result in
+    # TODO: no distance being recorded, and thus a step size of 0. Even though
+    # TODO: the value may have movement further in the range of motion...
+    def calibrate(s):
+        """ Determine how much of an impact each attribute has on our heuristic and thus our step size """
+        # TODO: This number doesn't mean a lot. What is important is the relationship between the scale and value.
+        # TODO: There can be a check that ensures we are not butted up against any min/max ranges. Nudge us out of the way if so.
+        combinations = [(-1, 0, 1)]*len(s.attributes) # Set some standard movement.
+        root_value = s.get_values() # Get our initial attribute values
+        root_position = s.get_positions() # Get our initial object positions
+        normalized = set()
+
+        for combo in itertools.product(*combinations): # Jump through different step combos
+            step = (a + b for a, b in zip(root_value, combo)) # Calculate a step
+            s.set_values(step) # Set values to make a step
+
+            new_position = s.get_positions() # Get new position
+            distance = s.get_distance(root_position, new_position) # Heuristic
+            scale = (1.0 / distance) if distance else 0
+            normalized.add(tuple(a * scale for a in combo)) # Normalize motion
+
+        # Return us back where we were.
+        s.set_values(root_position)
+        s.motion = list(normalized) # Convert to list for faster iteration later
+
+
+
+def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, refresh_interval=0.5):
     """ Match a bunch of groups """
     start_time = last_refresh = time.time()
     # Firstly calibrate our motions to efficiently use each attribute.
-    steps = [calibrate(a) for a in groups] # Calibrate our step sizing
     print("Matching...")
-    for combo in itertools.permutations(range(len(groups))):
-        for c in combo:
-            group = groups[c]
-            step = steps[c]
+    # Loop each combo. Brute force, but we don't want different combinations from making us miss our mark.
+    for combo in itertools.permutations(groups):
+        for group in combo:
+            # Mark how long sice last forward motion.
+            last_success = time.time()
 
-            # Prepare some setup variables
-            combo_start = time.time()
-            node_id = 0 # Serves as a heapq tiebreaker
-            success_count = 1
+            # Initialize our position.
+            current_distance = group.get_distance()
+            current_values = group.get_values()
+            current_stride = current_distance * step_length # Set up our initial stride size
 
-            # Initial distance cost
-
-            root_distance = group.get_distance()
-            root_values = group.get_values()
-            root_stride = root_distance * step_length
-            # Node = (distance left, node_id, current values, step to take)
-            root_node = (root_distance, node_id, root_values, root_stride)
+            # Create our first node!
+            current_node = Node(current_values, current_stride)
 
             # Record where we have been
-            visited = set()
-            to_visit = heapq.heapify([root_node])
-            closest = root_node
+            visited = set() # Don't retrace our steps...
+            to_visit = Task(current_node)
+            closest = (curr_distance, current_node)
 
             # Here we go!
             try:
                 while len(to_visit):
                     deadend = True
-                    curr_distance, _, curr_values, curr_stride = heapq.heappop(to_visit)
-                    for step_values in step: # Make one step each way!
-                        new_values = [a * b for a, b in zip(step_values, curr_values)]
+                    curr_distance, curr_node = to_visit.get()
+                    for move_values in group.motion: # Make one step each way!
+                        new_values = [a * b for a, b in zip(move_values, curr_node.values)]
                         if new_values not in visited: # Do not backtrack!
                             visited.add(new_values)
-                            node_id += 1
 
                             # Move to position, and get distance
                             group.set_values(new_values)
                             new_distance = group.get_distance()
 
                             # Build a new node.
-                            new_node = (new_distance, node_id, new_values, curr_stride)
-                            heapq.heappush(to_visit, new_node)
+                            new_node = (new_values, curr_stride)
+                            to_visit.add(new_distance, new_node)
 
+                            # If we are close enough to call it quits.
                             if new_distance < stop_threshold: raise StopIteration # We made it!
+
+                            # Have we reached a dead end? Where we cannot get any closer?
                             if new_distance < curr_distance: # Are we closer?
                                 deadend = False # We have somewhere to go!
+
+                            # Are we on the right track?
                             if new_distance < closest[0]: # Are we the closest we have ever been?
-                                closest = new_node
-                                success += 1
+                                closest = (new_distance, new_node)
                                 curr_time = time.time()
                                 if curr_time - last_refresh > refresh_interval:
                                     last_refresh = curr_time
                                     refresh()
+
                     if deadend: # Deadend? Take smaller steps.
                         new_stride = curr_stride * 0.5 # Take smaller steps.
                         if 0.001 < new_stride:
-                            node_id += 1
-                            new_node = (curr_distance, node_id, new_values, new_stride)
-                            heapq.heappush(to_visit, new_node)
+                            new_node = (new_values, new_stride)
+                            to_visit.add(curr_distance, new_node)
 
-                    elapsed_time = time.time() - combo_start
+                    elapsed_time = time.time() - last_success
                     if timeout < elapsed_time: # Important!
                         print("Timed out...")
                         break
