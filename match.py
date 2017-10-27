@@ -33,8 +33,8 @@ class Task(object):
 
 class Group(object):
     """ A group of objects and attributes for matching """
-    def __init__(s, match_type, objs, *attributes):
-        s.match_type, s.objs, s.attributes = match_type, objs, attributes
+    def __init__(s, match_type, markers, *attributes):
+        s.match_type, s.markers, s.attributes = match_type, markers, attributes
 
     def get_positions(s):
         """ Get a list of positions / rotations from objects """
@@ -48,7 +48,7 @@ class Group(object):
         """ Set a list of values to each attribute """
         raise NotImplementedError()
 
-    def get_distance(s, root_pos, curr_pos):
+    def get_distance(s, mark1, mark2):
         """ Calculate a distance value from two positionals """
         raise NotImplementedError()
 

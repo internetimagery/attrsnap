@@ -1,7 +1,9 @@
 # Match positions / rotations.
 from __future__ import print_function
 import maya.api.OpenMaya as om
-import contextlib
+import maya.cmds as cmds
+import match
+# import contextlib
 
 def get_node(name):
     """ Get Node """
@@ -16,21 +18,21 @@ def get_plug(obj, attr):
     attr = func.attribute(attr)
     return om.MPlug(obj, attr)
 
-@contextlib.contextmanager
-def safe_state():
-    """ Disable Autokey and keep the scene in a usable state """
-    state = cmds.autoKeyframe(q=True, st=True)
-    err = cmds.undoInfo(openChunk=True)
-    try:
-        cmds.autoKeyframe(st=False)
-        yield
-    except Exception as err:
-        raise
-    finally:
-        cmds.autoKeyframe(st=state)
-        cmds.undoInfo(closeChunk=True)
-        if err:
-            cmds.undo()
+# @contextlib.contextmanager
+# def safe_state():
+#     """ Disable Autokey and keep the scene in a usable state """
+#     state = cmds.autoKeyframe(q=True, st=True)
+#     err = cmds.undoInfo(openChunk=True)
+#     try:
+#         cmds.autoKeyframe(st=False)
+#         yield
+#     except Exception as err:
+#         raise
+#     finally:
+#         cmds.autoKeyframe(st=state)
+#         cmds.undoInfo(closeChunk=True)
+#         if err:
+#             cmds.undo()
 
 class Attribute(object):
     """ An Attribute """
@@ -71,14 +73,16 @@ class Transform(object):
         """ Get position of object """
         return s.transform.translation(om.MSpace.kWorld)
 
-class Group(object):
+class Group(match.Group):
     """ A group of objects and attributes for matching """
-    def __init__(s, match_type, objs, *attributes):
-        s.match_type, s.objs, s.attributes = match_type, objs, attributes
+    def __init__(s, match_type, markers, *attributes):
+        s.match_type = match_type
+        s.markers = [Transform(a) for a in markers]
+        s.attributes = [Attribute(a, b) for a, b in attributes]
 
     def get_positions(s):
         """ Get a list of positions / rotations from objects """
-        return tuple(a.get_position() for a in s.objs)
+        return tuple(a.get_position() for a in s.markers)
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
@@ -86,8 +90,8 @@ class Group(object):
 
     def set_values(s, vals):
         """ Set a list of values to each attribute """
-        for i, val in enumerate(vals):
-            s.attributes[i].set_value(val)
+        for attr, val in zip(s.attributes, vals):
+            attr.set_value(val)
 
     def get_distance(s, root_pos, curr_pos):
         """ Calculate a distance value from two positionals """
@@ -101,3 +105,37 @@ class Group(object):
         for at in s.attributes:
             # Set keyframe!
             pass
+
+if __name__ == '__main__':
+    import random
+    cmds.autoKeyframe(state=False)
+    for i in range(1,4): # Run 3 Tests
+        print("Running test %s." % i)
+        objs = ["obj%s" % a for a in range(3)]
+        for o in objs: # Set up some objects in random placements
+            if cmds.objExists(o):
+                cmds.delete(o)
+            cmds.polyCube(n=o)
+            random_pos = [random.random() * 20 - 10 for a in range(3)]
+            cmds.xform(o, t=random_pos)
+        cmds.parent(objs[1], objs[0]) # Create lever action
+        cmds.refresh()
+        print("Starting a new test in...")
+        for t in range(3,0,-1):
+            time.sleep(1)
+            print(t)
+        time.sleep(1)
+
+        objA, objB, objC = objs
+        objs = [objB, objC]
+        attrs = (
+            (objA, "translateX"),
+            (objA, "translateY"),
+            (objA, "rotateX"),
+            (objA, "rotateY"),
+            (objA, "rotateZ"),
+        )
+        group = Group("pos", objs, attrs)
+        match.match([group])
+        time.sleep(3)
+    print("Tests complete!")
