@@ -11,7 +11,7 @@ def refresh():
     import maya.cmds as cmds
     cmds.refresh()
 
-Node = collections.namedtuple("Node", ["values", "stride"])
+Node = collections.namedtuple("Node", ["values", "distance", "stride"])
 
 class Task(object):
     """ Ordered set of tasks """
@@ -22,8 +22,7 @@ class Task(object):
         s.id += 1
         heapq.heappush(s.heap, tuple(priority, s.id, task))
     def get(s):
-        result = heapq.heappop(s.heap)
-        return result[0], result[2]
+        return heapq.heappop(s.heap)[2]
     def __len__(s):
         return len(s.heap)
 
@@ -98,18 +97,18 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, refresh_i
             current_stride = current_distance * step_length # Set up our initial stride size
 
             # Create our first node!
-            current_node = Node(current_values, current_stride)
+            current_node = Node(current_values, current_distance, current_stride)
 
             # Record where we have been
             visited = set() # Don't retrace our steps...
             to_visit = Task(current_node)
-            closest = (curr_distance, current_node)
+            closest = current_node
 
             # Here we go!
             try:
                 while len(to_visit):
                     deadend = True
-                    curr_distance, curr_node = to_visit.get()
+                    curr_node = to_visit.get()
                     for move_values in group.motion: # Make one step each way!
                         new_values = [a * b for a, b in zip(move_values, curr_node.values)]
                         if new_values not in visited: # Do not backtrack!
@@ -120,29 +119,29 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, refresh_i
                             new_distance = group.get_distance()
 
                             # Build a new node.
-                            new_node = (new_values, curr_stride)
+                            new_node = Node(new_values, new_distance, curr_stride)
                             to_visit.add(new_distance, new_node)
 
                             # If we are close enough to call it quits.
                             if new_distance < stop_threshold: raise StopIteration # We made it!
 
                             # Have we reached a dead end? Where we cannot get any closer?
-                            if new_distance < curr_distance: # Are we closer?
+                            if new_distance < curr_node.distance: # Are we closer?
                                 deadend = False # We have somewhere to go!
 
                             # Are we on the right track?
                             if new_distance < closest[0]: # Are we the closest we have ever been?
-                                closest = (new_distance, new_node)
+                                closest = new_node
                                 curr_time = time.time()
                                 if curr_time - last_refresh > refresh_interval:
                                     last_refresh = curr_time
                                     refresh()
 
                     if deadend: # Deadend? Take smaller steps.
-                        new_stride = curr_stride * 0.5 # Take smaller steps.
+                        new_stride = curr_node.stride * 0.5 # Take smaller steps.
                         if 0.001 < new_stride:
-                            new_node = (new_values, new_stride)
-                            to_visit.add(curr_distance, new_node)
+                            new_node = Node(new_values, curr_node.distance, new_stride)
+                            to_visit.add(curr_node.distance, new_node)
 
                     elapsed_time = time.time() - last_success
                     if timeout < elapsed_time: # Important!
@@ -154,7 +153,7 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, refresh_i
                 print("Made it!")
 
             # Set our final keyframe
-            group.keyframe(closest[2])
+            group.keyframe(closest.values)
 
     total_time = (time.time() - start_time) * 1000
     print("Travel complete with a time of %s ms." % total_time)
