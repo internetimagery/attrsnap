@@ -7,7 +7,7 @@ import heapq
 
 
 # TODO: Add this as some sort of callback. Keep maya stuff out of here.
-def refresh():
+def update():
     import maya.cmds as cmds
     cmds.refresh()
 
@@ -80,7 +80,7 @@ class Group(object):
 
 
 
-def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, refresh_interval=0.5):
+def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_interval=0.5):
     """ Match a bunch of groups """
     start_time = last_refresh = time.time()
     # Firstly calibrate our motions to efficiently use each attribute.
@@ -122,20 +122,20 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, refresh_i
                             new_node = Node(new_values, new_distance, curr_stride)
                             to_visit.add(new_distance, new_node)
 
-                            # If we are close enough to call it quits.
-                            if new_distance < stop_threshold: raise StopIteration # We made it!
-
                             # Have we reached a dead end? Where we cannot get any closer?
                             if new_distance < curr_node.distance: # Are we closer?
                                 deadend = False # We have somewhere to go!
 
                             # Are we on the right track?
-                            if new_distance < closest[0]: # Are we the closest we have ever been?
+                            if new_distance < closest.distance: # Are we the closest we have ever been?
                                 closest = new_node
                                 curr_time = time.time()
-                                if curr_time - last_refresh > refresh_interval:
+                                if curr_time - last_refresh > update_interval:
                                     last_refresh = curr_time
-                                    refresh()
+                                    update()
+
+                            # If we are close enough to call it quits.
+                            if new_distance < stop_threshold: raise StopIteration # We made it!
 
                     if deadend: # Deadend? Take smaller steps.
                         new_stride = curr_node.stride * 0.5 # Take smaller steps.
