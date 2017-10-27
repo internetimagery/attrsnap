@@ -11,7 +11,11 @@ def update():
     import maya.cmds as cmds
     cmds.refresh()
 
-Node = collections.namedtuple("Node", ["values", "distance", "stride"])
+# Values = values of attributes at the time
+# Distance = number representing distance from goal
+# Stride = How far we will attempt to step
+# Real = We have tested this value and not predicted?
+Node = collections.namedtuple("Node", ["values", "distance", "stride", "real"])
 
 class Task(object):
     """ Ordered set of tasks """
@@ -80,7 +84,7 @@ class Group(object):
 
 
 
-def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_interval=0.5):
+def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_interval=0.5, update_callback=lambda: None):
     """ Match a bunch of groups """
     start_time = last_refresh = time.time()
     # Firstly calibrate our motions to efficiently use each attribute.
@@ -97,7 +101,11 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_in
             current_stride = current_distance * step_length # Set up our initial stride size
 
             # Create our first node!
-            current_node = Node(current_values, current_distance, current_stride)
+            current_node = Node(
+                values = current_values,
+                distance = current_distance,
+                stride = current_stride,
+                real = True)
 
             # Record where we have been
             visited = set() # Don't retrace our steps...
@@ -119,7 +127,11 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_in
                             new_distance = group.get_distance()
 
                             # Build a new node.
-                            new_node = Node(new_values, new_distance, curr_stride)
+                            new_node = Node(
+                                values = new_values,
+                                distance = new_distance,
+                                stride = curr_stride,
+                                real = True)
                             to_visit.add(new_distance, new_node)
 
                             # Have we reached a dead end? Where we cannot get any closer?
@@ -132,7 +144,7 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_in
                                 curr_time = time.time()
                                 if curr_time - last_refresh > update_interval:
                                     last_refresh = curr_time
-                                    update()
+                                    update_callback()
 
                             # If we are close enough to call it quits.
                             if new_distance < stop_threshold: raise StopIteration # We made it!
@@ -140,7 +152,11 @@ def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_in
                     if deadend: # Deadend? Take smaller steps.
                         new_stride = curr_node.stride * 0.5 # Take smaller steps.
                         if 0.001 < new_stride:
-                            new_node = Node(new_values, curr_node.distance, new_stride)
+                            new_node = Node(
+                                values = new_values,
+                                distance = curr_node.distance,
+                                stride = new_stride,
+                                real = True)
                             to_visit.add(curr_node.distance, new_node)
 
                     elapsed_time = time.time() - last_success
