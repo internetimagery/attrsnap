@@ -10,7 +10,7 @@ def position(min_, max_):
 def sphere():
     """ Create a sphere and place it somewhere """
     obj, _ = cmds.polySphere()
-    cmds.xform(obj, t=position(-5, 5), ro=position(-30, 30))
+    cmds.xform(obj, t=position(-5, 5))
     return obj
 
 def scene_setup():
@@ -22,6 +22,37 @@ def scene_setup():
     cmds.parent(s3, s2)
     return s1, s2, s3
 
+def test_match(s1, s2, s3):
+    """ Ideal matching situation. Linear movement and can 100% match."""
+    return Group(
+        (s1, s2),
+        ((s1, "tx"), (s1, "ty"), (s1, "tz")))
+
+def test_chase(s1, s2, s3):
+    """ Match is possible. But certain combinations can lead to a cat/mouse chase. """
+    return Group(
+        (s1, s2),
+        ((s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")))
+
+def test_parallel(s1, s2, s3):
+    """ Parallel movement. Distance will never close. """
+    return Group(
+        (s1, s2),
+        ((s1, "tx"), (s2, "tx")))
+
+def test_lookat(s1, s2, s3):
+    """ Cannot reach target, but can reach a point of minimal distance. """
+    return Group(
+        (s1, s3),
+        ((s2, "rx"), (s2, "ry")))
+
+def test_possibilities(s1, s2, s3):
+    """ Many possibilities exist. """
+    return Group(
+        (s1, s3),
+        ((s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")))
+
+
 def main():
     """ Run tests! """
-    scene_setup()
+    match_group = test_match(*scene_setup())
