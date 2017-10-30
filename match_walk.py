@@ -8,9 +8,10 @@ import math
 
 Node = collections.namedtuple("Node", [
     "values", # Values of attributes at current point
-    "to_goal", # Distance to goal
+    "to_goal", # Distance to goal (prediction)
     "from_root", # Distance from starting location
-    "prev_dist"]) # Distance from last step
+    "prev_dist", # Previous distance, real value (not prediction)
+    "callibration"]) # callibration scale
     # "path"]) # Path traveled (use for prediction. TODO:)
 
 def distance(point1, point2):
@@ -44,18 +45,31 @@ def match(group):
         values = root_values,
         to_goal = root_distance,
         from_root = 0,
-        last_dist = root_distance))
+        callibration = [1] * len(combinations),
+        last_move = 0))
 
     # Loop our options
     for node in queue:
         # Visiting unique nodes only
-        if node.values not in seen:
-            seen.add(node.values)
+        if pos not in seen:
+            seen.add(pos)
 
             # Move to location, collect information
-            group.set_values(node.values)
+
+            group.set_values(pos)
             to_goal = group.get_distance()
             from_root = distance(root_values, node.values)
+            diff = to_goal - node.to_goal
+            scale =
+
+
+        # for i, combo in enumerate(combinations):
+        #     pos = [a + b for a, b in zip(node.values, combo)]
+        #
+        #
+        #
+        #
+
 
 
 
