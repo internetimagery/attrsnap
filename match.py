@@ -15,7 +15,7 @@ def update():
 # Distance = number representing distance from goal
 # Stride = How far we will attempt to step
 # Real = We have tested this value and not predicted?
-Node = collections.namedtuple("Node", ["values", "distance", "stride", "real"])
+# Node = collections.namedtuple("Node", ["values", "distance", "stride", "real"])
 
 class Task(object):
     """ Ordered set of tasks """

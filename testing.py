@@ -3,6 +3,7 @@ from __future__ import print_function
 import maya.cmds as cmds
 import random
 import groups
+from match_path import match
 
 def position(min_, max_):
     """ Return random position """
@@ -40,30 +41,35 @@ def scene_setup():
 def test_match(s1, s2, s3):
     """ Ideal matching situation. Linear movement and can 100% match."""
     return groups.Group(
+        "pos",
         (s1, s2),
         ((s1, "tx"), (s1, "ty"), (s1, "tz")))
 
 def test_chase(s1, s2, s3):
     """ Match is possible. But certain combinations can lead to a cat/mouse chase. """
     return groups.Group(
+        "pos",
         (s1, s2),
         ((s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")))
 
 def test_parallel(s1, s2, s3):
     """ Parallel movement. Distance will never close. """
     return groups.Group(
+        "pos",
         (s1, s2),
         ((s1, "tx"), (s2, "tx")))
 
 def test_lookat(s1, s2, s3):
     """ Cannot reach target, but can reach a point of minimal distance. """
     return groups.Group(
+        "pos",
         (s1, s3),
         ((s2, "rx"), (s2, "ry")))
 
 def test_possibilities(s1, s2, s3):
     """ Many possibilities exist. """
     return groups.Group(
+        "pos",
         (s1, s3),
         ((s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")))
 
@@ -71,3 +77,4 @@ def test_possibilities(s1, s2, s3):
 def main():
     """ Run tests! """
     match_group = test_match(*scene_setup())
+    match(match_group)
