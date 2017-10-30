@@ -1,6 +1,9 @@
 # Perform a match by broadly casting a net. Then within that net, getting finer and finer detailself.
 from __future__ import print_function
 
+def set_attributes():
+    """ Set attributes through all combinations. """
+    pass
 
 def match(group):
     """ Cast a wide net. Slowly narrow down after the fact """
