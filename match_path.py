@@ -6,6 +6,12 @@ import groups
 
 import maya.cmds as cmds
 
+
+def distance(point1, point2):
+    """ Distance between two points """
+    return math.sqrt(sum((b - a) ** 2 for a, b in zip(point1, point2)))
+
+
 def movement(num):
     combo = [(0,1) * num]
     return itertools.product(*combo)
