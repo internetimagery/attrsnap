@@ -8,8 +8,6 @@ import itertools
 def match(group):
     """ Match by wandering over to the right place (hopefully) """
     # Set up working materials
-    queue = task.Task()
-    seen = set()
     combinations = list(itertools.product(*itertools.tee(range(-1, 2), len(group))))
     calibration = [1] * len(combinations)
 
@@ -19,7 +17,7 @@ def match(group):
     step = 1
 
 
-    for i in range(1, 3):
+    for i in range(1, 10):
         step = (1 / i) * curr_distance
         chunk = {}
         for j in range(len(combinations)):
@@ -28,7 +26,7 @@ def match(group):
             new_distance = group.get_distance()
             chunk[new_distance] = new_values
 
-            diff = [b - a for a, b in zip(curr_values, new_values)]
+            diff = new_distance - curr_distance
             calibration[j] = (1 / diff) if diff else 0
 
         if chunk:

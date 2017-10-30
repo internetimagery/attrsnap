@@ -1,9 +1,10 @@
 # Create a few test situations.
 from __future__ import print_function
 import maya.cmds as cmds
+import time
 import random
 import groups
-from match_path import match
+from match_walk import match
 
 def position(min_, max_):
     """ Return random position """
@@ -43,7 +44,7 @@ def test_match(s1, s2, s3):
     return groups.Group(
         "pos",
         (s1, s2),
-        ((s1, "tx"), (s1, "ty"), (s1, "tz")))
+        (s1, "tx"), (s1, "ty"), (s1, "tz"))
 
 def test_chase(s1, s2, s3):
     """ Match is possible. But certain combinations can lead to a cat/mouse chase. """
@@ -77,4 +78,6 @@ def test_possibilities(s1, s2, s3):
 def main():
     """ Run tests! """
     match_group = test_match(*scene_setup())
+    print("Beginning test...")
+    time.sleep(1)
     match(match_group)

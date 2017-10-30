@@ -47,18 +47,18 @@ class Attribute(object):
             s.min = query(min=True)
         if query(mxe=True):
             s.max = query(max=True)
-        s.plug = plug = getPlug(obj, attr)
+        s.plug = plug = get_plug(obj, attr)
         s.current = plug.asDouble()
     def __str__(s):
         return s.plug.name()
-    def set_value(val):
+    def set_value(s, val):
         """ Set attribute value """
         s.threshold
         val = max(s.min, min(val, s.max)) # Ensure we are capped to the range limit
-        if val < s.current - threshold or s.current + threshold < val: # Check we are outside the threshold
+        if val < s.current - s.threshold or s.current + s.threshold < val: # Check we are outside the threshold
             s.plug.setDouble(val)
             s.current = val
-    def get_value():
+    def get_value(s):
         """ Get current value """
         return s.current
 
@@ -73,7 +73,7 @@ class Transform(object):
         """ Get position of object """
         return s.transform.translation(om.MSpace.kWorld)
 
-class Group(match.Group):
+class Group(object):
     """ A group of objects and attributes for matching """
     def __init__(s, match_type, markers, *attributes):
         s.match_type = match_type
@@ -93,18 +93,25 @@ class Group(match.Group):
         for attr, val in zip(s.attributes, vals):
             attr.set_value(val)
 
-    def get_distance(s, root_pos, curr_pos):
-        """ Calculate a distance value from two positionals """
+    def get_distance(s):
+        """ Calculate a distance value from our markers """
         # Calculate distance or rotational distance. OR whatever we are using.
         # Returns single number
         # Distance positionally:
-        return sum((a-b).length() for a, b in zip(curr_pos, root_pos))
+        return (s.markers[0].get_position() - s.markers[1].get_position()).length()
 
     def keyframe(s, values):
         """ Set a bunch of keyframes for each attribute """
         for at in s.attributes:
             # Set keyframe!
             pass
+
+    def __len__(s):
+        return len(s.attributes)
+
+    def __iter__(s):
+        for at in s.attributes:
+            yield at
 
 if __name__ == '__main__':
     import random
