@@ -17,7 +17,7 @@ class Task(object):
     def __len__(s):
         return len(s.heap)
     def __iter__(s):
-        while len(s):
+        while len(s.heap):
             yield s.get()
 
 if __name__ == '__main__':
