@@ -3,7 +3,8 @@ from __future__ import print_function
 import maya.cmds as cmds
 import time
 import groups
-from match_walk import match
+
+import match_walk
 
 DEBUG = False
 
@@ -49,6 +50,10 @@ def update(dist):
 #
 # And if you dont want to see the tiny window you could instead use mayas own progress bar inside the main windows help line with progressBar()
 
+matches = {
+    "walk": match_walk.match
+    }
+
 tests = {}
 
 # Ideal matching situation. Linear movement and can 100% match.
@@ -76,19 +81,28 @@ tests["possibilities"] = (
     lambda s1, s2, s3: groups.Group("pos", (s1, s3), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")),
     lambda s1, s2, s3: equals(s3, cmds.xform(s1, q=True, t=True)))
 
+# No movement at all.
+tests["zero"] = (
+    lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "rx"), (s1, "ry"), (s1, "rz")),
+    lambda s1, s2, s3: equals(s1, (2,0,2)))
+
 
 def main():
     """ Run tests! """
-    for name, (test, result) in tests.items():
-        scene = scene_setup()
-        match_group = test(*scene)
-        print("Beginning test {}...".format(name), end="")
-        if DEBUG:
-            cmds.refresh()
-            time.sleep(1)
-        match(match_group, update)
-        assert result(*scene)
-        print("OK!")
-        if DEBUG:
-            cmds.refresh()
-            time.sleep(2)
+    for match_name, match in matches.items():
+        for name, (test, result) in tests.items():
+            scene = scene_setup()
+            match_group = test(*scene)
+            print("Running match \"{}\" on \"{}\"...".format(match_name, name), end="")
+            if DEBUG:
+                cmds.refresh()
+                time.sleep(1)
+            match(match_group, update)
+            try:
+                assert result(*scene)
+                print("OK!")
+            except AssertionError:
+                print("Failed!")
+            if DEBUG:
+                cmds.refresh()
+                time.sleep(2)
