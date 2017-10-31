@@ -97,10 +97,11 @@ def main():
             if DEBUG:
                 cmds.refresh()
                 time.sleep(1)
+            start = time.time()
             match(match_group, update)
             try:
                 assert result(*scene)
-                print("OK!")
+                print("OK! - {}".format(time.time() - start))
             except AssertionError:
                 print("Failed!")
             if DEBUG:
