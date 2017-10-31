@@ -89,6 +89,7 @@ tests["zero"] = (
 
 def main():
     """ Run tests! """
+    failed = {}
     for match_name, match in matches.items():
         for name, (test, result) in tests.items():
             times = []
@@ -104,6 +105,19 @@ def main():
                 print("OK! - {}".format(sum(times)))
             except AssertionError:
                 print("Failed!")
+                failed[match_name, name] = {
+                    scene[0]: cmds.xform(scene[0], q=True, matrix=True, ws=True),
+                    scene[1]: cmds.xform(scene[1], q=True, matrix=True, ws=True),
+                    scene[2]: cmds.xform(scene[2], q=True, matrix=True, ws=True)}
             if DEBUG:
                 cmds.refresh()
                 time.sleep(2)
+
+    # Failed tests recreate for inspection
+    cmds.file(new=True, force=True)
+    for (match_name, name), scene in failed.items():
+        grp = cmds.group(name="{}_{}_State".format(match_name, name), em=True)
+        for obj, matrix in scene.items():
+            o, _ = cmds.polySphere()
+            cmds.parent(o, grp)
+            cmds.xform(o, ws=True, matrix=matrix)
