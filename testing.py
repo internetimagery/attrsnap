@@ -23,7 +23,7 @@ def scene_setup():
 def equals(obj, xyz):
     """ Check position is right within tolerance """
     tolerance = 0.05
-    for XYZ, ax in zip(xyz, cmds.xform(obj, q=True, t=True)):
+    for XYZ, ax in zip(xyz, cmds.xform(obj, q=True, t=True, ws=True)):
         if abs(ax - XYZ) > tolerance:
             return False
     return True
@@ -66,7 +66,7 @@ tests["parallel"] = (
 # Cannot reach target, but can reach a point of minimal distance.
 tests["lookat"] = (
     lambda s1, s2, s3: groups.Group("pos", (s1, s3), (s2, "rx"), (s2, "ry")),
-    lambda s1, s2, s3: True)
+    lambda s1, s2, s3: equals(s3, (0, 1, 1)))
 
 # Many possibilities exist.
 tests["possibilities"] = (
