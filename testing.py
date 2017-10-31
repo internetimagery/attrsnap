@@ -5,6 +5,8 @@ import time
 import groups
 from match_walk import match
 
+DEBUG = False
+
 def sphere(*pos):
     """ Create a sphere and place it somewhere """
     obj, _ = cmds.polySphere()
@@ -30,7 +32,8 @@ def equals(obj, xyz):
 
 def update(dist):
     """ Update callback """
-    cmds.refresh()
+    if DEBUG:
+        cmds.refresh()
 
 #
 # You could use the progressWindow() to cancel loops with ESC, might involve some more lines but does not slow down loops while accessing and checking files.
@@ -79,11 +82,13 @@ def main():
     for name, (test, result) in tests.items():
         scene = scene_setup()
         match_group = test(*scene)
-        print("Beginning test {}...".format(name))
-        cmds.refresh()
-        # time.sleep(1)
+        print("Beginning test {}...".format(name), end="")
+        if DEBUG:
+            cmds.refresh()
+            time.sleep(1)
         match(match_group, update)
         assert result(*scene)
         print("OK!")
-        cmds.refresh()
-        # time.sleep(2)
+        if DEBUG:
+            cmds.refresh()
+            time.sleep(2)
