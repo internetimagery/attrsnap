@@ -2,28 +2,31 @@
 from __future__ import print_function
 import maya.cmds as cmds
 import time
-import random
 import groups
 from match_walk import match
 
-def position(min_, max_):
-    """ Return random position """
-    return [random.randrange(min_, max_) for a in range(3)]
-
-def sphere():
+def sphere(*pos):
     """ Create a sphere and place it somewhere """
     obj, _ = cmds.polySphere()
-    cmds.xform(obj, t=position(-5, 5))
+    cmds.xform(obj, t=pos)
     return obj
 
 def scene_setup():
     """ Set up a test scene! """
     cmds.file(new=True, force=True)
-    s1 = sphere()
-    s2 = sphere()
-    s3 = sphere()
+    s1 = sphere(2, 0, 2)
+    s2 = sphere(-2, 2, 0)
+    s3 = sphere(0, 3, 1)
     cmds.parent(s3, s2)
     return s1, s2, s3
+
+def equals(obj, xyz):
+    """ Check position is right within tolerance """
+    tolerance = 0.05
+    for XYZ, ax in zip(xyz, cmds.xform(obj, q=True, t=True)):
+        if abs(ax - XYZ) > tolerance:
+            return False
+    return True
 
 def update(dist):
     """ Update callback """
@@ -43,57 +46,44 @@ def update(dist):
 #
 # And if you dont want to see the tiny window you could instead use mayas own progress bar inside the main windows help line with progressBar()
 
-def test_match(s1, s2, s3):
-    """ Ideal matching situation. Linear movement and can 100% match."""
-    return groups.Group(
-        "pos",
-        (s1, s2),
-        (s1, "tx"), (s1, "ty"), (s1, "tz"))
+tests = {}
 
-def test_chase(s1, s2, s3):
-    """ Match is possible. But certain combinations can lead to a cat/mouse chase. """
-    return groups.Group(
-        "pos",
-        (s1, s2),
-        (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz"))
+# Ideal matching situation. Linear movement and can 100% match.
+tests["match"] = (
+    lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "tx"), (s1, "ty"), (s1, "tz")),
+    lambda s1, s2, s3: equals(s1, (-2, 2, 0))) # Object should match
 
-def test_parallel(s1, s2, s3):
-    """ Parallel movement. Distance will never close. """
-    return groups.Group(
-        "pos",
-        (s1, s2),
-        (s1, "tx"), (s2, "tx"))
+# Match is possible. But certain combinations can lead to a cat/mouse chase.
+tests["chase"] = (
+    lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")),
+    lambda s1, s2, s3: equals(s1, cmds.xform(s2, q=True, t=True))) # Objects should match somewhere in space.
 
-def test_lookat(s1, s2, s3):
-    """ Cannot reach target, but can reach a point of minimal distance. """
-    return groups.Group(
-        "pos",
-        (s1, s3),
-        (s2, "rx"), (s2, "ry"))
+# Parallel movement. Distance will never close.
+tests["parallel"] = (
+    lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "tx"), (s2, "tx")),
+    lambda s1, s2, s3: equals(s1, (2,0,2))) # No result works. Should stay where we are.
 
-def test_possibilities(s1, s2, s3):
-    """ Many possibilities exist. """
-    return groups.Group(
-        "pos",
-        (s1, s3),
-        (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz"))
+# Cannot reach target, but can reach a point of minimal distance.
+tests["lookat"] = (
+    lambda s1, s2, s3: groups.Group("pos", (s1, s3), (s2, "rx"), (s2, "ry")),
+    lambda s1, s2, s3: True)
+
+# Many possibilities exist.
+tests["possibilities"] = (
+    lambda s1, s2, s3: groups.Group("pos", (s1, s3), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")),
+    lambda s1, s2, s3: True)
 
 
 def main():
     """ Run tests! """
-    tests = {
-        "match": test_match,
-        "chase": test_chase,
-        "parallel": test_parallel,
-        "lookat": test_lookat,
-        "possibilities": test_possibilities
-        }
-    for name, test in tests.items():
-        match_group = test(*scene_setup())
+    for name, (test, result) in tests.items():
+        scene = scene_setup()
+        match_group = test(*scene)
         print("Beginning test {}...".format(name))
         cmds.refresh()
         time.sleep(1)
         match(match_group, update)
-        # assert match_group.get_distance() <= 0.02
+        assert result(*scene)
+        print("OK!")
         cmds.refresh()
-        time.sleep(5)
+        time.sleep(3)
