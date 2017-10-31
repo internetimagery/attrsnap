@@ -55,28 +55,28 @@ def test_chase(s1, s2, s3):
     return groups.Group(
         "pos",
         (s1, s2),
-        ((s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")))
+        (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz"))
 
 def test_parallel(s1, s2, s3):
     """ Parallel movement. Distance will never close. """
     return groups.Group(
         "pos",
         (s1, s2),
-        ((s1, "tx"), (s2, "tx")))
+        (s1, "tx"), (s2, "tx"))
 
 def test_lookat(s1, s2, s3):
     """ Cannot reach target, but can reach a point of minimal distance. """
     return groups.Group(
         "pos",
         (s1, s3),
-        ((s2, "rx"), (s2, "ry")))
+        (s2, "rx"), (s2, "ry"))
 
 def test_possibilities(s1, s2, s3):
     """ Many possibilities exist. """
     return groups.Group(
         "pos",
         (s1, s3),
-        ((s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")))
+        (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz"))
 
 
 def main():
@@ -89,7 +89,7 @@ def main():
         "possibilities": test_possibilities
         }
     for name, test in tests.items():
-        match_group = test_match(*scene_setup())
+        match_group = test(*scene_setup())
         print("Beginning test {}...".format(name))
         cmds.refresh()
         time.sleep(1)
