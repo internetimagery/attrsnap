@@ -91,17 +91,17 @@ def main():
     """ Run tests! """
     for match_name, match in matches.items():
         for name, (test, result) in tests.items():
-            scene = scene_setup()
-            match_group = test(*scene)
+            times = []
             print("Running match \"{}\" on \"{}\"...".format(match_name, name), end="")
-            if DEBUG:
-                cmds.refresh()
-                time.sleep(1)
-            start = time.time()
-            match(match_group, update)
             try:
-                assert result(*scene)
-                print("OK! - {}".format(time.time() - start))
+                for i in range(10): # Times to run test!
+                    scene = scene_setup()
+                    match_group = test(*scene)
+                    start = time.time()
+                    match(match_group, update)
+                    times.append(time.time() - start)
+                    assert result(*scene)
+                print("OK! - {}".format(sum(times)))
             except AssertionError:
                 print("Failed!")
             if DEBUG:
