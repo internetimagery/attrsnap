@@ -71,7 +71,7 @@ tests["lookat"] = (
 # Many possibilities exist.
 tests["possibilities"] = (
     lambda s1, s2, s3: groups.Group("pos", (s1, s3), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")),
-    lambda s1, s2, s3: True)
+    lambda s1, s2, s3: equals(s3, cmds.xform(s1, q=True, t=True)))
 
 
 def main():
@@ -81,9 +81,9 @@ def main():
         match_group = test(*scene)
         print("Beginning test {}...".format(name))
         cmds.refresh()
-        time.sleep(1)
+        # time.sleep(1)
         match(match_group, update)
         assert result(*scene)
         print("OK!")
         cmds.refresh()
-        time.sleep(3)
+        # time.sleep(2)
