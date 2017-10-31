@@ -12,7 +12,7 @@ def match(group, update_callback):
 
     curr_values = group.get_values()
     root_distance = curr_distance = group.get_distance()
-    update(0)
+    update_callback(0)
 
     step = curr_distance * 0.3
 
@@ -42,4 +42,4 @@ def match(group, update_callback):
             break
         # Reset ready for round two
         group.set_values(curr_values)
-    update(1) # Done
+    update_callback(1) # Done
