@@ -27,7 +27,6 @@ def scene_setup():
 
 def update(dist):
     """ Update callback """
-    print(dist)
     cmds.refresh()
 
 #
@@ -82,8 +81,19 @@ def test_possibilities(s1, s2, s3):
 
 def main():
     """ Run tests! """
-    match_group = test_match(*scene_setup())
-    print("Beginning test...")
-    cmds.refresh()
-    time.sleep(1)
-    match(match_group, update)
+    tests = {
+        "match": test_match,
+        "chase": test_chase,
+        "parallel": test_parallel,
+        "lookat": test_lookat,
+        "possibilities": test_possibilities
+        }
+    for name, test in tests.items():
+        match_group = test_match(*scene_setup())
+        print("Beginning test {}...".format(name))
+        cmds.refresh()
+        time.sleep(1)
+        match(match_group, update)
+        # assert match_group.get_distance() <= 0.02
+        cmds.refresh()
+        time.sleep(5)
