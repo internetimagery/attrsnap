@@ -25,6 +25,11 @@ def scene_setup():
     cmds.parent(s3, s2)
     return s1, s2, s3
 
+def update(dist):
+    """ Update callback """
+    print(dist)
+    cmds.refresh()
+
 #
 # You could use the progressWindow() to cancel loops with ESC, might involve some more lines but does not slow down loops while accessing and checking files.
 # import maya.cmds as cmds
@@ -79,5 +84,6 @@ def main():
     """ Run tests! """
     match_group = test_match(*scene_setup())
     print("Beginning test...")
+    cmds.refresh()
     time.sleep(1)
-    match(match_group)
+    match(match_group, update)

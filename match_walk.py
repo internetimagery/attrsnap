@@ -4,8 +4,10 @@ from __future__ import print_function, division
 import collections
 import itertools
 
+import maya.cmds as cmds
+import time
 
-def match(group):
+def match(group, update_callback):
     """ Match by wandering over to the right place (hopefully) """
     # Set up working materials
     combinations = list(itertools.product(*itertools.tee(range(-1, 2), len(group))))
@@ -14,26 +16,31 @@ def match(group):
     curr_values = group.get_values()
     curr_distance = group.get_distance()
 
-    step = 1
+    step = curr_distance * 0.5
 
 
-    for i in range(1, 10):
-        step = (1 / i) * curr_distance
+    while step > 0.01:
         chunk = {}
         for j in range(len(combinations)):
-            new_values = [a * calibration[j] * step for a in combinations[j]]
+            new_values = [a * calibration[j] * step + b for a, b in zip(combinations[j], curr_values)]
             group.set_values(new_values)
             new_distance = group.get_distance()
             chunk[new_distance] = new_values
 
-            diff = new_distance - curr_distance
+            diff = abs(new_distance - curr_distance)
             calibration[j] = (1 / diff) if diff else 0
 
         if chunk:
             # Take the closest move, and repeat!
             new_distance = min(chunk.keys())
             if new_distance < curr_distance:
-                curr_distance = min(chunk.keys())
+                curr_distance = new_distance
                 curr_values = chunk[curr_distance]
+                step = curr_distance * 0.5
+                update_callback(curr_distance)
+            else:
+                step *= 0.5
+        # Reset ready for round two
+        group.set_values(curr_values)
 
     group.set_values(curr_values)
