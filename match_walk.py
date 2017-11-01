@@ -43,3 +43,4 @@ def match(group, update_callback):
         # Reset ready for round two
         group.set_values(curr_values)
     update_callback(1) # Done
+    return curr_values
