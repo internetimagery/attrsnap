@@ -4,6 +4,11 @@ import maya.cmds as cmds
 import time
 import groups
 
+try:
+    import cProfile as profile
+except ImportError:
+    import profile
+
 import match_walk
 
 DEBUG = False
@@ -86,6 +91,18 @@ tests["zero"] = (
     lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "rx"), (s1, "ry"), (s1, "rz")),
     lambda s1, s2, s3: equals(s1, (2,0,2)))
 
+def prof():
+    """ Profile match functionality """
+    cmds.refresh(su=True)
+    try:
+        for name, func in matches.items():
+            scene = scene_setup()
+            group = tests["possibilities"][0](*scene)
+            print("STARTING PROFILE FOR \"{}\"".format(name))
+            profile.runctx("func(group, update)", globals(), locals())
+            print("-"*20)
+    finally:
+        cmds.refresh(su=False)
 
 def main():
     """ Run tests! """
