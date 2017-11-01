@@ -54,13 +54,13 @@ def progress():
 
 class Tab(object):
     """ Tab holding information! """
-    def __init__(s, tab_parent, title="Group"):
+    def __init__(s, tab_parent, title="Group", enabled=True):
         s.parent = tab_parent
         s.layout = cmds.columnLayout(adj=True, p=s.parent)
 
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
-        cmds.checkBox(l="Enable", v=True, bgc=YELLOW)
+        s.GUI_enable = cmds.checkBox(l="Enable", v=enabled, cc=s.enable)
         cmds.optionMenu()
         cmds.menuItem(l="opt1")
         cmds.menuItem(l="other opt")
@@ -78,6 +78,7 @@ class Tab(object):
         cmds.text(l="Attribute!")
 
         s.set_title(title)
+        s.validate()
 
     def rename(s):
         """ Prompt rename """
@@ -85,11 +86,30 @@ class Tab(object):
             text = cmds.promptDialog(q=True, tx=True).strip()
             if text:
                 s.set_title(text)
+                s.enable(True)
+
 
     def set_title(s, title):
         """ Set title of tab """
         s.title = title
         cmds.tabLayout(s.parent, e=True, tl=(s.layout, title))
+
+    def enable(s, state):
+        """ Enable / disable """
+        cmds.checkBox(s.GUI_enable, e=True, v=state)
+        if state:
+            s.set_title(s.title.replace("*", ""))
+        else:
+            s.set_title(s.title + "*")
+        s.validate()
+
+    def validate(s, *_):
+        """ Validate all info is there """
+        if cmds.checkBox(s.GUI_enable, q=True, v=True): # Check we are enabled
+            # TODO: Validate stuff
+            cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
+        else:
+            cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
 
     def __str__(s):
         """ Make class usable """
