@@ -16,7 +16,6 @@ def match(group, update_callback):
 
     step = curr_distance * 0.3
 
-
     while step > 0.001:
         chunk = {}
         for j in range(len(combinations)):
@@ -36,6 +35,8 @@ def match(group, update_callback):
                 curr_values = chunk[curr_distance]
                 progress = (curr_distance / root_distance) if curr_distance and root_distance else 0
                 update_callback(1 - progress)
+                if curr_distance < step:
+                    step = curr_distance * 0.5
             else:
                 step *= 0.5
         else:
