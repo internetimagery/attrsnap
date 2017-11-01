@@ -13,6 +13,9 @@ YELLOW = (0.7, 0.7, 0.1)
 # D_GREEN = [a * 0.4 for a in GREEN]
 # D_RED = [a * 0.4 for a in RED]
 
+OK = "Ok"
+CANCEL = "Cancel"
+
 
 @contextlib.contextmanager
 def progress():
@@ -51,29 +54,17 @@ def progress():
 
 class Tab(object):
     """ Tab holding information! """
-    def __init__(s, tab_parent, group):
+    def __init__(s, tab_parent, title="Group"):
         s.parent = tab_parent
         s.layout = cmds.columnLayout(adj=True, p=s.parent)
-        s.group = Group(s.layout, group)
 
-    def set_title(s, title):
-        """ Set title of tab """
-        cmds.tabLayout(s.parent, e=True, tl=(s.layout, title))
-
-    def __str__(s):
-        """ Make class usable """
-        return s.layout
-
-class Group(object):
-    """ Group (GUI) holding information regarding group (data) """
-    def __init__(s, parent, group):
-        s.parent = parent
-        cmds.rowLayout(nc=2, adj=1, p=parent)
+        # Group stuff
+        cmds.rowLayout(nc=2, adj=1, p=s.layout)
         cmds.checkBox(l="Enable", v=True, bgc=YELLOW)
         cmds.optionMenu()
         cmds.menuItem(l="opt1")
         cmds.menuItem(l="other opt")
-        pane = cmds.paneLayout(configuration="vertical2", p=parent)
+        pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New markers from selection")
         cmds.columnLayout(adj=True, bgc=BLACK)
@@ -86,9 +77,28 @@ class Group(object):
         cmds.text(l="Attribute!")
         cmds.text(l="Attribute!")
 
+        s.set_title(title)
+
+    def rename(s):
+        """ Prompt rename """
+        if cmds.promptDialog(t="Rename group", m="Name:", b=[OK, CANCEL], db=OK, cb=CANCEL, ds=CANCEL) == OK:
+            text = cmds.promptDialog(q=True, tx=True).strip()
+            if text:
+                s.set_title(text)
+
+    def set_title(s, title):
+        """ Set title of tab """
+        s.title = title
+        cmds.tabLayout(s.parent, e=True, tl=(s.layout, title))
+
+    def __str__(s):
+        """ Make class usable """
+        return s.layout
+
 class Window(object):
     """ Main window! """
     def __init__(s):
+        s.tabs = []
         name = "attrsnap"
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
@@ -97,11 +107,18 @@ class Window(object):
         cmds.columnLayout(adj=True)
         cmds.button(l="Add new group.", bgc=GREEN, c=s.new_group)
         cmds.separator()
-        tab_grp = cmds.tabLayout()
+        s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab)
         for name in ["one", "two", "three"]:
-            t = Tab(tab_grp, "thing")
+            t = Tab(s.tab_grp)
             t.set_title(name)
+            s.tabs.append(t)
         cmds.showWindow(win)
+
+    def rename_tab(s):
+        """ Rename tabs on doubleclick """
+        selected = cmds.tabLayout(s.tab_grp, q=True, st=True, fpn=True)
+        for tab in (t for t in s.tabs if selected in t.layout):
+            tab.rename()
 
     def new_group(s, *_):
         """ Create a new group """
