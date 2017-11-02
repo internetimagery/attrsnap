@@ -52,6 +52,24 @@ def progress():
         if err:
             cmds.undo()
 
+class Marker(object):
+    """ Marker collection """
+    def __init__(s, parent, markers=None):
+        s.markers = markers or []
+        s.layout = cmds.rowLayout(adj=True, p=parent)
+
+    def set_markers(s):
+        """ Get markers from selection """
+        sel = cmds.ls(sl=True)
+        if len(sel) != 2:
+            raise RuntimeError("Please select two items only.")
+        s.markers = sel
+
+    def validate(s):
+        """ Return True if valid, False otherwise """
+        return len(s.markers) == 2
+
+
 class Tab(object):
     """ Tab holding information! """
     def __init__(s, tab_parent, title="Group", enabled=True):
@@ -88,7 +106,6 @@ class Tab(object):
                 s.set_title(text)
                 s.enable(True)
 
-
     def set_title(s, title):
         """ Set title of tab """
         s.title = title
@@ -119,20 +136,23 @@ class Window(object):
     """ Main window! """
     def __init__(s):
         s.tabs = []
+        s.group_index = 0
         name = "attrsnap"
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
 
         win = cmds.window(t="Attribute Snapping!")
-        cmds.columnLayout(adj=True)
-        cmds.button(l="Add new group.", bgc=GREEN, c=s.new_group)
-        cmds.separator()
-        s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab)
-        for name in ["one", "two", "three"]:
-            t = Tab(s.tab_grp)
-            t.set_title(name)
-            s.tabs.append(t)
+        root = cmds.columnLayout(adj=True)
+        cmds.menuBarLayout()
+        cmds.menu(l="Groups")
+        cmds.menuItem(l="New Group", c=s.new_group)
+        cmds.menuItem(l="Load Template", c=s.load_template)
+        cmds.menuItem(l="Save Template", c=s.save_template)
+        s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab, p=root)
         cmds.showWindow(win)
+
+        # Initial group
+        s.new_group()
 
     def rename_tab(s):
         """ Rename tabs on doubleclick """
@@ -142,4 +162,19 @@ class Window(object):
 
     def new_group(s, *_):
         """ Create a new group """
-        pass
+        groups = cmds.tabLayout(s.tab_grp, q=True, tl=True) or []
+        while True:
+            s.group_index += 1
+            name = "Group{}".format(s.group_index)
+            if name not in groups:
+                break
+        s.tabs.append(Tab(s.tab_grp, "Group{}".format(s.group_index)))
+        cmds.tabLayout(s.tab_grp, e=True, sti=cmds.tabLayout(s.tab_grp, q=True, nch=True))
+
+    def load_template(s, *_):
+        """ Load template file """
+        raise NotImplementedError("Sorry... Not yet.")
+
+    def save_template(s, *_):
+        """ Save template file """
+        raise NotImplementedError("Sorry... Load doesn't work! Why would this?")

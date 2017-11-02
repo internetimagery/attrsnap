@@ -18,7 +18,8 @@ def match(group, update_callback):
 
     step = curr_distance * 0.3
 
-    while step > 0.001:
+    # while step > 0.001:
+    for i in range(200):
         chunk = {}
         for j in range(len(combinations)):
             new_values = [a * calibration[j] * step + b for a, b in zip(combinations[j], curr_values)]
@@ -27,14 +28,8 @@ def match(group, update_callback):
             chunk[new_distance] = new_values
 
             diff = abs(new_distance - curr_distance)
-            if diff:
-                if calibration[j]:
-                    scale = (step / diff) if diff else 0
-                    calibration[j] = calibration[j] * scale
-                else:
-                    calibration[j] = scale
-            else:
-                calibration[j] = 0
+            scale = (step / diff) if diff else 0
+            calibration[j] = calibration[j] * scale if calibration[j] else scale
 
         if chunk:
             # Take the closest move, and repeat!
