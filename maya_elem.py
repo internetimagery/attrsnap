@@ -73,7 +73,9 @@ class Marker_Set(object):
 
     def get_rot_distance(s):
         """ Get rotational distance """
-        return math.sqrt(abs(sum(b-a for a, b in zip(s.node1.get_rotation(), s.node2.get_rotation()))))
+        dot = sum(a * b for a, b in zip(s.node1.get_rotation(), s.node2.get_rotation()))
+        return math.degrees(1 - dot ** 2) * 10
+
 
 if __name__ == '__main__':
     cmds.file(new=True, force=True)

@@ -28,10 +28,11 @@ def scene_setup():
     cmds.parent(s3, s2)
     return s1, s2, s3
 
-def equals(obj, xyz):
+def equals(obj, xyz, rotation=False):
     """ Check position is right within tolerance """
     tolerance = 0.05
-    for XYZ, ax in zip(xyz, cmds.xform(obj, q=True, t=True, ws=True)):
+    pos = cmds.xform(obj, q=True, ro=True, ws=True) if rotation else cmds.xform(obj, q=True, t=True, ws=True)
+    for XYZ, ax in zip(xyz, pos):
         if abs(ax - XYZ) > tolerance:
             return False
     return True
@@ -41,20 +42,6 @@ def update(dist):
     if DEBUG:
         cmds.refresh()
 
-#
-# You could use the progressWindow() to cancel loops with ESC, might involve some more lines but does not slow down loops while accessing and checking files.
-# import maya.cmds as cmds
-#
-# cmds.progressWindow(isInterruptable=1)
-# while 1 :
-# print "kill me!"
-# if cmds.progressWindow(query=1, isCancelled=1) :
-# break
-#
-# cmds.progressWindow(endProgress=1)
-#
-# And if you dont want to see the tiny window you could instead use mayas own progress bar inside the main windows help line with progressBar()
-
 matches = {
     "walk": match_walk.match
     }
@@ -63,33 +50,44 @@ tests = {}
 
 # Ideal matching situation. Linear movement and can 100% match.
 tests["match"] = (
-    lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "tx"), (s1, "ty"), (s1, "tz")),
+    lambda s1, s2, s3: groups.Group(groups.POSITION, (s1, s2), (s1, "tx"), (s1, "ty"), (s1, "tz")),
     lambda s1, s2, s3: equals(s1, (-2, 2, 0))) # Object should match
 
 # Match is possible. But certain combinations can lead to a cat/mouse chase.
 tests["chase"] = (
-    lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")),
+    lambda s1, s2, s3: groups.Group(groups.POSITION, (s1, s2), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")),
     lambda s1, s2, s3: equals(s1, cmds.xform(s2, q=True, t=True))) # Objects should match somewhere in space.
 
 # Parallel movement. Distance will never close.
 tests["parallel"] = (
-    lambda s1, s2, s3: [cmds.parentConstraint(s1, s2, mo=True), groups.Group("pos", (s1, s2), (s1, "tx"))][1],
+    lambda s1, s2, s3: [cmds.parentConstraint(s1, s2, mo=True), groups.Group(groups.POSITION, (s1, s2), (s1, "tx"))][1],
     lambda s1, s2, s3: equals(s1, (2,0,2))) # No result works. Should stay where we are.
 
 # Cannot reach target, but can reach a point of minimal distance.
 tests["lookat"] = (
-    lambda s1, s2, s3: groups.Group("pos", (s1, s3), (s2, "rx"), (s2, "ry")),
+    lambda s1, s2, s3: groups.Group(groups.POSITION, (s1, s3), (s2, "rx"), (s2, "ry")),
     lambda s1, s2, s3: equals(s3, (0, 1, 1)))
 
 # Many possibilities exist.
 tests["possibilities"] = (
-    lambda s1, s2, s3: groups.Group("pos", (s1, s3), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")),
+    lambda s1, s2, s3: groups.Group(groups.POSITION, (s1, s3), (s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")),
     lambda s1, s2, s3: equals(s3, cmds.xform(s1, q=True, t=True)))
 
 # No movement at all.
 tests["zero"] = (
-    lambda s1, s2, s3: groups.Group("pos", (s1, s2), (s1, "rx"), (s1, "ry"), (s1, "rz")),
+    lambda s1, s2, s3: groups.Group(groups.POSITION, (s1, s2), (s1, "rx"), (s1, "ry"), (s1, "rz")),
     lambda s1, s2, s3: equals(s1, (2,0,2)))
+
+# Match rotation
+tests["match rotation"] = (
+    lambda s1, s2, s3: [cmds.xform(s2, ro=(10,10,-10)), groups.Group(groups.ROTATION, (s1, s2), (s1, "rx"), (s1, "ry"), (s1, "rz"))][1],
+    lambda s1, s2, s3: equals(s1, (10, 10, -10), True))
+
+# Unable to match rotation, get closest
+tests["lookat rotation"] = (
+    lambda s1, s2, s3: [cmds.xform(s2, ro=(10,10,-10)), groups.Group(groups.ROTATION, (s1, s2), (s1, "rx"))][1],
+    lambda s1, s2, s3: equals(s1, (10, 0, 0), True))
+
 
 def prof():
     """ Profile match functionality """

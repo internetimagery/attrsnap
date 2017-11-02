@@ -4,6 +4,8 @@ from __future__ import print_function, division
 import collections
 import itertools
 
+# TODO: Issue with using curr_distance to inform step
+
 def match(group, update_callback):
     """ Match by wandering over to the right place. """
     # Set up working materials
@@ -25,7 +27,14 @@ def match(group, update_callback):
             chunk[new_distance] = new_values
 
             diff = abs(new_distance - curr_distance)
-            calibration[j] = (1 / diff) if diff else 0
+            if diff:
+                if calibration[j]:
+                    scale = (step / diff) if diff else 0
+                    calibration[j] = calibration[j] * scale
+                else:
+                    calibration[j] = scale
+            else:
+                calibration[j] = 0
 
         if chunk:
             # Take the closest move, and repeat!
@@ -36,7 +45,7 @@ def match(group, update_callback):
                 progress = (curr_distance / root_distance) if curr_distance and root_distance else 0
                 update_callback(1 - progress)
                 if curr_distance < step:
-                    step = curr_distance * 0.5
+                    step = curr_distance
             else:
                 step *= 0.5
         else:
