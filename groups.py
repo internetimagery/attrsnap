@@ -1,88 +1,16 @@
 # Match positions / rotations.
 from __future__ import print_function
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
-import match
-# import contextlib
+import maya_elem as elem
 
-def get_node(name):
-    """ Get Node """
-    sel = om.MSelectionList()
-    sel.add(name)
-    return sel.getDependNode(0)
-
-def get_plug(obj, attr):
-    """ Get attribute from mayas API ugh """
-    obj = get_node(obj)
-    func = om.MFnDependencyNode(obj)
-    attr = func.attribute(attr)
-    return om.MPlug(obj, attr)
-
-# @contextlib.contextmanager
-# def safe_state():
-#     """ Disable Autokey and keep the scene in a usable state """
-#     state = cmds.autoKeyframe(q=True, st=True)
-#     err = cmds.undoInfo(openChunk=True)
-#     try:
-#         cmds.autoKeyframe(st=False)
-#         yield
-#     except Exception as err:
-#         raise
-#     finally:
-#         cmds.autoKeyframe(st=state)
-#         cmds.undoInfo(closeChunk=True)
-#         if err:
-#             cmds.undo()
-
-class Attribute(object):
-    """ An Attribute """
-    threshold = 0.001 # Negate tiny adjustments
-    def __init__(s, obj, attr):
-        s.obj, s.attr = obj, attr # Store variables
-        s.min, s.max = -9999999, 9999999 # Initialize max / min range
-        query = lambda **kwargs: cmds.attributeQuery(attr, n=obj, **kwargs) # REUSE!
-        if not query(ex=True):
-            raise RuntimeError("\"{}\" does not exist.".format(attr))
-        if query(mne=True):
-            s.min = query(min=True)
-        if query(mxe=True):
-            s.max = query(max=True)
-        s.plug = plug = get_plug(obj, attr)
-        s.current = plug.asDouble()
-    def __str__(s):
-        return s.plug.name()
-    def set_value(s, val):
-        """ Set attribute value """
-        s.threshold
-        val = max(s.min, min(val, s.max)) # Ensure we are capped to the range limit
-        if val < s.current - s.threshold or s.current + s.threshold < val: # Check we are outside the threshold
-            s.plug.setDouble(val)
-            s.current = val
-    def get_value(s):
-        """ Get current value """
-        return s.current
-
-class Transform(object):
-    """ A maya object """
-    def __init__(s, name):
-        obj = get_node(name)
-        s.transform = om.MFnTransform(om.MDagPath.getAPathTo(obj))
-    def __str__(s):
-        return s.transform.name()
-    def get_position(s):
-        """ Get position of object """
-        return s.transform.translation(om.MSpace.kWorld)
+POSITION = 0
+ROTATION = 1
 
 class Group(object):
     """ A group of objects and attributes for matching """
     def __init__(s, match_type, markers, *attributes):
         s.match_type = match_type
-        s.markers = [Transform(a) for a in markers]
-        s.attributes = [Attribute(a, b) for a, b in attributes]
-
-    def get_positions(s):
-        """ Get a list of positions / rotations from objects """
-        return tuple(a.get_position() for a in s.markers)
+        s.markers = elem.Marker_Set(*markers)
+        s.attributes = [elem.Attribute(a, b) for a, b in attributes]
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
@@ -95,13 +23,16 @@ class Group(object):
 
     def get_distance(s):
         """ Calculate a distance value from our markers """
-        # Calculate distance or rotational distance. OR whatever we are using.
-        # Returns single number
-        # Distance positionally:
-        return (s.markers[0].get_position() - s.markers[1].get_position()).length()
+        if s.match_type == POSITION:
+            return s.markers.get_pos_distance()
+        elif s.match_type == ROTATION:
+            return s.markers.get_rot_distance()
+        else:
+            raise RuntimeError("Distance type not supported.")
 
     def keyframe(s, values):
         """ Set a bunch of keyframes for each attribute """
+        raise NotImplementedError
         for at in s.attributes:
             # Set keyframe!
             pass
