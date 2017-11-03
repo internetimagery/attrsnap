@@ -5,6 +5,9 @@ import maya_elem as elem
 POSITION = 0
 ROTATION = 1
 
+class Group_Set(object):
+    pass
+
 class Group(object):
     """ A group of objects and attributes for matching """
     def __init__(s, match_type, markers, *attributes):
