@@ -1,21 +1,15 @@
 # Dict that gets values based on nearest key.
+from __future__ import print_function, division
+import math
+
+def distance(vec1, vec2):
+    return math.sqrt(sum((b - a)**2 for a, b in zip(vec1, vec2)))
 
 class Dict(dict):
-    def __init__(s, func, *args, **kwargs):
-        """ Provide function to do the sorting """
-        s.func = func
-        dict.__init__(s, *args, **kwargs)
-    def near(s, key):
+    def near(s, *key):
         """ Return nearest keys value """
-        near_key = None
-        near_dist = None
-        for k in s:
-            if near_dist is None:
-                near_dist = s.func(key, k)
-                near_key = k
-            else:
-                test = s.func(key, k)
-                if test < near_dist:
-                    near_dist = test
-                    near_key = k
-        return s[near_key]
+        # grab all nearby keys
+        nearest = [(distance(key, k), v) for k, v in s.items()]
+        total = sum(a[0] for a in nearest)
+        scale = 1 / total
+        return sum(k * scale * v for k, v in nearest)
