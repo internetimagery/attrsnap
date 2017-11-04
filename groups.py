@@ -1,19 +1,54 @@
 # Match positions / rotations.
 from __future__ import print_function
 import maya_elem as elem
+import collections
+import uuid
 
 POSITION = 0
 ROTATION = 1
 
-class Group_Set(object):
-    pass
+
+class Group_Set(collections.Mapping):
+    """ Manage a collection of groups """
+    def __init__(s):
+        s.groups = {}
+
+        # ABCS!
+    def __contains__(s, ID):
+        return ID in s.groups
+    def __iter__(s):
+        for ID in s.groups:
+            yield ID, s.groups[ID]
+    def __len__(s):
+        return len(s.groups)
+
+    def new(s):
+        """ Create a new group. Return its id """
+        ID = uuid.uuid4()
+        s.groups[ID] = Group()
+        return ID
 
 class Group(object):
     """ A group of objects and attributes for matching """
-    def __init__(s, match_type, markers, *attributes):
+    def __init__(s, match_type=POSITION):
         s.match_type = match_type
-        s.markers = elem.Marker_Set(*markers)
-        s.attributes = [elem.Attribute(a, b) for a, b in attributes]
+        s.markers = None
+        s.attributes = []
+
+    def set_type(s, type):
+        """ Set matching type """
+        s.match_type = type
+        return s
+
+    def set_markers(s, marker1, marker2):
+        """ Use given markers """
+        s.markers = elem.Marker_Set(marker1, marker2)
+        return s
+
+    def add_attributes(s, *attributes):
+        """ Add attributes to use. Attributes = [(obj, attr), (obj, attr)] """
+        s.attributes += [elem.Attribute(a, b) for a, b in attributes]
+        return s
 
     def get_values(s):
         """ Get a list of attribute values at the current time """

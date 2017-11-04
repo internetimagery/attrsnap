@@ -1,9 +1,11 @@
 # Perform a match by broadly casting a net. Then within that net, getting finer and finer detailself.
 from __future__ import print_function
 import itertools
-import task
 
 
+def match(group):
+    """ Match casting a wide net, and increasing in resolution """
+    pass
 
 
 

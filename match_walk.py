@@ -4,6 +4,7 @@ from __future__ import print_function, division
 import collections
 import itertools
 
+# pick a bucnh of starting locations at random...
 # TODO: Issue with using curr_distance to inform step
 
 def match(group, update_callback):
