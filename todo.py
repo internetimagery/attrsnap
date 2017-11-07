@@ -86,35 +86,30 @@ class Todo(object):
         task += ["{}:{}".format(*a) for a in s.extra.items()]
         return " ".join(task)
 
-# Rule 1: If priority exists, it ALWAYS appears first.
-
-# Rule 2: A task's creation date may optionally appear directly after priority and a space.
-
-# If there is no priority, the creation date appears first. If the creation date exists, it should be in the format YYYY-MM-DD.
-
-# Rule 3: Contexts and Projects may appear anywhere in the line after priority/prepended date.
-#
-#     A context is preceded by a single space and an at-sign (@).
-#     A project is preceded by a single space and a plus-sign (+).
-#     A project or context contains any non-whitespace character.
-#     A task may have zero, one, or more than one projects and contexts included in it.
-
-test = ["(A) Thank Mom for the meatballs @phone",
-"(B) Schedule Goodwill pickup +GarageSale @phone",
-"Post signs around the neighborhood +GarageSale",
-"@GroceryStore Eskimo pies",
-"x 2011-03-02 2011-03-01 Review Tim's pull request +TodoTxtTouch @github",
-"x 2011-03-02 Review Tim's pull request +TodoTxtTouch @github",
-"Get things done @home",
-"Get some other things done @work",
-"Add task text to Chromodoro @home +Chromodoro tid:293",
-"Fix retrieve password scenarios @home +Diaspora tid:292",
-"[Significant coding] for Diaspora @home +Diaspora tid:275"]
-
-for t in test:
-    t1 = Todo(t)
-    t2 = Todo(str(t1))
-    print("Raw:", t1.raw)
-    print("New:", str(t1))
-    print("-"*20)
-    assert str(t1) == str(t2)
+if __name__ == '__main__':
+    # Quick test and output
+    for t in ["(A) Thank Mom for the meatballs @phone",
+    "(B) Schedule Goodwill pickup +GarageSale @phone",
+    "Post signs around the neighborhood +GarageSale",
+    "@GroceryStore Eskimo pies",
+    "x 2011-03-02 2011-03-01 Review Tim's pull request +TodoTxtTouch @github",
+    "x 2011-03-02 Review Tim's pull request +TodoTxtTouch @github",
+    "Get things done @home",
+    "Get some other things done @work",
+    "Add task text to Chromodoro @home +Chromodoro tid:293",
+    "Fix retrieve password scenarios @home +Diaspora tid:292",
+    "[Significant coding] for Diaspora @home +Diaspora tid:275",
+    "(A) Call Mom @Phone +Family",
+    "(A) Schedule annual checkup +Health",
+    "(B) Outline chapter 5 +Novel @Computer",
+    "(C) Add cover sheets @Office +TPSReports",
+    "Plan backyard herb garden @Home",
+    "Pick up milk @GroceryStore",
+    "Research self-publishing services +Novel @Computer",
+    "x Download Todo.txt mobile app @Phone]"]:
+        t1 = Todo(t)
+        t2 = Todo(str(t1))
+        print("Old:", t1.raw)
+        print("New:", str(t1))
+        print("-"*20)
+        assert str(t1) == str(t2)
