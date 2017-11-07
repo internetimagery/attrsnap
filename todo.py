@@ -7,15 +7,10 @@ DATE = r"(\d{4})-(\d{2})-(\d{2})\s+"
 PRIORITY = r"\((?P<priority>[A-Z])\)\s+"
 COMPLETE = r"(?P<complete>x)\s+"
 HEADER = re.compile(r"^(?:%s|%s)?(?P<dates>(?:%s){0,2})" % (COMPLETE, PRIORITY, DATE))
+DATES = re.compile(DATE)
 
 # Tag stuff
-PROJECT = r"\+[^\s]+"
-CONTEXT = r"@[^\s]+"
-KWARGS = r"([^\s:]+):([^\s]+)"
-TAGS = re.compile("({})".format("|".join([
-    PROJECT,
-    CONTEXT,
-    KWARGS])))
+TAGS = re.compile(r"(?P<key>\+|@|[^\s:]+:)(?P<value>[^\s]+)")
 
 class Todo(object):
     """ Todo obj """
@@ -35,7 +30,7 @@ class Todo(object):
             s.complete = True if header.group("complete") else False
             priority = header.group("priority")
             s.priority = priority if priority else "M" # Pick default priority
-            dates = re.findall(DATE, header.group("dates"))
+            dates = DATES.findall(header.group("dates"))
             if dates:
                 year, month, day = dates[0]
                 if s.complete: # Date 1 will be completion
@@ -46,8 +41,11 @@ class Todo(object):
                 else:
                     s.creation = datetime.date(int(year), int(month), int(day))
             head_end = header.end(0)
-        body = todo[head_end:]
-        
+        s.task = todo[head_end:]
+
+        for tag in TAGS.finditer(s.task):
+            print tag.group("key"), tag.group("value")
+
 # Rule 1: If priority exists, it ALWAYS appears first.
 
 # Rule 2: A task's creation date may optionally appear directly after priority and a space.
