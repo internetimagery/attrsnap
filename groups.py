@@ -7,48 +7,58 @@ import uuid
 POSITION = 0
 ROTATION = 1
 
-
-class Group_Set(collections.Mapping):
-    """ Manage a collection of groups """
+class ID_Map(collections.Mapping):
+    """ Entries have ID's. """
     def __init__(s):
-        s.groups = {}
-
-        # ABCS!
+        s.data = {}
     def __contains__(s, ID):
-        return ID in s.groups
+        return ID in s.data
     def __iter__(s):
-        for ID in s.groups:
-            yield ID, s.groups[ID]
+        for ID in s.data:
+            yield ID, s.data[ID]
     def __len__(s):
-        return len(s.groups)
-
-    def new(s):
-        """ Create a new group. Return its id """
+        return len(s.data)
+    def add(s, value):
         ID = uuid.uuid4()
-        s.groups[ID] = Group()
+        s.data[ID] = value
         return ID
+    def remove(s, ID):
+        del s.data[ID]
+
+group_data = collections.namedtuple("Group Data", [
+    "name",
+    "markers",
+    "attributes"])
+
+class Group_Set(ID_Map):
+    """ Manage a collection of groups """
+    def new(s, name="Group"):
+        """ Create a new group. Return its id """
+        return s.add(group_data(name, [], {}))
+
+    def set_markers(s, ID, maker1, marker2):
+        """ Set markers """
+        s.data[ID].markers = [marker1, marker2]
+        return s
+    def get_markers(s, ID):
+        """ Get marker info """
+        return s.data[ID].markers
+
+    def add_attribute(s, ID, name, min=0, max=0):
+        """ Add an attribute """
+        s.data[ID].attributes[name] = [min,max]
+        return s
+    def remove_attribute(s, ID, name):
+        """ Take an attribute out """
+        del s.data[ID]
+        return s
 
 class Group(object):
     """ A group of objects and attributes for matching """
-    def __init__(s, match_type=POSITION):
+    def __init__(s, match_type=POSITION, markers, *attributes):
         s.match_type = match_type
-        s.markers = None
-        s.attributes = []
-
-    def set_type(s, type):
-        """ Set matching type """
-        s.match_type = type
-        return s
-
-    def set_markers(s, marker1, marker2):
-        """ Use given markers """
-        s.markers = elem.Marker_Set(marker1, marker2)
-        return s
-
-    def add_attributes(s, *attributes):
-        """ Add attributes to use. Attributes = [(obj, attr), (obj, attr)] """
-        s.attributes += [elem.Attribute(a, b) for a, b in attributes]
-        return s
+        s.markers = elem.Marker_Set(*markers)
+        s.attributes = [elem.Attribute(a, b) for a, b in attributes]
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
