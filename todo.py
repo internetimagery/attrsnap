@@ -3,17 +3,10 @@ import datetime
 import re
 
 # Header stuff
-DATE = r"(\d{4})-(\d{2})-(\d{2})\s+"
-PRIORITY = r"\(([A-Z])\)\s+"
-COMPLETE = r"(x)\s+"
-combinations = [
-    DATE,
-    PRIORITY,
-    PRIORITY + DATE,
-    COMPLETE,
-    COMPLETE + DATE,
-    COMPLETE + DATE + DATE]
-HEADER = re.compile("^({})".format("|".join(combinations)))
+DATE = r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})\s+"
+PRIORITY = r"\((?P<priority>[A-Z])\)\s+"
+COMPLETE = r"(?P<complete>x)\s+"
+HEADER = re.compile(r"^(?:%s|%s)?(?P<dates>(?:%s){0,2})" % (COMPLETE, PRIORITY, DATE))
 
 # Tag stuff
 PROJECT = r"\+[^\s]+"
@@ -27,19 +20,32 @@ TAGS = re.compile("({})".format("|".join([
 class Todo(object):
     """ Todo obj """
     def __init__(s, todo=""):
-        s._priority = None
-        s._done = False
-        s._creation = None
-        s._complete = None
-        s._task = ""
-        s._projects = []
-        s._contexts = []
-        s._extra = {}
+        s.priority = None
+        s.done = False
+        s.creation = None
+        s.complete = None
+        s.task = ""
+        s.projects = []
+        s.contexts = []
+        s.extra = {}
 
         header = HEADER.search(todo)
         if header:
-            print header, todo
+            s.complete = True if header.group("complete") else False
+            priority = header.group("priority")
+            s.priority = priority if priority else "M" # Pick default priority
+            dates = re.findall(DATE, header.group("dates"))
+            if dates:
+                year, month, day = dates[0]
+                if s.complete: # Date 1 will be completion
+                    s.complete = datetime.date(int(year), int(month), int(day))
+                    if len(dates) > 1:
+                        year, month, day = dates[1]
+                        s.creation = datetime.date(int(year), int(month), int(day))
+                else:
+                    s.creation = datetime.date(int(year), int(month), int(day))
 
+        print s
 # Rule 1: If priority exists, it ALWAYS appears first.
 
 # Rule 2: A task's creation date may optionally appear directly after priority and a space.
