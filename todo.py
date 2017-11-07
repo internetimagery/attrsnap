@@ -3,7 +3,7 @@ import datetime
 import re
 
 # Header stuff
-DATE = r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})\s+"
+DATE = r"(\d{4})-(\d{2})-(\d{2})\s+"
 PRIORITY = r"\((?P<priority>[A-Z])\)\s+"
 COMPLETE = r"(?P<complete>x)\s+"
 HEADER = re.compile(r"^(?:%s|%s)?(?P<dates>(?:%s){0,2})" % (COMPLETE, PRIORITY, DATE))
@@ -30,6 +30,7 @@ class Todo(object):
         s.extra = {}
 
         header = HEADER.search(todo)
+        head_end = 0
         if header:
             s.complete = True if header.group("complete") else False
             priority = header.group("priority")
@@ -44,8 +45,9 @@ class Todo(object):
                         s.creation = datetime.date(int(year), int(month), int(day))
                 else:
                     s.creation = datetime.date(int(year), int(month), int(day))
-
-        print s
+            head_end = header.end(0)
+        body = todo[head_end:]
+        
 # Rule 1: If priority exists, it ALWAYS appears first.
 
 # Rule 2: A task's creation date may optionally appear directly after priority and a space.
