@@ -2,24 +2,31 @@
 import datetime
 import re
 
-PRIORITY = re.compile(r"^(x|\(([A-Z])\))")
-DATE = re.compile(r"(\d{4})-(\d{2})-(\d{2})\s")
-PROJECT = re.compile(r"\s\+([^\s]+)")
-CONTEXT = re.compile(r"\s@([^\s]+)")
-KEYVAL = re.compile(r"\s([^\s:]+):([^\s:]+)")
+# Header stuff
+DATE = r"(\d{4})-(\d{2})-(\d{2})\s+"
+PRIORITY = r"\(([A-Z])\)\s+"
+COMPLETE = r"(x)\s+"
+combinations = [
+    DATE,
+    PRIORITY,
+    PRIORITY + DATE,
+    COMPLETE,
+    COMPLETE + DATE,
+    COMPLETE + DATE + DATE]
+HEADER = re.compile("^({})".format("|".join(combinations)))
 
-EXTRA = re.compile(r"(\+|@|[^\s:]:)([^\s]+)")
-
-
-https://github.com/EpocDotFr/todotxtio/blob/master/todotxtio.py
+# Tag stuff
+PROJECT = r"\+[^\s]+"
+CONTEXT = r"@[^\s]+"
+KWARGS = r"([^\s:]+):([^\s]+)"
+TAGS = re.compile("({})".format("|".join([
+    PROJECT,
+    CONTEXT,
+    KWARGS])))
 
 class Todo(object):
     """ Todo obj """
-    def __init__(s):
-        s.reset()
-
-    def reset(s):
-        """ Set default values """
+    def __init__(s, todo=""):
         s._priority = None
         s._done = False
         s._creation = None
@@ -29,26 +36,9 @@ class Todo(object):
         s._contexts = []
         s._extra = {}
 
-    def parse(s, line):
-        """ Parse line of todo """
-        tokens = re.split(r"\s", line)
-        num_tokens = len(tokens)
-        task = []
-
-        if num_tokens > 0:
-            # Check for completed or priority
-            token = PRIORITY.match(tokens[0])
-            if token:
-                if token.group(1) == "x":
-                    s._done = True
-                else:
-                    s._priority = token.group(2)
-
-            token = DATE.match(tokens[1])
-            if token:
-                date = datetime.date(token.group(1), token.group(2), token.group(3))
-                if s._done: # Date is completion date
-                    s._complete = date
+        header = HEADER.search(todo)
+        if header:
+            print header, todo
 
 # Rule 1: If priority exists, it ALWAYS appears first.
 
@@ -63,14 +53,17 @@ class Todo(object):
 #     A project or context contains any non-whitespace character.
 #     A task may have zero, one, or more than one projects and contexts included in it.
 
+test = ["(A) Thank Mom for the meatballs @phone",
+"(B) Schedule Goodwill pickup +GarageSale @phone",
+"Post signs around the neighborhood +GarageSale",
+"@GroceryStore Eskimo pies",
+"x 2011-03-02 2011-03-01 Review Tim's pull request +TodoTxtTouch @github",
+"x 2011-03-02 Review Tim's pull request +TodoTxtTouch @github",
+"Get things done @home",
+"Get some other things done @work",
+"Add task text to Chromodoro @home +Chromodoro tid:293",
+"Fix retrieve password scenarios @home +Diaspora tid:292",
+"[Significant coding] for Diaspora @home +Diaspora tid:275"]
 
-(A) Thank Mom for the meatballs @phone
-(B) Schedule Goodwill pickup +GarageSale @phone
-Post signs around the neighborhood +GarageSale
-@GroceryStore Eskimo pies
-x 2011-03-02 2011-03-01 Review Tim's pull request +TodoTxtTouch @github
-Get things done @home
-Get some other things done @work
-Add task text to Chromodoro @home +Chromodoro tid:293
-Fix retrieve password scenarios @home +Diaspora tid:292
-[Significant coding] for Diaspora @home +Diaspora tid:275
+for t in test:
+    Todo(t)
