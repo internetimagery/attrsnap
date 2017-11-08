@@ -28,7 +28,7 @@ class Table(object):
         row = cmds.rowLayout(nc=len(s.cols))
         cols = [cmds.columnLayout(adj=True, p=row) for a in s.cols]
         for name, col in zip(s.cols, cols):
-            dir_ = "^" if s.dir else "v"
+            dir_ = u"\u02C6" if s.dir else u"\u02c7"
             title = "{} {}".format(name, dir_) if name == s.order else name
             cmds.button(l=title, p=col, c=functools.partial(s.sort, name))
         for row in sorted(s.items, key=s.cols[s.order], reverse=s.dir):
