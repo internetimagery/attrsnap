@@ -8,10 +8,15 @@ class Table(object):
         s.items = []
         s.cols = cols
         s.parent = parent
+        s.dir = True
+        s.order = ""
         s.sort(cols.keys()[0])
+
 
     def sort(s, order, *_):
         """ Change sorting order """
+        if order == s.order:
+            s.dir = False if s.dir else True
         s.order = order
         s.build()
 
@@ -23,9 +28,10 @@ class Table(object):
         row = cmds.rowLayout(nc=len(s.cols))
         cols = [cmds.columnLayout(adj=True, p=row) for a in s.cols]
         for name, col in zip(s.cols, cols):
-            title = "{} v".format(name) if name == s.order else name
+            dir_ = "^" if s.dir else "v"
+            title = "{} {}".format(name, dir_) if name == s.order else name
             cmds.button(l=title, p=col, c=functools.partial(s.sort, name))
-        for row in sorted(s.items, key=s.cols[s.order]):
+        for row in sorted(s.items, key=s.cols[s.order], reverse=s.dir):
             for name, col in zip(row, cols):
                 cmds.text(l=name, p=col)
 
