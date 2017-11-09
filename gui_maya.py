@@ -73,8 +73,9 @@ class Marker(object):
 
 class Tab(object):
     """ Tab holding information! """
-    def __init__(s, tab_parent, title="Group", enabled=True):
+    def __init__(s, tab_parent, group, enabled=True):
         s.parent = tab_parent
+        s.group = group
         s.layout = cmds.columnLayout(adj=True, p=s.parent)
 
         # Group stuff
@@ -96,7 +97,7 @@ class Tab(object):
         cmds.text(l="Attribute!")
         cmds.text(l="Attribute!")
 
-        s.set_title(title)
+        s.set_title(group.get_name())
         s.validate()
 
     def rename(s):
@@ -109,7 +110,7 @@ class Tab(object):
 
     def set_title(s, title):
         """ Set title of tab """
-        s.title = title
+        s.group.set_name(title)
         cmds.tabLayout(s.parent, e=True, tl=(s.layout, title))
 
     def enable(s, state):
@@ -170,7 +171,6 @@ class Window(object):
             name = "Group{}".format(s.group_index)
             if name not in tab_names:
                 break
-        # ID = s.groups.new(name="Group{}".format(s.group_index))
         group = groups.Group(name="GroupP{}".format(s.group_index))
         s.tabs.append(Tab(s.tab_grp, group))
         cmds.tabLayout(s.tab_grp, e=True, sti=cmds.tabLayout(s.tab_grp, q=True, nch=True))
