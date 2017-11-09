@@ -1,6 +1,6 @@
 # Load elements.
 
 try:
-    import element_maya as element
+    from element_maya import *
 except ImportError:
     raise RuntimeError("Element not supported")
