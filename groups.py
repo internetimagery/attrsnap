@@ -1,69 +1,58 @@
 # Match positions / rotations.
 from __future__ import print_function
 import maya_elem as elem
-import collections
 import uuid
 
 POSITION = 0
 ROTATION = 1
 
-class ID_Map(collections.Mapping):
-    """ Entries have ID's. """
-    def __init__(s):
-        s.data = {}
-    def __contains__(s, ID):
-        return ID in s.data
-    def __iter__(s):
-        for ID in s.data:
-            yield ID, s.data[ID]
-    def __len__(s):
-        return len(s.data)
-    def add(s, value):
-        ID = uuid.uuid4()
-        s.data[ID] = value
-        return ID
-    def remove(s, ID):
-        del s.data[ID]
-
-group_data = collections.namedtuple("Group Data", [
-    "name",
-    "markers",
-    "attributes"])
-
-class Group_Set(ID_Map):
-    """ Manage a collection of groups """
-    def new(s, name="Group"):
-        """ Create a new group. Return its id """
-        return s.add(group_data(name, [], {}))
-
-    def set_markers(s, ID, maker1, marker2):
-        """ Set markers """
-        s.data[ID].markers = [marker1, marker2]
-        return s
-    def get_markers(s, ID):
-        """ Get marker info """
-        return s.data[ID].markers
-
-    def add_attribute(s, ID, name, min=0, max=0):
-        """ Add an attribute """
-        s.data[ID].attributes[name] = [min,max]
-        return s
-    def remove_attribute(s, ID, name):
-        """ Take an attribute out """
-        del s.data[ID]
-        return s
 
 class Group(object):
     """ A group of objects and attributes for matching """
-    def __init__(s, match_type=POSITION, markers, *attributes):
+    def __init__(s, name="", match_type=POSITION, markers=None, attributes=None):
+        s.name = name
         s.match_type = match_type
-        s.markers = elem.Marker_Set(*markers)
-        s.attributes = [elem.Attribute(a, b) for a, b in attributes]
+        s.markers = []
+        if markers:
+            s.set_markers(*markers)
+        s.attributes = []
+        if attributes:
+            s.add_attributes(*attributes)
+
+    def get_name(s):
+        """ Get name value """
+        return s.name
+    def set_name(s, name):
+        """ Set name value """
+        s.name = name.strip()
+        return s
+
+    def get_type(s):
+        """ Get type value """
+        return s.match_type
+    def set_type(s, val):
+        """ Set type value """
+        s.match_type = val
+        return s
+
+    def get_markers(s):
+        """ Get current markers """
+        return s.markers
+    def set_markers(s, m1, m2):
+        """ Set markers """
+        s.markers = elem.Marker_Set(m1, m2)
+        return s
+
+    def get_attributes(s):
+        """ List out attributes ascociated """
+        return s.attributes
+    def add_attributes(s, *attrs):
+        """ Add some attributes """
+        s.attributes += [elem.Attribute(a, b) for a, b in attrs]
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
         return tuple(a.get_value() for a in s.attributes)
-
     def set_values(s, vals):
         """ Set a list of values to each attribute """
         for attr, val in zip(s.attributes, vals):

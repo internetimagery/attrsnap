@@ -4,6 +4,7 @@ from __future__ import print_function
 import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
+import groups
 
 BLACK = (0.1,0.1,0.1)
 GREEN = (0.2, 0.5, 0.4)
@@ -135,6 +136,7 @@ class Tab(object):
 class Window(object):
     """ Main window! """
     def __init__(s):
+        # s.groups = groups.Group_Set()
         s.tabs = []
         s.group_index = 0
         name = "attrsnap"
@@ -162,13 +164,15 @@ class Window(object):
 
     def new_group(s, *_):
         """ Create a new group """
-        groups = cmds.tabLayout(s.tab_grp, q=True, tl=True) or []
+        tab_names = cmds.tabLayout(s.tab_grp, q=True, tl=True) or []
         while True:
             s.group_index += 1
             name = "Group{}".format(s.group_index)
-            if name not in groups:
+            if name not in tab_names:
                 break
-        s.tabs.append(Tab(s.tab_grp, "Group{}".format(s.group_index)))
+        # ID = s.groups.new(name="Group{}".format(s.group_index))
+        group = groups.Group(name="GroupP{}".format(s.group_index))
+        s.tabs.append(Tab(s.tab_grp, group))
         cmds.tabLayout(s.tab_grp, e=True, sti=cmds.tabLayout(s.tab_grp, q=True, nch=True))
 
     def load_template(s, *_):

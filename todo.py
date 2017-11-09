@@ -1,4 +1,4 @@
-# Unrelated todo.txt parser
+# Todo.txt parsing
 from __future__ import print_function
 import datetime
 import re
