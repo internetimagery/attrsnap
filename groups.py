@@ -1,6 +1,6 @@
 # Match positions / rotations.
 from __future__ import print_function
-import maya_elem as elem
+import element
 import uuid
 
 POSITION = 0
@@ -40,7 +40,7 @@ class Group(object):
         return s.markers
     def set_markers(s, m1, m2):
         """ Set markers """
-        s.markers = elem.Marker_Set(m1, m2)
+        s.markers = element.Marker_Set(m1, m2)
         return s
 
     def get_attributes(s):
@@ -48,7 +48,7 @@ class Group(object):
         return s.attributes
     def add_attributes(s, *attrs):
         """ Add some attributes """
-        s.attributes += [elem.Attribute(a, b) for a, b in attrs]
+        s.attributes += [element.Attribute(a, b) for a, b in attrs]
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
