@@ -54,7 +54,6 @@ def progress():
         if err:
             cmds.undo()
 
-
 class Tab(object):
     """ Tab holding information! """
     def __init__(s, tab_parent, group, enabled=True):
@@ -80,7 +79,6 @@ class Tab(object):
 
         s.set_title(group.get_name())
         s.refresh()
-        s.validate()
 
     def refresh(s):
         """ Update gui with data """
@@ -93,10 +91,12 @@ class Tab(object):
 
         # Create elements for each entry
         for marker in s.group.get_markers():
-            cmds.text(l=marker, p=s.GUI_marker)
+            cmds.textField(tx=marker, p=s.GUI_marker)
 
         for attr in s.group.get_attributes():
-            cmds.text(l=attr, p=s.GUI_attr)
+            cmds.textField(tx=attr, p=s.GUI_attr)
+
+        s.validate()
 
     def rename(s):
         """ Prompt rename """
@@ -114,18 +114,22 @@ class Tab(object):
     def enable(s, state):
         """ Enable / disable """
         cmds.checkBox(s.GUI_enable, e=True, v=state)
+        title = s.group.get_name()
         if state:
-            s.set_title(s.title.replace("*", ""))
+            s.set_title(title.replace("*", ""))
         else:
-            s.set_title(s.title + "*")
+            s.set_title(title + "*")
         s.validate()
 
     def validate(s, *_):
         """ Validate all info is there """
         if cmds.checkBox(s.GUI_enable, q=True, v=True): # Check we are enabled
             if s.group.get_markers():# and s.group.get_attributes():
-                return cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
-        cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
+                cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
+            else:
+                cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
+        else:
+            cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
 
     def __str__(s):
         """ Make class usable """
