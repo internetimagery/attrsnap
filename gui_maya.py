@@ -53,23 +53,6 @@ def progress():
         if err:
             cmds.undo()
 
-class Marker(object):
-    """ Marker collection """
-    def __init__(s, parent, markers=None):
-        s.markers = markers or []
-        s.layout = cmds.rowLayout(adj=True, p=parent)
-
-    def set_markers(s):
-        """ Get markers from selection """
-        sel = cmds.ls(sl=True)
-        if len(sel) != 2:
-            raise RuntimeError("Please select two items only.")
-        s.markers = sel
-
-    def validate(s):
-        """ Return True if valid, False otherwise """
-        return len(s.markers) == 2
-
 
 class Tab(object):
     """ Tab holding information! """
@@ -87,18 +70,31 @@ class Tab(object):
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New markers from selection")
-        cmds.columnLayout(adj=True, bgc=BLACK)
-        cmds.text(l="Marker1")
-        cmds.text(l="Marker2")
+        s.GUI_marker = cmds.columnLayout(adj=True, bgc=BLACK)
+        # -----
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New Attribute from Channelbox")
-        cmds.scrollLayout(h=300, bgc=BLACK)
-        cmds.text(l="Attribute!")
-        cmds.text(l="Attribute!")
-        cmds.text(l="Attribute!")
+        s.GUI_attr = cmds.scrollLayout(h=300, bgc=BLACK)
+        # -----
 
         s.set_title(group.get_name())
+        s.refresh()
         s.validate()
+
+    def refresh(s):
+        """ Update gui with data """
+        # Clean out gui
+        existing = cmds.layout(s.GUI_marker, q=True, ca=True) or []
+        existing += cmds.layout(s.GUI_attr, q=True, ca=True) or []
+        if existing:
+            cmds.deleteUI(existing)
+
+        # Create elements for each entry
+        for marker in s.group.get_markers():
+            cmds.text(l=marker, p=s.GUI_marker)
+
+        for attr in s.group.get_attributes():
+            cmds.text(l=attr, p=s.GUI_attr)
 
     def rename(s):
         """ Prompt rename """
