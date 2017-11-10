@@ -3,9 +3,10 @@
 from __future__ import print_function
 import maya.cmds as cmds
 import maya.mel as mel
+import functools
 import contextlib
+import utility
 import groups
-import utility_maya as utility
 
 BLACK = (0.1,0.1,0.1)
 GREEN = (0.2, 0.5, 0.4)
@@ -54,28 +55,42 @@ def progress():
         if err:
             cmds.undo()
 
-class TextBox(object):
-    """ Text box full of boxy text! """
-    def __init__(s, parent, update, text=""):
-        s.gui = cmds.textFieldGrp(tx=text, p=parent, tcc=update, bgc=BLACK)
+class Widget(object):
+    """ Simple widget """
+    def __init__(s, widget, key):
+        s.key = key
+        s.widget = widget
 
     def validate(s, check):
-        """ Validate input on change """
-        if check(s.text):
+        """ Check value is ok """
+        if check(s.value):
             colour = BLACK
         else:
             colour = RED
-        cmds.textFieldGrp(s.gui, e=True, bgc=colour)
+        s.widget(s.gui, e=True, bgc=colour)
         return colour == BLACK
 
-    def text():
-        doc = "The text property."
-        def fget(s):
-            return cmds.textFieldGrp(s.gui, q=True, tx=True)
-        def fset(s, text):
-            cmds.textFieldGrp(s.gui, q=True, tx=text)
+    def value():
+        doc = "The value property."
+        def fget(self):
+            return s.widget(s.qui, q=True, **{s.key: True})
+        def fset(self, value):
+            s.widget(s.gui, e=True, **{s.key: value})
         return locals()
-    text = property(**text())
+    value = property(**value())
+
+
+class IntBox(Widget):
+    """ Int box """
+    def __init__(s, parent, update, val=0):
+        s.gui = cmds.intField(v=val, p=parent, cc=update, bgc=BLACK)
+        Widget.__init__(s, cmds.intField, "v")
+
+class TextBox(Widget):
+    """ Text box full of boxy text! """
+    def __init__(s, parent, update, text=""):
+        s.gui = cmds.textFieldGrp(tx=text, p=parent, tcc=update, bgc=BLACK)
+        Widget.__init__(s, cmds.textFieldGrp, "tx")
 
 class Attribute(object):
     """ gui for single attribute """
@@ -89,8 +104,6 @@ class Attribute(object):
         if not s.attr.validate(utility.attr_exists):
             ok = False
         return ok
-
-
 
 class Attributes(object):
     """ Gui for attributes """
