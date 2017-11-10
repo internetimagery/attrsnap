@@ -54,6 +54,33 @@ def progress():
         if err:
             cmds.undo()
 
+class Markers(object):
+    """ Gui for markers """
+    def __init__(s, parent, update, m1="", m2=""):
+        s.parent = cmds.columnLayout(adj=True, p=parent)
+        s.update = update # callback to update parent
+        s.m1 = cmds.textFieldGrp(p=s.parent, tx=m1, tcc=s.update, bgc=BLACK)
+        s.m2 = cmds.textFieldGrp(p=s.parent, tx=m2, tcc=s.update, bgc=BLACK)
+        s.validate()
+
+    def validate(s, *_):
+        """ validate that entry exists """
+        valid = True
+        for m in (s.m1, s.m2):
+            obj = cmds.textFieldGrp(m, q=True, tx=True)
+            if cmds.objExists(obj):
+                colour = BLACK
+            else:
+                colour = RED
+                valid = False
+            cmds.textFieldGrp(m, e=True, bgc=colour)
+        return valid
+
+    def set(s, mark1, mark2):
+        """ Set markers in bulk """
+        cmds.textFieldGrp(s.m1, e=True, tx=mark1)
+        cmds.textFieldGrp(s.m2, e=True, tx=mark2)
+
 class Tab(object):
     """ Tab holding information! """
     def __init__(s, tab_parent, group, enabled=True):
@@ -68,9 +95,9 @@ class Tab(object):
         cmds.menuItem(l="opt1")
         cmds.menuItem(l="other opt")
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
-        cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="New markers from selection", c=lambda _: s.group.set_markers(*utility.get_selection(2)) or s.refresh())
-        s.GUI_marker = cmds.columnLayout(adj=True, bgc=BLACK)
+        markers = cmds.columnLayout(adj=True, p=pane)
+        cmds.button(l="New markers from selection", c=lambda _: s.markers.set(*utility.get_selection(2)))
+        s.markers = Markers(markers, s.validate, *s.group.get_markers())
         # -----
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New Attribute from Channelbox")
@@ -78,24 +105,6 @@ class Tab(object):
         # -----
 
         s.set_title(group.get_name())
-        s.refresh()
-
-    def refresh(s):
-        """ Update gui with data """
-        print("refresh!")
-        # Clean out gui
-        existing = cmds.layout(s.GUI_marker, q=True, ca=True) or []
-        existing += cmds.layout(s.GUI_attr, q=True, ca=True) or []
-        if existing:
-            cmds.deleteUI(existing)
-
-        # Create elements for each entry
-        for marker in s.group.get_markers():
-            cmds.textField(tx=marker, p=s.GUI_marker)
-
-        for attr in s.group.get_attributes():
-            cmds.textField(tx=attr, p=s.GUI_attr)
-
         s.validate()
 
     def rename(s):
@@ -124,7 +133,7 @@ class Tab(object):
     def validate(s, *_):
         """ Validate all info is there """
         if cmds.checkBox(s.GUI_enable, q=True, v=True): # Check we are enabled
-            if s.group.get_markers():# and s.group.get_attributes():
+            if s.markers.validate():# and s.group.get_attributes():
                 cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
             else:
                 cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
