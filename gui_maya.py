@@ -5,6 +5,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
 import groups
+import utility_maya as utility
 
 BLACK = (0.1,0.1,0.1)
 GREEN = (0.2, 0.5, 0.4)
@@ -69,7 +70,7 @@ class Tab(object):
         cmds.menuItem(l="other opt")
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="New markers from selection")
+        cmds.button(l="New markers from selection", c=lambda _: s.group.set_markers(*utility.get_selection(2)) or s.refresh())
         s.GUI_marker = cmds.columnLayout(adj=True, bgc=BLACK)
         # -----
         cmds.columnLayout(adj=True, p=pane)
@@ -83,6 +84,7 @@ class Tab(object):
 
     def refresh(s):
         """ Update gui with data """
+        print("refresh!")
         # Clean out gui
         existing = cmds.layout(s.GUI_marker, q=True, ca=True) or []
         existing += cmds.layout(s.GUI_attr, q=True, ca=True) or []
@@ -121,10 +123,9 @@ class Tab(object):
     def validate(s, *_):
         """ Validate all info is there """
         if cmds.checkBox(s.GUI_enable, q=True, v=True): # Check we are enabled
-            # TODO: Validate stuff
-            cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
-        else:
-            cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
+            if s.group.get_markers():# and s.group.get_attributes():
+                return cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
+        cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
 
     def __str__(s):
         """ Make class usable """

@@ -76,6 +76,10 @@ class Marker_Set(object):
         dot = sum(a * b for a, b in zip(s.node1.get_rotation(), s.node2.get_rotation()))
         return math.degrees(1 - dot ** 2) * 10
 
+    def __iter__(s):
+        """ Loop over entries """
+        for a in (s.node1, s.node2):
+            yield a
 
 if __name__ == '__main__':
     cmds.file(new=True, force=True)
