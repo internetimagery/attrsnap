@@ -54,32 +54,83 @@ def progress():
         if err:
             cmds.undo()
 
+class TextBox(object):
+    """ Text box full of boxy text! """
+    def __init__(s, parent, update, text=""):
+        s.gui = cmds.textFieldGrp(tx=text, p=parent, tcc=update, bgc=BLACK)
+
+    def validate(s, check):
+        """ Validate input on change """
+        if check(s.text):
+            colour = BLACK
+        else:
+            colour = RED
+        cmds.textFieldGrp(s.gui, e=True, bgc=colour)
+        return colour == BLACK
+
+    def text():
+        doc = "The text property."
+        def fget(s):
+            return cmds.textFieldGrp(s.gui, q=True, tx=True)
+        def fset(s, text):
+            cmds.textFieldGrp(s.gui, q=True, tx=text)
+        return locals()
+    text = property(**text())
+
+class Attribute(object):
+    """ gui for single attribute """
+    def __init__(s, parent, update, attribute="", min_=None, max_=None):
+        s.row = cmds.rowLayout(nc=1)
+        s.attr = TextBox(s.row, update, attribute)
+
+    def validate(s):
+        """ Validate attribute exists and values are between limits """
+        ok = True
+        if not s.attr.validate(utility.attr_exists):
+            ok = False
+        return ok
+
+
+
+class Attributes(object):
+    """ Gui for attributes """
+    def __init__(s, parent, update, attributes=None):
+        s.parent = parent
+        s.update = update
+        s.attributes = [Attribute(parent, update, a) for a in attributes or []]
+
+    def add_attribute(s, name=""):
+        """ Add a new attribute """
+        s.attributes.append(Attribute(s.parent, s.update, name))
+
+    def validate(s):
+        """ Validate attributes """
+        ok = True
+        for at in s.attributes:
+            if not at.validate():
+                ok = False
+        return ok
+
 class Markers(object):
     """ Gui for markers """
     def __init__(s, parent, update, m1="", m2=""):
         s.parent = cmds.columnLayout(adj=True, p=parent)
-        s.update = update # callback to update parent
-        s.m1 = cmds.textFieldGrp(p=s.parent, tx=m1, tcc=s.update, bgc=BLACK)
-        s.m2 = cmds.textFieldGrp(p=s.parent, tx=m2, tcc=s.update, bgc=BLACK)
+        s.m1 = TextBox(s.parent, update)
+        s.m2 = TextBox(s.parent, update)
         s.validate()
 
     def validate(s, *_):
-        """ validate that entry exists """
-        valid = True
+        """ validate all markers actually exist """
+        ok = True
         for m in (s.m1, s.m2):
-            obj = cmds.textFieldGrp(m, q=True, tx=True)
-            if cmds.objExists(obj):
-                colour = BLACK
-            else:
-                colour = RED
-                valid = False
-            cmds.textFieldGrp(m, e=True, bgc=colour)
-        return valid
+            if not m.validate(cmds.objExists):
+                ok = False
+        return ok
 
     def set(s, mark1, mark2):
         """ Set markers in bulk """
-        cmds.textFieldGrp(s.m1, e=True, tx=mark1)
-        cmds.textFieldGrp(s.m2, e=True, tx=mark2)
+        s.m1.text = mark1
+        s.m2.text = mark2
 
 class Tab(object):
     """ Tab holding information! """
