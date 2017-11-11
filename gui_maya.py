@@ -93,7 +93,7 @@ class TextBox(Widget):
 class Attribute(object):
     """ gui for single attribute """
     def __init__(s, parent, update, attribute="", min_=-9999, max_=9999):
-        s.row = cmds.rowLayout(nc=3, p=parent)
+        s.row = cmds.rowLayout(nc=3, adj=1, p=parent)
         s.attr = TextBox(s.row, update, attribute)
         s.min = IntBox(s.row, update, min_)
         s.max = IntBox(s.row, update, max_)
@@ -114,9 +114,12 @@ class Attributes(object):
 
     def add_attributes(s, *names):
         """ Add a new attribute """
-        print(names)
         for name in names:
             s.attributes.append(Attribute(s.parent, s.update, name))
+
+    def del_attribute(s, name):
+        """ Remove attribute! """
+        pass
 
     def validate(s):
         """ Validate attributes """
@@ -253,7 +256,7 @@ class Window(object):
             name = "Group{}".format(s.group_index)
             if name not in tab_names:
                 break
-        group = groups.Group(name="GroupP{}".format(s.group_index))
+        group = groups.Group(name="Group{}".format(s.group_index))
         s.tabs.append(Tab(s.tab_grp, group))
         cmds.tabLayout(s.tab_grp, e=True, sti=cmds.tabLayout(s.tab_grp, q=True, nch=True))
 
