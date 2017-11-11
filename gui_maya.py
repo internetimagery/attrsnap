@@ -57,7 +57,8 @@ def progress():
 
 class Widget(object):
     """ Simple widget """
-    def __init__(s, widget, key):
+    def __init__(s, widget, key, *args, **kwargs):
+        s.gui = widget(*args, **kwargs)
         s.key = key
         s.widget = widget
 
@@ -72,36 +73,35 @@ class Widget(object):
 
     def value():
         doc = "The value property."
-        def fget(self):
-            return s.widget(s.qui, q=True, **{s.key: True})
-        def fset(self, value):
+        def fget(s):
+            return s.widget(s.gui, q=True, **{s.key: True})
+        def fset(s, value):
             s.widget(s.gui, e=True, **{s.key: value})
         return locals()
     value = property(**value())
 
-
 class IntBox(Widget):
     """ Int box """
     def __init__(s, parent, update, val=0):
-        s.gui = cmds.intField(v=val, p=parent, cc=update, bgc=BLACK)
-        Widget.__init__(s, cmds.intField, "v")
+        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, bgc=BLACK)
 
 class TextBox(Widget):
     """ Text box full of boxy text! """
     def __init__(s, parent, update, text=""):
-        s.gui = cmds.textFieldGrp(tx=text, p=parent, tcc=update, bgc=BLACK)
-        Widget.__init__(s, cmds.textFieldGrp, "tx")
+        Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK)
 
 class Attribute(object):
     """ gui for single attribute """
-    def __init__(s, parent, update, attribute="", min_=None, max_=None):
-        s.row = cmds.rowLayout(nc=1)
+    def __init__(s, parent, update, attribute="", min_=-9999, max_=9999):
+        s.row = cmds.rowLayout(nc=3, p=parent)
         s.attr = TextBox(s.row, update, attribute)
+        s.min = IntBox(s.row, update, min_)
+        s.max = IntBox(s.row, update, max_)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
         ok = True
-        if not s.attr.validate(utility.attr_exists):
+        if not s.attr.validate(utility.valid_attribute):
             ok = False
         return ok
 
@@ -112,9 +112,11 @@ class Attributes(object):
         s.update = update
         s.attributes = [Attribute(parent, update, a) for a in attributes or []]
 
-    def add_attribute(s, name=""):
+    def add_attributes(s, *names):
         """ Add a new attribute """
-        s.attributes.append(Attribute(s.parent, s.update, name))
+        print(names)
+        for name in names:
+            s.attributes.append(Attribute(s.parent, s.update, name))
 
     def validate(s):
         """ Validate attributes """
@@ -142,8 +144,8 @@ class Markers(object):
 
     def set(s, mark1, mark2):
         """ Set markers in bulk """
-        s.m1.text = mark1
-        s.m2.text = mark2
+        s.m1.value = mark1
+        s.m2.value = mark2
 
 class Tab(object):
     """ Tab holding information! """
@@ -151,6 +153,7 @@ class Tab(object):
         s.parent = tab_parent
         s.group = group
         s.layout = cmds.columnLayout(adj=True, p=s.parent)
+        s.ready = False
 
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
@@ -164,11 +167,13 @@ class Tab(object):
         s.markers = Markers(markers, s.validate, *s.group.get_markers())
         # -----
         cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="New Attribute from Channelbox")
-        s.GUI_attr = cmds.scrollLayout(h=300, bgc=BLACK)
+        cmds.button(l="New Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()))
+        attributes = cmds.scrollLayout(h=300, bgc=BLACK)
+        s.attributes = Attributes(attributes, s.validate, group.get_attributes())
         # -----
 
         s.set_title(group.get_name())
+        s.ready = True
         s.validate()
 
     def rename(s):
@@ -196,13 +201,16 @@ class Tab(object):
 
     def validate(s, *_):
         """ Validate all info is there """
-        if cmds.checkBox(s.GUI_enable, q=True, v=True): # Check we are enabled
-            if s.markers.validate():# and s.group.get_attributes():
-                cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
+        if s.ready:
+            if cmds.checkBox(s.GUI_enable, q=True, v=True): # Check we are enabled
+                m_ok = s.markers.validate()
+                a_ok = s.attributes.validate()
+                if m_ok and a_ok:
+                    cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
+                else:
+                    cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
             else:
-                cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
-        else:
-            cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
+                cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
 
     def __str__(s):
         """ Make class usable """

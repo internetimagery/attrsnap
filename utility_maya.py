@@ -8,12 +8,14 @@ def get_selection(num=0):
         raise RuntimeError("Please select only {} items.".format(num))
     return sel
 
-def attr_exists(attribute):
-    """ Check attribute exists (object.attribute) """
+def get_attribute():
+    """ Get selected attribute from channelbox """
+    return set("{}.{}".format(o, cmds.attributeName("{}.{}".format(o, at), l=True)) for o in cmds.ls(sl=True) for at in cmds.channelBox("mainChannelBox", sma=True, q=True) or [] if cmds.attributeQuery(at, n=o, ex=True))
+
+def valid_attribute(attr):
+    """ Check attribute is valid and exists """
     try:
-        obj, attr = attribute.split(".")
-        if cmds.attributeQuery(attr, n=obj, ex=True):
-            return True
-    except ValueError:
-        pass
-    return False
+        obj, at = attr.split(".")
+        return cmds.attributeQuery(at, n=obj, k=True)
+    except (ValueError, TypeError, RuntimeError):
+        return False
