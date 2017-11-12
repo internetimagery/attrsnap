@@ -7,6 +7,7 @@ import random
 Vector = lambda: om.MVector(*(random.randrange(-10, 10) for _ in range(3)))
 
 # https://github.com/paulhayes/MultilaterationExample
+# https://github.com/kim74/multilateration/blob/master/Multilateration.py
 # https://stackoverflow.com/questions/16176656/trilateration-and-locating-the-point-x-y-z
 # https://en.wikipedia.org/wiki/Trilateration
 def test():
