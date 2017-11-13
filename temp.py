@@ -1,6 +1,9 @@
 # Testing some stuff
 from __future__ import division
 
+# ANOTHER CANDIDATE
+# https://en.wikipedia.org/wiki/Gauss%E2%80%93Newton_algorithm#Description
+
 import maya.api.OpenMaya as om
 import random
 

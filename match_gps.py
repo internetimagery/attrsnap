@@ -59,21 +59,17 @@ def trilateration(P1, P2, P3, D1, D2, D3, return_middle=False):
     if abs(b) < 0.0000000001:
         b = 0
 
-    try:
-        # TODO: inverse numbers fail squareroot? just check for > 0?
-        import math
-        z = math.sqrt(b)
-    except ValueError:
-        # no solution found
-        return None
+    if b < 0:
+        return []
 
+    z = (b ** -0.5) * b
     a = vector_add(P1, vector_add(vector_multiply(ex, x), vector_multiply(ey, y)))
     ez_z = vector_multiply(ez, z)
     p4a = vector_add(a, ez_z)
     p4b = vector_subtract(a, ez_z)
 
     if z == 0 or return_middle:
-        return a
+        return [a]
     else:
         return (p4a, p4b)
 
