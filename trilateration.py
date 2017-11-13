@@ -75,13 +75,21 @@ def test():
 
     Vec2 = collections.namedtuple("vec2", ["x","y","z","r"])
 
-    Position = lambda: [random.randrange(-10, 10) for _ in range(3)]
+    failed = []
+    for _ in range(100000):
+        Position = lambda: [random.randrange(-10, 10) for _ in range(3)]
 
-    emitter = Position()
-    sensors = [Vec2(*p + [math.sqrt(sum((b-a)**2 for a,b in zip(p, emitter)))]) for p in (Position() for _ in range(3))]
+        emitter = Position()
+        sensors = [Vec2(*p + [math.sqrt(sum((b-a)**2 for a,b in zip(p, emitter)))]) for p in (Position() for _ in range(3))]
 
-    prediction = trilateration(*sensors, return_middle=False)
-    if len(prediction) == 2:
-        prediction = min(prediction, key=lambda x: math.sqrt(sum((b-a)**2 for a,b in zip(x, emitter))))
-    print "Actual position:", emitter
-    print "Predicted position:", list(prediction)
+        prediction = trilateration(*sensors, return_middle=False)
+        if prediction and len(prediction) == 2:
+            prediction = min(prediction, key=lambda x: math.sqrt(sum((b-a)**2 for a,b in zip(x, emitter))))
+        try:
+            assert emitter == [round(p, 3) for p in prediction]
+        except (TypeError, AssertionError):
+            failed.append((emitter, prediction))
+    for em, pred in failed:
+        print em, pred
+        # print "Actual position:", emitter
+        # print "Predicted position:", list(prediction)

@@ -88,28 +88,38 @@ def test():
     import math
     import time
 
-    s = time.time()
     failed = []
+    iterations = 100000
+    s = time.time()
     for _ in range(100000):
 
-        Position = lambda: [random.randrange(-10, 10) for _ in range(3)]
+        Position = lambda: tuple(random.randrange(-10, 10) for _ in range(3))
 
         emitter = Position()
-        args = [Position() for _ in range(3)]
+        args = set()
+        while len(args) != 3:
+            args.add(Position())
+        args = list(args)
         args += [math.sqrt(sum((a-b)**2 for a,b in zip(arg, emitter))) for arg in args]
 
         prediction = trilateration(*args)
         if len(prediction) == 2:
             prediction = [min(prediction, key=lambda x: math.sqrt(sum((b-a)**2 for a,b in zip(x, emitter))))]
-        pred = [round(b, 3) for a in prediction for b in a]
+        pred = tuple(round(b, 3) for a in prediction for b in a)
         # print "Actual position:", emitter
         # print "Predicted position:", pred
         try:
             assert emitter == pred
         except AssertionError:
-            failed.append((emitter, pred))
+            failed.append((emitter, pred, args))
+    print "Run %s times..." % iterations
     print "Took", time.time() - s
     print "Failed %s times" % len(failed)
-    for em, pred in failed:
+    for em, pred, args in failed:
         print "Failed emitter:", em
         print "Failed prediction:", pred
+        if pred:
+            diff = vector_subtract(em, pred)
+            print "Distance:", sqrt(dot(diff, diff))
+        print "Args:", args
+    print "#"*20
