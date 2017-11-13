@@ -1,4 +1,4 @@
-# Match using gps-like tracking.
+# Locate a position using gps-like tracking.
 
 # From file:
 # https://github.com/gheja/trilateration.js/blob/master/trilateration.js
@@ -91,7 +91,7 @@ def test():
     failed = []
     iterations = 100000
     s = time.time()
-    for _ in range(100000):
+    for _ in range(iterations):
 
         Position = lambda: tuple(random.randrange(-10, 10) for _ in range(3))
 
