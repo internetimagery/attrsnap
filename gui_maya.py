@@ -85,6 +85,11 @@ class IntBox(Widget):
     def __init__(s, parent, update, val=0):
         Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, bgc=BLACK)
 
+class CheckBox(Widget):
+    """ Int box """
+    def __init__(s, parent, update, val=True):
+        Widget.__init__(s, cmds.checkBox, "v", v=val, p=parent, cc=update, bgc=BLACK)
+
 class TextBox(Widget):
     """ Text box full of boxy text! """
     def __init__(s, parent, update, text=""):
@@ -114,7 +119,12 @@ class Attributes(object):
 
     def add_attributes(s, *names):
         """ Add a new attribute """
-        for name in names:
+        duplicates = set()
+        for attr in s.attributes:
+            for name in names:
+                if name == attr.attr.value:
+                    duplicates.add(name)
+        for name in set(names) - duplicates:
             s.attributes.append(Attribute(s.parent, s.update, name))
 
     def del_attribute(s, name):
@@ -140,9 +150,10 @@ class Markers(object):
     def validate(s, *_):
         """ validate all markers actually exist """
         ok = True
-        for m in (s.m1, s.m2):
-            if not m.validate(cmds.objExists):
-                ok = False
+        m1 = s.m1.validate(cmds.objExists)
+        m2 = s.m2.validate(cmds.objExists)
+        if not m1 or not m2 or m1 == m2:
+            ok = False
         return ok
 
     def set(s, mark1, mark2):
@@ -202,8 +213,13 @@ class Tab(object):
             s.set_title(title + "*")
         s.validate()
 
+    def is_active(s):
+        """ Return if active or not """
+        return cmds.checkBox(s.GUI_enable, q=True, v=True)
+
     def validate(s, *_):
         """ Validate all info is there """
+        ok = True
         if s.ready:
             if cmds.checkBox(s.GUI_enable, q=True, v=True): # Check we are enabled
                 m_ok = s.markers.validate()
@@ -212,8 +228,15 @@ class Tab(object):
                     cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
                 else:
                     cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
+                    ok = False
             else:
                 cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
+        return ok
+
+    def export(s):
+        """ Export information from gui """
+        s.group.set_markers(s.markers.m1.value, s.markers.m2.value)
+        return s.group
 
     def __str__(s):
         """ Make class usable """
@@ -236,6 +259,7 @@ class Window(object):
         cmds.menuItem(l="New Group", c=s.new_group)
         cmds.menuItem(l="Load Template", c=s.load_template)
         cmds.menuItem(l="Save Template", c=s.save_template)
+        cmds.button(l="-- Do it! --", h=50, bgc=GREEN, c=s.run_match)
         s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab, p=root)
         cmds.showWindow(win)
 
@@ -267,3 +291,8 @@ class Window(object):
     def save_template(s, *_):
         """ Save template file """
         raise NotImplementedError("Sorry... Load doesn't work! Why would this?")
+
+    def run_match(s, *_):
+        """ Run match! Woot """
+        valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
+        print(valid)
