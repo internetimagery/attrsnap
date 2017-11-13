@@ -33,7 +33,7 @@ def vector_cross(a, b):
         a[2] * b[0] - a[0] * b[2],
         a[0] * b[1] - a[1] * b[0])
 
-def trilateration(p1, p2, p3, return_middle):
+def trilateration(p1, p2, p3, return_middle=False):
     """ p1 ~ p3 = (x, y, z, r) r = distance """
 
     ex = vector_divide(vector_subtract(p2, p1), norm(vector_subtract(p2, p1)))
@@ -50,9 +50,9 @@ def trilateration(p1, p2, p3, return_middle):
 
     b = sqr(p1.r) - sqr(x) - sqr(y)
 
-    # floating point math flaw in IEEE 754 standard
-    if abs(b) < 0.0000000001:
-        b = 0
+    # # floating point math flaw in IEEE 754 standard
+    # if abs(b) < 0.0000000001:
+    #     b = 0
 
     try:
         z = math.sqrt(b)
@@ -68,3 +68,20 @@ def trilateration(p1, p2, p3, return_middle):
         return a
     else:
         return (p4a, p4b)
+
+def test():
+    import maya.cmds as cmds
+    import random
+
+    Vec2 = collections.namedtuple("vec2", ["x","y","z","r"])
+
+    Position = lambda: [random.randrange(-10, 10) for _ in range(3)]
+
+    emitter = Position()
+    sensors = [Vec2(*p + [math.sqrt(sum((b-a)**2 for a,b in zip(p, emitter)))]) for p in (Position() for _ in range(3))]
+
+    prediction = trilateration(*sensors, return_middle=False)
+    if len(prediction) == 2:
+        prediction = min(prediction, key=lambda x: math.sqrt(sum((b-a)**2 for a,b in zip(x, emitter))))
+    print "Actual position:", emitter
+    print "Predicted position:", list(prediction)
