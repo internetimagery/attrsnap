@@ -16,7 +16,7 @@ def dot(a, b):
     return a.x * b.x + a.y * b.y + a.z * b.z
 
 def vector_subtract(a, b):
-    return Vector(a.x - b.x, y: a.y - b.y, z: a.z - b.z)
+    return Vector(a.x - b.x, a.y - b.y, a.z - b.z)
 
 def vector_add(a, b):
     return Vector(a.x + b.x, a.y + b.y, a.z + b.z)
@@ -45,14 +45,14 @@ def trilateration(p1, p2, p3, return_middle):
     d = norm(vector_subtract(p2, p1))
     j = dot(ey, vector_subtract(p3, p1))
 
-	x = (sqr(p1.r) - sqr(p2.r) + sqr(d)) / (2 * d)
-	y = (sqr(p1.r) - sqr(p3.r) + sqr(i) + sqr(j)) / (2 * j) - (i / j) * x
+    x = (sqr(p1.r) - sqr(p2.r) + sqr(d)) / (2 * d)
+    y = (sqr(p1.r) - sqr(p3.r) + sqr(i) + sqr(j)) / (2 * j) - (i / j) * x
 
     b = sqr(p1.r) - sqr(x) - sqr(y)
 
     # floating point math flaw in IEEE 754 standard
     if abs(b) < 0.0000000001:
-		b = 0
+        b = 0
 
     try:
         z = math.sqrt(b)
@@ -60,9 +60,9 @@ def trilateration(p1, p2, p3, return_middle):
         # no solution found
         return None
 
-	a = vector_add(p1, vector_add(vector_multiply(ex, x), vector_multiply(ey, y)))
-	p4a = vector_add(a, vector_multiply(ez, z))
-	p4b = vector_subtract(a, vector_multiply(ez, z))
+    a = vector_add(p1, vector_add(vector_multiply(ex, x), vector_multiply(ey, y)))
+    p4a = vector_add(a, vector_multiply(ez, z))
+    p4b = vector_subtract(a, vector_multiply(ez, z))
 
     if z == 0 or return_middle:
         return a
