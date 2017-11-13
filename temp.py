@@ -4,6 +4,8 @@ from __future__ import division
 # ANOTHER CANDIDATE
 # https://en.wikipedia.org/wiki/Gauss%E2%80%93Newton_algorithm#Description
 
+# https://github.com/zwigglers/multilateration/tree/master/doc
+
 import maya.api.OpenMaya as om
 import random
 

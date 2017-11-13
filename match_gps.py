@@ -61,8 +61,7 @@ def trilateration(P1, P2, P3, D1, D2, D3, return_middle=False):
 
     if b < 0:
         return []
-
-    z = (b ** -0.5) * b
+    z = (b ** -0.5) * b if b else 0.0
     a = vector_add(P1, vector_add(vector_multiply(ex, x), vector_multiply(ey, y)))
     ez_z = vector_multiply(ez, z)
     p4a = vector_add(a, ez_z)
@@ -77,15 +76,20 @@ def test():
     import maya.cmds as cmds
     import random
     import math
+    import time
 
-    Position = lambda: [random.randrange(-10, 10) for _ in range(3)]
+    s = time.time()
+    for _ in range(100):
 
-    emitter = Position()
-    args = [Position() for _ in range(3)]
-    args += [math.sqrt(sum((a-b)**2 for a,b in zip(arg, emitter))) for arg in args]
+        Position = lambda: [random.randrange(-10, 10) for _ in range(3)]
 
-    prediction = trilateration(*args)
-    if len(prediction) == 2:
-        prediction = min(prediction, key=lambda x: math.sqrt(sum((b-a)**2 for a,b in zip(x, emitter))))
-    print "Actual position:", emitter
-    print "Predicted position:", [round(a, 3) for a in prediction]
+        emitter = Position()
+        args = [Position() for _ in range(3)]
+        args += [math.sqrt(sum((a-b)**2 for a,b in zip(arg, emitter))) for arg in args]
+
+        prediction = trilateration(*args)
+        if len(prediction) == 2:
+            prediction = min(prediction, key=lambda x: math.sqrt(sum((b-a)**2 for a,b in zip(x, emitter))))
+        # print "Actual position:", emitter
+        # print "Predicted position:", [round(a, 3) for a in prediction]
+    print "Took", time.time() - s
