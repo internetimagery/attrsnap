@@ -22,17 +22,17 @@ def get_plug(obj, attr):
 class Attribute(object):
     """ An Attribute """
     # threshold = 0.001 # Negate tiny adjustments
-    def __init__(s, obj, attr):
+    def __init__(s, obj, attr, min_=-999999, max_=999999):
         query = lambda **kwargs: cmds.attributeQuery(attr, n=obj, **kwargs) # REUSE!
         if not query(ex=True):
             raise RuntimeError("\"{}\" does not exist.".format(attr))
         s.attr = get_plug(obj, attr)
 
-        s.min, s.max = -9999999, 9999999 # Initialize max / min range
+        s.min, s.max = min_, max_ # Initialize max / min range
         if query(mne=True):
-            s.min = query(min=True)
+            s.min = max(query(min=True), s.min)
         if query(mxe=True):
-            s.max = query(max=True)
+            s.max = min(query(max=True), s.max)
 
     def __str__(s):
         """ Represent object in a usable state for cmds """

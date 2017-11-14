@@ -1,10 +1,9 @@
 # Prepare and run gui!
 
-from __future__ import print_function
+from __future__ import print_function, division
 import maya.cmds as cmds
 import maya.mel as mel
 import functools
-import contextlib
 import utility
 import groups
 
@@ -18,42 +17,6 @@ YELLOW = (0.7, 0.7, 0.1)
 
 OK = "Ok"
 CANCEL = "Cancel"
-
-
-@contextlib.contextmanager
-def progress():
-    """ Safely run operations in the scene. Clean up afterwards if errors occurr """
-
-    def update(val):
-        """ Update progress. Expect value 0 ~ 1 """
-        if cmds.progressBar(gMainProgressBar, query=True, isCancelled=True):
-            raise KeyboardInterrupt
-        cmds.progressBar(gMainProgressBar, edit=True, progress=val * 100)
-
-    err = cmds.undoInfo(openChunk=True)
-    state = cmds.autoKeyframe(q=True, state=True)
-    cmds.refresh(suspend=True) # Careful with this. Some depend nodes may not update as expected.
-    cmds.autoKeyframe(state=False)
-    gMainProgressBar = maya.mel.eval('$tmp = $gMainProgressBar')
-    cmds.progressBar( gMainProgressBar,
-    				edit=True,
-    				beginProgress=True,
-    				isInterruptable=True,
-    				status='Matching ...',
-    				maxValue=100 )
-    try:
-        yield update
-    except KeyboardInterrupt:
-        pass
-    except Exception as err:
-        raise
-    finally:
-        cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
-        cmds.autoKeyframe(state=state)
-        cmds.refresh(suspend=False)
-        cmds.undoInfo(closeChunk=True)
-        if err:
-            cmds.undo()
 
 class Widget(object):
     """ Simple widget """
@@ -313,12 +276,30 @@ class Window(object):
 
     def save_template(s, *_):
         """ Save template file """
+        valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
         raise NotImplementedError("Sorry... Load doesn't work! Why would this?")
 
     def run_match(s, *_):
         """ Run match! Woot """
         valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
-        for v in valid:
-            print("Name:", v.get_name())
-            print("Markers:", list(v.get_markers()))
-            print("Attrs:", v.get_attributes())
+        num_valid = len(valid)
+        if not valid:
+            return
+        frame_range = utility.get_frame_range()
+        frame_diff = (frame_range[1] - frame_range[0]) + 1
+        frame_scale = 1 / frame_diff
+        grp_scale = 1 / num_valid
+
+        # TODO: Put in proper matching!
+        from match_walk import match
+        with utility.progress() as prog:
+            def update(progress):
+                prog(prog_frame_scale + prog_grp_scale * prog_frame_scale + progress)
+
+            for i, frame in enumerate(utility.frame_walk(*frame_range)):
+                prog_frame_scale = i * frame_scale
+                cmds.currentTime(frame)
+                for j, grp in enumerate(valid):
+                    prog_grp_scale = j * grp_scale
+                    values = match(grp, prog)
+                    grp.set_values(values)

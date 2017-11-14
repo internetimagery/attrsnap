@@ -1,5 +1,7 @@
 # Some utility funtionality
 import maya.cmds as cmds
+import maya.mel as mel
+import contextlib
 
 def get_selection(num=0):
     """ Get current selection. num = expected selection number """
@@ -28,3 +30,53 @@ def attribute_range(attr):
     if cmds.attributeQuery(at, n=obj, mxe=True):
         result[1] = cmds.attributeQuery(at, n=obj, max=True)[0]
     return result
+
+def get_frame_range():
+    """ Get either a single frame, or selected region """
+    slider = mel.eval("$tmp = $gPlayBackSlider") # Get timeslider
+    if cmds.timeControl(slider, q=True, rangeVisible=True): # Get framerange
+        return cmds.timeControl(slider, q=True, rangeArray=True)
+    return [cmds.currentTime(q=True)]*2
+
+def frame_walk(start, end):
+    """ Move along frames """
+    origin = cmds.currentTime(q=True)
+    for frame in range(int(start), int(end + 1)):
+        cmds.currentTime(frame)
+        yield frame
+    cmds.currentTime(origin)
+
+@contextlib.contextmanager
+def progress():
+    """ Safely run operations in the scene. Clean up afterwards if errors occurr """
+
+    def update(val):
+        """ Update progress. Expect value 0 ~ 1 """
+        if cmds.progressBar(gMainProgressBar, query=True, isCancelled=True):
+            raise KeyboardInterrupt
+        cmds.progressBar(gMainProgressBar, edit=True, progress=val * 100)
+
+    err = cmds.undoInfo(openChunk=True)
+    state = cmds.autoKeyframe(q=True, state=True)
+    cmds.refresh(suspend=True) # Careful with this. Some depend nodes may not update as expected.
+    cmds.autoKeyframe(state=False)
+    gMainProgressBar = mel.eval('$tmp = $gMainProgressBar')
+    cmds.progressBar( gMainProgressBar,
+    				edit=True,
+    				beginProgress=True,
+    				isInterruptable=True,
+    				status='Matching ...',
+    				maxValue=100 )
+    try:
+        yield update
+    except KeyboardInterrupt:
+        pass
+    except Exception as err:
+        raise
+    finally:
+        cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
+        cmds.autoKeyframe(state=state)
+        cmds.refresh(suspend=False)
+        cmds.undoInfo(closeChunk=True)
+        if err:
+            cmds.undo()
