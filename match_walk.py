@@ -3,6 +3,7 @@
 from __future__ import print_function, division
 import collections
 import itertools
+import time
 
 # pick a bucnh of starting locations at random...
 # TODO: Issue with using curr_distance to inform step
@@ -19,8 +20,10 @@ def match(group, update_callback):
 
     step = curr_distance * 0.3
 
-    # while step > 0.001:
-    for i in range(200):
+    while step > 0.001:
+    # for i in range(200):
+    #     if step > 0.001:
+    #         break
         chunk = {}
         for j in range(len(combinations)):
             new_values = [a * calibration[j] * step + b for a, b in zip(combinations[j], curr_values)]

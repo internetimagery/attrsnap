@@ -22,7 +22,7 @@ def match(group, step_chunk=0.3, path_cutoff=3):
 
     queue = []
     combinations = set()
-    for combo in itertools.product(*itertools.tee(range(-1, 2), len(group)))
+    for combo in itertools.product(*itertools.tee(range(-1, 2), len(group))):
         group.set_value(a+b for a,b in zip(combo, root_values))
         diff = group.get_distance() - root_distance
         inv = diff and 1 / diff
@@ -31,7 +31,7 @@ def match(group, step_chunk=0.3, path_cutoff=3):
 
     heapq.heappush(Node(
         to_goal = root_distance,
-        from_start = 0
+        from_start = 0,
         values = root_values,
         confidence = 1))
 
@@ -59,7 +59,7 @@ def match(group, step_chunk=0.3, path_cutoff=3):
                 values = tuple(a * next_step for a, b in zip(combo, node.values))
                 heapq.heappush(Node(
                     to_goal = next_step + distance,
-                    from_start = node.from_start + 1
+                    from_start = node.from_start + 1,
                     values = values,
                     confidence = confidence))
 
