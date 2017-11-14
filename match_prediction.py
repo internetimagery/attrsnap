@@ -15,19 +15,49 @@ Node = collections.namedtuple("Node", [
 
 def match(group):
     """ Match location using vairious levels of prediction """
-    queue = []
-    combinations = tuple(itertools.product(*itertools.tee(range(-1, 2), len(group))))
 
-    curr_values = group.get_values()
-    curr_distance = group.get_distance()
+    precision = 10
+    root_values = group.get_values()
+    root_distance = group.get_distance()
+    step = root_distance / precision
+
+    queue = []
+    combinations = {}
+    for combo in itertools.product(*itertools.tee(range(-1, 2), len(group)))
+        group.set_value(a+b for a,b in zip(combo, root_values))
+        combinations[combo] = group.get_distance() - root_distance
+
     heapq.heappush(Node(
-        to_goal = curr_distance,
+        to_goal = root_distance,
         from_start = 0
-        values = curr_values,
-        confidence = 1,
-        ))
+        values = root_values,
+        confidence = 1))
 
     while len(queue):
+        node = heapq.heappop(queue)
+
+        # set our poistion and check it
+        group.set_value(node.values)
+        distance = group.get_distance()
+        if distance < 0.001: # We made it!
+            break
+
+        # Update our confidence
+        inv_distance = 1 / node.to_goal
+        confidence = inv_distance * distance * node.confidence
+
+        # Decide on our step size
+        next_step = confidence * step if step >= distance else distance
+
+        # Predict some more steps
+        for combo, dist in combinations.items():
+            values = tuple(a * next_step for a, b in zip(combo, node.values))
+            heapq.heappush(Node(
+                to_goal = dist * next_step + distance,
+                from_start = node.from_start + 1
+                values = root_values,
+                confidence = confidence))
+
         pass
     else:
         print("Queue exhausted.")
