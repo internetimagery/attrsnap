@@ -13,7 +13,7 @@ Node = collections.namedtuple("Node", [
     "confidence" # How accurate we are with our estimates
     ])
 
-def match(group, step_chunk=0.3):
+def match(group, step_chunk=0.3, path_cutoff=3):
     """ Match location using vairious levels of prediction """
 
     root_values = closest_values = group.get_values()
@@ -37,30 +37,34 @@ def match(group, step_chunk=0.3):
 
     while len(queue):
         node = heapq.heappop(queue)
+        if node.from_start < path_cutoff:
 
-        # set our poistion and check it
-        group.set_value(node.values)
-        distance = group.get_distance()
-        if distance < 0.001: # We made it!
-            closest_values = node.values
-            break
+            # set our poistion and check it
+            group.set_value(node.values)
+            distance = group.get_distance()
+            if distance < 0.001: # We made it!
+                closest_values = node.values
+                break
 
-        # Update our confidence
-        inv_distance = 1 / node.to_goal
-        confidence = inv_distance * distance
+            # Update our confidence
+            inv_distance = 1 / node.to_goal
+            confidence = inv_distance * distance
 
-        # Decide on our step size
-        next_step = confidence * step if step >= distance else distance
+            # Decide on our step size
+            next_step = confidence * step if step >= distance else distance
 
-        # Predict some more steps
-        for combo in combinations:
-            values = tuple(a * next_step for a, b in zip(combo, node.values))
-            heapq.heappush(Node(
-                to_goal = next_step + distance,
-                from_start = node.from_start + 1
-                values = values,
-                confidence = confidence))
+            # Predict some more steps
+            for combo in combinations:
+                values = tuple(a * next_step for a, b in zip(combo, node.values))
+                heapq.heappush(Node(
+                    to_goal = next_step + distance,
+                    from_start = node.from_start + 1
+                    values = values,
+                    confidence = confidence))
 
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_values = node.values
     else:
         print("Queue exhausted.")
     return closest_values
