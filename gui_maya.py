@@ -123,6 +123,10 @@ class Attribute(object):
             ok = False
         return ok
 
+    def export(s):
+        """ Return representation of data """
+        return s.attr.value, s.min.value, s.max.value
+
 class Attributes(object):
     """ Gui for attributes """
     def __init__(s, parent, update, attributes=None):
@@ -152,6 +156,11 @@ class Attributes(object):
                 ok = False
         return ok
 
+    def export(s):
+        """ Send out attributes """
+        for at in s.attributes:
+            yield at.export()
+
 class Markers(object):
     """ Gui for markers """
     def __init__(s, parent, update, m1="", m2=""):
@@ -165,7 +174,8 @@ class Markers(object):
         ok = True
         m1 = s.m1.validate(cmds.objExists)
         m2 = s.m2.validate(cmds.objExists)
-        if not m1 or not m2 or m1 == m2:
+        print(m1, m2)
+        if not m1 or not m2 or s.m1.value == s.m2.value:
             ok = False
         return ok
 
@@ -249,6 +259,7 @@ class Tab(object):
     def export(s):
         """ Export information from gui """
         s.group.set_markers(s.markers.m1.value, s.markers.m2.value)
+        s.group.add_attributes(at[0] for at in s.attributes.export())
         return s.group
 
     def __str__(s):
