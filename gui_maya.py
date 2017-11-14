@@ -174,7 +174,6 @@ class Markers(object):
         ok = True
         m1 = s.m1.validate(cmds.objExists)
         m2 = s.m2.validate(cmds.objExists)
-        print(m1, m2)
         if not m1 or not m2 or s.m1.value == s.m2.value:
             ok = False
         return ok
@@ -259,7 +258,7 @@ class Tab(object):
     def export(s):
         """ Export information from gui """
         s.group.set_markers(s.markers.m1.value, s.markers.m2.value)
-        s.group.add_attributes(at[0] for at in s.attributes.export())
+        s.group.add_attributes(*(at[0].split(".") for at in s.attributes.export()))
         return s.group
 
     def __str__(s):
@@ -319,4 +318,7 @@ class Window(object):
     def run_match(s, *_):
         """ Run match! Woot """
         valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
-        print(valid)
+        for v in valid:
+            print("Name:", v.get_name())
+            print("Markers:", list(v.get_markers()))
+            print("Attrs:", v.get_attributes())
