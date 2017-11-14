@@ -44,8 +44,8 @@ def update(dist):
         cmds.refresh()
 
 matches = {
-    "walk": match_walk.match,
-    # "prediction": match_prediction
+    # "walk": match_walk.match,
+    "prediction": match_prediction.match
     }
 
 tests = {}
@@ -109,6 +109,8 @@ def main():
     failed = {}
     for match_name, match in matches.items():
         for name, (test, result) in tests.items():
+            if name != "match":
+                continue
             times = []
             print("Running match \"{}\" on \"{}\"...".format(match_name, name), end="")
             try:

@@ -5,15 +5,22 @@ import collections
 import itertools
 import locate
 import heapq
+import time
+
+def normalize(vector):
+    mag2 = sum(a*a for a in vector)
+    mag = mag2 and (mag2 ** -0.5) * mag2
+    return tuple(mag and a / mag for a in vector)
 
 Node = collections.namedtuple("Node", [
-    "to_goal", # Distance from goal
-    "from_start", # How far we have moved from the beginning
+    "distance", # Distance from goal
+    "traveled", # How far we have moved from the beginning
     "values", # Values that lead us here
-    "confidence" # How accurate we are with our estimates
-    ])
+    "calibration", # Calibrate
+    "confidence", # How accurate we are with our estimates
+    "step"]) # Reference to last node
 
-def match(group, step_chunk=0.3, path_cutoff=3):
+def match(group, update_callback, step_chunk=0.3, path_cutoff=3, timeout=0.5):
     """ Match location using vairious levels of prediction """
 
     root_values = closest_values = group.get_values()
@@ -21,53 +28,68 @@ def match(group, step_chunk=0.3, path_cutoff=3):
     step = root_distance * step_chunk # Break distance into chunks to travel
 
     queue = []
-    combinations = set()
+    combinations = {}
     for combo in itertools.product(*itertools.tee(range(-1, 2), len(group))):
-        group.set_value(a+b for a,b in zip(combo, root_values))
-        diff = group.get_distance() - root_distance
-        inv = diff and 1 / diff
-        combinations.add(tuple(a * inv for a in combo))
-    combinations = list(combinations)
+        combo = normalize(combo)
+        if sum(combo): # skip (0,0,0) values
+            group.set_values(a+b for a,b in zip(combo, root_values))
+            diff = group.get_distance() - root_distance
+            inv = diff and 1 / diff
+            combinations[combo] = inv
 
-    heapq.heappush(Node(
-        to_goal = root_distance,
-        from_start = 0,
+    heapq.heappush(queue, Node(
+        distance = root_distance,
+        traveled = 0,
         values = root_values,
-        confidence = 1))
+        calibration = 1,
+        confidence = 1,
+        step=1))
 
+    update_callback(0) # Get going!
+
+    end = time.time() + timeout
     while len(queue):
+        if time.time() > end:
+            print("Match Timed Out")
+            break
         node = heapq.heappop(queue)
-        if node.from_start < path_cutoff:
+        if node.traveled < path_cutoff:
 
             # set our poistion and check it
-            group.set_value(node.values)
+            group.set_values(node.values)
             distance = group.get_distance()
             if distance < 0.001: # We made it!
                 closest_values = node.values
-                print("Match found!")
                 break
 
-            # Update our confidence
-            inv_distance = 1 / node.to_goal
-            confidence = inv_distance * distance
+            # Update our confidence and calibration
+            inv_distance = node.distance and 1 / node.distance
+            confidence = abs(inv_distance * distance)
+            calibration = node.calibration * confidence
+            print(calibration)
 
             # Decide on our step size
             next_step = confidence * step if step >= distance else distance
 
             # Predict some more steps
-            for combo in combinations:
-                values = tuple(a * next_step for a, b in zip(combo, node.values))
-                heapq.heappush(Node(
-                    to_goal = next_step + distance,
-                    from_start = node.from_start + 1,
-                    values = values,
-                    confidence = confidence))
+            for combo, inv in combinations.items():
+                dist_prediction = next_step * inv + distance
+                heapq.heappush(queue, Node(
+                    distance = dist_prediction,
+                    traveled = node.traveled + 0 if dist_prediction < closest_distance else 1,
+                    values = tuple(a * inv * calibration * next_step + b  for a, b in zip(combo, node.values)),
+                    calibration = calibration,
+                    confidence = confidence,
+                    step=next_step * inv))
 
             if distance < closest_distance:
+                print("closer!", node.traveled)
                 closest_distance = distance
                 closest_values = node.values
+                update_callback(1 - (closest_distance / root_distance))
     else:
         print("Queue exhausted.")
+    update_callback(1)
     return closest_values
 
     # TODO: Calibrate one step in all directions?
