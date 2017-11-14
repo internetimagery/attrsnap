@@ -100,13 +100,26 @@ class Attribute(object):
     def __init__(s, parent, update, attribute="", min_=-9999, max_=9999):
         s.row = cmds.rowLayout(nc=3, adj=1, p=parent)
         s.attr = TextBox(s.row, update, attribute)
+        if utility.valid_attribute(attribute):
+            limit = utility.attribute_range(attribute)
+            if limit[0] is not None:
+                min_ = limit[0]
+            if limit[1] is not None:
+                max_ = limit[1]
+            print(limit)
         s.min = IntBox(s.row, update, min_)
         s.max = IntBox(s.row, update, max_)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
         ok = True
-        if not s.attr.validate(utility.valid_attribute):
+        if s.attr.validate(utility.valid_attribute):
+            min_, max_ = utility.attribute_range(s.attr.value)
+            if min_ is not None and not s.min.validate(lambda x: min_ <= x):
+                ok = False
+            if max_ is not None and not s.max.validate(lambda x: max_ <= x):
+                ok = False
+        else:
             ok = False
         return ok
 
