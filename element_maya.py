@@ -47,6 +47,10 @@ class Attribute(object):
         """ Get current value """
         return s.attr.asDouble()
 
+    def key(s, value):
+        """ Keyframe value at current time """
+        cmds.setKeyframe(str(s), v=value)
+
 class Marker(object):
     """ A maya object """
     def __init__(s, name):

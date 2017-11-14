@@ -69,7 +69,6 @@ class Attribute(object):
                 min_ = limit[0]
             if limit[1] is not None:
                 max_ = limit[1]
-            print(limit)
         s.min = IntBox(s.row, update, min_)
         s.max = IntBox(s.row, update, max_)
 
@@ -243,6 +242,7 @@ class Window(object):
         cmds.menuBarLayout()
         cmds.menu(l="Groups")
         cmds.menuItem(l="New Group", c=s.new_group)
+        cmds.menuItem(l="Remove Group", c=lambda x: "")
         cmds.menuItem(l="Load Template", c=s.load_template)
         cmds.menuItem(l="Save Template", c=s.save_template)
         cmds.button(l="-- Do it! --", h=50, bgc=GREEN, c=s.run_match)
@@ -303,3 +303,4 @@ class Window(object):
                     prog_grp_scale = j * grp_scale
                     values = match(grp, prog)
                     grp.set_values(values)
+                    grp.keyframe(values)

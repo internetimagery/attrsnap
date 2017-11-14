@@ -69,10 +69,8 @@ class Group(object):
 
     def keyframe(s, values):
         """ Set a bunch of keyframes for each attribute """
-        raise NotImplementedError
-        for at in s.attributes:
-            # Set keyframe!
-            pass
+        for at, val in zip(s.attributes, values):
+            at.key(val)
 
     def __len__(s):
         return len(s.attributes)

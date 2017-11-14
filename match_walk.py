@@ -11,7 +11,8 @@ import time
 def match(group, update_callback, timeout=30):
     """ Match by wandering over to the right place. """
     # Set up working materials
-    combinations = list(itertools.product(*itertools.tee(range(-1, 2), len(group))))
+    combinations = set(itertools.product(*itertools.tee(range(-1, 2), len(group))))
+    combinations = list(combinations)
     calibration = [1] * len(combinations)
 
     curr_values = group.get_values()
