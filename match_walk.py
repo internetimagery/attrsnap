@@ -20,12 +20,12 @@ def match(group, update_callback, timeout=30):
 
     step = curr_distance * 0.3
 
-    start = time.time() + timeout
+    end = time.time() + timeout
     while step > 0.001:
     # for i in range(200):
     #     if step > 0.001:
     #         break
-        if time.time() > start:
+        if time.time() > end:
             print("Match Timed Out!")
             break
         chunk = {}
