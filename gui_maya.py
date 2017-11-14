@@ -115,9 +115,9 @@ class Attribute(object):
         ok = True
         if s.attr.validate(utility.valid_attribute):
             min_, max_ = utility.attribute_range(s.attr.value)
-            if min_ is not None and not s.min.validate(lambda x: min_ <= x):
+            if min_ is not None and not s.min.validate(lambda x: min_ <= x and x < s.max.value):
                 ok = False
-            if max_ is not None and not s.max.validate(lambda x: max_ <= x):
+            if max_ is not None and not s.max.validate(lambda x: max_ >= x and x > s.min.value):
                 ok = False
         else:
             ok = False
