@@ -13,19 +13,21 @@ Node = collections.namedtuple("Node", [
     "confidence" # How accurate we are with our estimates
     ])
 
-def match(group):
+def match(group, step_chunk=0.3):
     """ Match location using vairious levels of prediction """
 
-    precision = 10
-    root_values = group.get_values()
-    root_distance = group.get_distance()
-    step = root_distance / precision
+    root_values = closest_values = group.get_values()
+    root_distance = closest_distance = group.get_distance()
+    step = root_distance * step_chunk # Break distance into chunks to travel
 
     queue = []
-    combinations = {}
+    combinations = set()
     for combo in itertools.product(*itertools.tee(range(-1, 2), len(group)))
         group.set_value(a+b for a,b in zip(combo, root_values))
-        combinations[combo] = group.get_distance() - root_distance
+        diff = group.get_distance() - root_distance
+        inv = diff and 1 / diff
+        combinations.add(tuple(a * inv for a in combo))
+    combinations = list(combinations)
 
     heapq.heappush(Node(
         to_goal = root_distance,
@@ -40,27 +42,28 @@ def match(group):
         group.set_value(node.values)
         distance = group.get_distance()
         if distance < 0.001: # We made it!
+            closest_values = node.values
             break
 
         # Update our confidence
         inv_distance = 1 / node.to_goal
-        confidence = inv_distance * distance * node.confidence
+        confidence = inv_distance * distance
 
         # Decide on our step size
         next_step = confidence * step if step >= distance else distance
 
         # Predict some more steps
-        for combo, dist in combinations.items():
+        for combo in combinations:
             values = tuple(a * next_step for a, b in zip(combo, node.values))
             heapq.heappush(Node(
-                to_goal = dist * next_step + distance,
+                to_goal = next_step + distance,
                 from_start = node.from_start + 1
-                values = root_values,
+                values = values,
                 confidence = confidence))
 
-        pass
     else:
         print("Queue exhausted.")
+    return closest_values
 
     # TODO: Calibrate one step in all directions?
 
