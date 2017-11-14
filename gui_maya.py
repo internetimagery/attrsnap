@@ -3,6 +3,7 @@
 from __future__ import print_function, division
 import maya.cmds as cmds
 import maya.mel as mel
+import match_walk
 import functools
 import utility
 import groups
@@ -218,10 +219,12 @@ class Tab(object):
         return ok
 
     def export(s):
-        """ Export information from gui """
-        s.group.set_markers(s.markers.m1.value, s.markers.m2.value)
-        s.group.add_attributes(*(at[0].split(".") for at in s.attributes.export()))
-        return s.group
+        """ Export information into a clean group from gui """
+        group = groups.Group()
+        group.set_name(s.group.get_name())
+        group.set_markers(s.markers.m1.value, s.markers.m2.value)
+        group.add_attributes(*(at[0].split(".") for at in s.attributes.export()))
+        return group
 
     def __str__(s):
         """ Make class usable """
@@ -293,17 +296,18 @@ class Window(object):
             grp_scale = 1 / num_valid
 
             # TODO: Put in proper matching!
-            from match_walk import match
             with utility.progress() as prog:
                 def update(progress):
-                    prog(prog_frame_scale + prog_grp_scale * prog_frame_scale + progress)
+                    print("Progress", progress)
+                    prog(progress)
+                    # prog(prog_frame_scale + prog_grp_scale * prog_frame_scale + progress)
 
                 for i, frame in enumerate(utility.frame_walk(*frame_range)):
                     prog_frame_scale = i * frame_scale
                     cmds.currentTime(frame)
                     for j, grp in enumerate(valid):
                         prog_grp_scale = j * grp_scale
-                        values = match(grp, prog)
+                        values = match_walk.match(grp, update)
                         grp.set_values(values)
-                        grp.keyframe(values)
+                        # grp.keyframe(values)
         s.idle = True
