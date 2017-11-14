@@ -8,7 +8,7 @@ import time
 # pick a bucnh of starting locations at random...
 # TODO: Issue with using curr_distance to inform step
 
-def match(group, update_callback):
+def match(group, update_callback, timeout=30):
     """ Match by wandering over to the right place. """
     # Set up working materials
     combinations = list(itertools.product(*itertools.tee(range(-1, 2), len(group))))
@@ -20,10 +20,14 @@ def match(group, update_callback):
 
     step = curr_distance * 0.3
 
+    start = time.time() + timeout
     while step > 0.001:
     # for i in range(200):
     #     if step > 0.001:
     #         break
+        if time.time() > start:
+            print("Match Timed Out!")
+            break
         chunk = {}
         for j in range(len(combinations)):
             new_values = [a * calibration[j] * step + b for a, b in zip(combinations[j], curr_values)]
