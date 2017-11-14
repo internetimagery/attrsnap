@@ -44,6 +44,7 @@ def match(group, step_chunk=0.3, path_cutoff=3):
             distance = group.get_distance()
             if distance < 0.001: # We made it!
                 closest_values = node.values
+                print("Match found!")
                 break
 
             # Update our confidence

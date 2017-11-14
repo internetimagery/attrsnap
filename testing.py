@@ -10,6 +10,7 @@ except ImportError:
     import profile
 
 import match_walk
+import match_prediction
 
 DEBUG = False
 
@@ -43,7 +44,8 @@ def update(dist):
         cmds.refresh()
 
 matches = {
-    "walk": match_walk.match
+    "walk": match_walk.match,
+    "prediction": match_prediction
     }
 
 tests = {}
