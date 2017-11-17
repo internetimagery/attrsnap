@@ -242,7 +242,7 @@ class Window(object):
         cmds.menuBarLayout()
         cmds.menu(l="Groups")
         cmds.menuItem(l="New Group", c=s.new_group)
-        cmds.menuItem(l="Remove Group", c=lambda x: "")
+        cmds.menuItem(l="Remove Group", c=s.delete_tab)
         cmds.menuItem(l="Load Template", c=s.load_template)
         cmds.menuItem(l="Save Template", c=s.save_template)
         cmds.button(l="-- Do it! --", h=50, bgc=GREEN, c=s.run_match)
@@ -251,6 +251,17 @@ class Window(object):
 
         # Initial group
         s.new_group()
+
+    def delete_tab(s, *_):
+        """ Delete active tab """
+        selected = cmds.tabLayout(s.tab_grp, q=True, fpn=True, st=True)
+        for i, tab in enumerate(s.tabs):
+            if selected in tab.layout:
+                cmds.deleteUI(tab.layout)
+                del s.tabs[i]
+                if not len(s.tabs):
+                    s.new_group()
+                return
 
     def rename_tab(s):
         """ Rename tabs on doubleclick """
