@@ -148,9 +148,8 @@ class Markers(object):
 
 class Tab(object):
     """ Tab holding information! """
-    def __init__(s, tab_parent, group, enabled=True):
+    def __init__(s, tab_parent, name="Group", enabled=True):
         s.parent = tab_parent
-        s.group = group
         s.layout = cmds.columnLayout(adj=True, p=s.parent)
         s.ready = False
 
@@ -163,15 +162,15 @@ class Tab(object):
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New markers from selection", c=lambda _: s.markers.set(*utility.get_selection(2)))
-        s.markers = Markers(markers, s.validate, *s.group.get_markers())
+        s.markers = Markers(markers, s.validate)
         # -----
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()))
         attributes = cmds.scrollLayout(h=300, bgc=BLACK)
-        s.attributes = Attributes(attributes, s.validate, group.get_attributes())
+        s.attributes = Attributes(attributes, s.validate)
         # -----
 
-        s.set_title(group.get_name())
+        s.set_title(name)
         s.ready = True
         s.validate()
 
@@ -185,17 +184,13 @@ class Tab(object):
 
     def set_title(s, title):
         """ Set title of tab """
-        s.group.set_name(title)
+        s.name = title
         cmds.tabLayout(s.parent, e=True, tl=(s.layout, title))
 
     def enable(s, state):
         """ Enable / disable """
         cmds.checkBox(s.GUI_enable, e=True, v=state)
-        title = s.group.get_name()
-        if state:
-            s.set_title(title.replace("*", ""))
-        else:
-            s.set_title(title + "*")
+        cmds.tabLayout(s.parent, e=True, tl=(s.layout, s.name + ("" if state else "*")))
         s.validate()
 
     def is_active(s):
@@ -221,7 +216,7 @@ class Tab(object):
     def export(s):
         """ Export information into a clean group from gui """
         group = groups.Group()
-        group.set_name(s.group.get_name())
+        group.set_name(s.name)
         group.set_markers(s.markers.m1.value, s.markers.m2.value)
         group.add_attributes(*(at[0].split(".") for at in s.attributes.export()))
         return group
@@ -280,8 +275,7 @@ class Window(object):
             name = "Group{}".format(s.group_index)
             if name not in tab_names:
                 break
-        group = groups.Group(name="Group{}".format(s.group_index))
-        s.tabs.append(Tab(s.tab_grp, group))
+        s.tabs.append(Tab(s.tab_grp, "Group{}".format(s.group_index)))
         cmds.tabLayout(s.tab_grp, e=True, sti=cmds.tabLayout(s.tab_grp, q=True, nch=True))
 
     def load_template(s, *_):
@@ -320,5 +314,5 @@ class Window(object):
                         prog_grp_scale = j * grp_scale
                         values = match_walk.match(grp, update)
                         grp.set_values(values)
-                        # grp.keyframe(values)
+                        grp.keyframe(values)
         s.idle = True

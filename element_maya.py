@@ -26,7 +26,7 @@ class Attribute(object):
         query = lambda **kwargs: cmds.attributeQuery(attr, n=obj, **kwargs) # REUSE!
         if not query(ex=True):
             raise RuntimeError("\"{}\" does not exist.".format(attr))
-        s.attr = get_plug(obj, attr)
+        s._attr = get_plug(obj, attr)
 
         s.min, s.max = min_, max_ # Initialize max / min range
         if query(mne=True):
@@ -36,16 +36,16 @@ class Attribute(object):
 
     def __str__(s):
         """ Represent object in a usable state for cmds """
-        return s.attr.name()
+        return s._attr.name()
 
     def set_value(s, val):
         """ Set attribute value """
         if val <= s.max and s.min <= val:
-            s.attr.setDouble(val)
+            s._attr.setDouble(val)
 
     def get_value(s):
         """ Get current value """
-        return s.attr.asDouble()
+        return s._attr.asDouble()
 
     def key(s, value, time=None):
         """ Keyframe value at current time """
