@@ -36,7 +36,7 @@ class Attribute(object):
 
     def __str__(s):
         """ Represent object in a usable state for cmds """
-        return "{}.{}".format(s.attr.node().name(), s.attr.name())
+        return s.attr.name()
 
     def set_value(s, val):
         """ Set attribute value """
@@ -47,9 +47,12 @@ class Attribute(object):
         """ Get current value """
         return s.attr.asDouble()
 
-    def key(s, value):
+    def key(s, value, time=None):
         """ Keyframe value at current time """
-        cmds.setKeyframe(str(s), v=value)
+        if time is None:
+            cmds.setKeyframe(str(s), v=value)
+        else:
+            cmds.setKeyframe(str(s), v=value, t=time)
 
 class Marker(object):
     """ A maya object """

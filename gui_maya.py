@@ -3,6 +3,7 @@
 from __future__ import print_function, division
 import maya.cmds as cmds
 import maya.mel as mel
+import match_walk
 import functools
 import utility
 import groups
@@ -218,10 +219,12 @@ class Tab(object):
         return ok
 
     def export(s):
-        """ Export information from gui """
-        s.group.set_markers(s.markers.m1.value, s.markers.m2.value)
-        s.group.add_attributes(*(at[0].split(".") for at in s.attributes.export()))
-        return s.group
+        """ Export information into a clean group from gui """
+        group = groups.Group()
+        group.set_name(s.group.get_name())
+        group.set_markers(s.markers.m1.value, s.markers.m2.value)
+        group.add_attributes(*(at[0].split(".") for at in s.attributes.export()))
+        return group
 
     def __str__(s):
         """ Make class usable """
@@ -230,7 +233,7 @@ class Tab(object):
 class Window(object):
     """ Main window! """
     def __init__(s):
-        # s.groups = groups.Group_Set()
+        s.idle = True
         s.tabs = []
         s.group_index = 0
         name = "attrsnap"
@@ -292,26 +295,30 @@ class Window(object):
 
     def run_match(s, *_):
         """ Run match! Woot """
-        valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
-        num_valid = len(valid)
-        if not valid:
-            return
-        frame_range = utility.get_frame_range()
-        frame_diff = (frame_range[1] - frame_range[0]) + 1
-        frame_scale = 1 / frame_diff
-        grp_scale = 1 / num_valid
+        if s.idle:
+            s.idle = False
+            valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
+            num_valid = len(valid)
+            if not valid:
+                return
+            frame_range = utility.get_frame_range()
+            frame_diff = (frame_range[1] - frame_range[0]) + 1
+            frame_scale = 1 / frame_diff
+            grp_scale = 1 / num_valid
 
-        # TODO: Put in proper matching!
-        from match_walk import match
-        with utility.progress() as prog:
-            def update(progress):
-                prog(prog_frame_scale + prog_grp_scale * prog_frame_scale + progress)
+            # TODO: Put in proper matching!
+            with utility.progress() as prog:
+                def update(progress):
+                    print("Progress", progress)
+                    prog(progress)
+                    # prog(prog_frame_scale + prog_grp_scale * prog_frame_scale + progress)
 
-            for i, frame in enumerate(utility.frame_walk(*frame_range)):
-                prog_frame_scale = i * frame_scale
-                cmds.currentTime(frame)
-                for j, grp in enumerate(valid):
-                    prog_grp_scale = j * grp_scale
-                    values = match(grp, prog)
-                    grp.set_values(values)
-                    grp.keyframe(values)
+                for i, frame in enumerate(utility.frame_walk(*frame_range)):
+                    prog_frame_scale = i * frame_scale
+                    cmds.currentTime(frame)
+                    for j, grp in enumerate(valid):
+                        prog_grp_scale = j * grp_scale
+                        values = match_walk.match(grp, update)
+                        grp.set_values(values)
+                        # grp.keyframe(values)
+        s.idle = True

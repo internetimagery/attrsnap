@@ -13,13 +13,26 @@ def match(group, update_callback, timeout=30):
     # Set up working materials
     combinations = set(itertools.product(*itertools.tee(range(-1, 2), len(group))))
     combinations = list(combinations)
+    # combinations = [a for a in combinations if abs(sum(a)) == 1]
     calibration = [1] * len(combinations)
+
 
     curr_values = group.get_values()
     root_distance = curr_distance = group.get_distance()
     update_callback(0)
 
     step = curr_distance * 0.3
+
+    attempts = 0
+    def log():
+        print("Match complete {} attempts.".format(attempts))
+        print("Using {} of combinations.".format(len(combinations)))
+
+
+    if root_distance < 0.001:
+        update_callback(1)
+        log()
+        return curr_values
 
     end = time.time() + timeout
     while step > 0.001:
@@ -31,10 +44,15 @@ def match(group, update_callback, timeout=30):
             break
         chunk = {}
         for j in range(len(combinations)):
+            attempts += 1
             new_values = [a * calibration[j] * step + b for a, b in zip(combinations[j], curr_values)]
             group.set_values(new_values)
             new_distance = group.get_distance()
             chunk[new_distance] = new_values
+            if new_distance < 0.001:
+                update_callback(1)
+                log()
+                return curr_values
 
             diff = abs(new_distance - curr_distance)
             scale = (step / diff) if diff else 0
@@ -56,5 +74,6 @@ def match(group, update_callback, timeout=30):
             break
         # Reset ready for round two
         group.set_values(curr_values)
-    update_callback(1) # Done
+    update_callback(1)
+    log()
     return curr_values
