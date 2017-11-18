@@ -1,0 +1,9 @@
+Incorporate distance as a dimension in the vector.
+
+ie: (distance, attr1, attr2, att3, etc...)
+
+Then use vector math to work out which way to go based on existing moves.
+
+Perhaps project all positions onto a plane. Generate curve on that plane.
+Then for each axis do the same (skipping the distance axis).
+The convergeance point of all curves gives a prediction
