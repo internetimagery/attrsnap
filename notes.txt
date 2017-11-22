@@ -12,3 +12,6 @@ https://github.com/Tom-Alexander/regression-js/blob/master/src/regression.js
 http://www.stat.ucla.edu/~rosario/classes/091/112-1b/regression.pdf
 http://www.alisonpearce.net/wp-content/uploads/2013/05/Fun-Reg-Cheat-Sheet.pdf
 https://en.wikipedia.org/wiki/Polynomial_regression
+https://blog.demofox.org/2016/12/22/incremental-least-squares-curve-fitting/
+https://spin.atomicobject.com/2014/06/24/gradient-descent-linear-regression/
+https://en.wikipedia.org/wiki/Stochastic_gradient_descent#Background
