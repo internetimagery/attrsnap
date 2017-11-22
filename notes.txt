@@ -7,3 +7,6 @@ Then use vector math to work out which way to go based on existing moves.
 Perhaps project all positions onto a plane. Generate curve on that plane.
 Then for each axis do the same (skipping the distance axis).
 The convergeance point of all curves gives a prediction
+
+https://github.com/Tom-Alexander/regression-js/blob/master/src/regression.js
+http://www.stat.ucla.edu/~rosario/classes/091/112-1b/regression.pdf
