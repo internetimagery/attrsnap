@@ -61,6 +61,7 @@ def map():
     curvesX = []
     curvesY = []
     for i, x in enumerate(range(-10, 11)):
+        curveY = None
         for j, z in enumerate(range(-10, 11)):
             y = distance((x, 0, z), goal)
             point = (x,y,z)
@@ -69,12 +70,18 @@ def map():
             else:
                 curvesX.append(cmds.curve(p=point))
 
+            if curveY:
+                cmds.curve(curveY, a=True, p=point)
+            else:
+                curveY = cmds.curve(p=point)
+
             grp = cmds.group(em=True)
             cmds.xform(grp, t=(x,0,z))
             dist = cmds.shadingNode("distanceBetween", asUtility=True)
             cmds.connectAttr(grp + ".translate", dist + ".point1")
             cmds.connectAttr(poly_at, dist + ".point2")
             cmds.connectAttr(dist + ".distance", curvesX[j] + ".controlPoints[%s].yValue" % i)
+            cmds.connectAttr(dist + ".distance", curveY + ".controlPoints[%s].yValue" % j)
 
 
 
