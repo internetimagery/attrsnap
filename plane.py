@@ -31,7 +31,8 @@ def position(p1, p2, p3):
     crs = cross(p1p2, p1p3)
     if crs[0] < 0:
         crs = inv(crs)
-    return norm(crs)
+    cmds.curve(p=[p1, vAdd(p1, norm(crs))])
+    return crs
 
 
 
@@ -49,6 +50,18 @@ import random
 import math
 import heapq
 
+def map():
+    cmds.file(new=True, force=True)
+
+    goal = [random.randrange(-5, 5) for _ in range(3)]
+    poly, _ = cmds.polySphere()
+    cmds.xform(poly, t=goal)
+
+    for x in range(-10, 11):
+        for z in range(-10, 11):
+            y = distance((x, 0, z), goal)
+            cmds.spaceLocator(p=(x, goal[1]-y, z))
+
 def test():
 
     cmds.file(new=True, force=True)
@@ -57,34 +70,38 @@ def test():
         return [distance([0, x[1], x[2]], goal), x[1], x[2]]
 
     # Create a goal
-    goal = [random.randrange(-5, 5) for _ in range(3)]
+    goal = [random.randrange(-10, 10) for _ in range(3)]
 
     # Create our starting points
     root = get([random.randrange(-10, 10) for _ in range(3)])
-    points = []
-    heapq.heappush(points, root)
+    points = [root]
 
     for x in [(0,1,0), (0,0,1)]:
-        heapq.heappush(points, get(vAdd(x, root)))
+        points.append(get(vAdd(x, root)))
 
     poly, _ = cmds.polySphere()
     cmds.xform(poly, t=goal)
     curve = cmds.curve(p=(0, root[1], root[2]))
     curve2 = cmds.curve(p=root)
 
-    step = root[0] * 0.2
+    step = root[0] * 0.8
+    step = 1
 
-    for _ in range(20):
-        # Grab the three nearest points
-        pos = position(*points[:3])
+    for _ in range(50):
+        # Grab the three recent points
+        p3, p1, p2 = points[-3:]
+        crs = position(p1, p2, p3)
+        n_move = norm(crs[1:])
+        move = vMul(get([0, n_move[0], n_move[1]]), step)
+        # step = (step - move[0]) * 0.8
+        # if step < 0:
+        #     step *= -1
+        #     move = inv(move)
 
-
-        move = vMul(get(pos), step)
-        step = move[0] * 0.2
 
         cmds.curve(curve, a=True, p=(0, move[1], move[2]))
         cmds.curve(curve2, a=True, p=move)
-        heapq.heappush(points, move)
+        points.append(move)
 
     #
     # cmds.xform(p1, t=goal)
