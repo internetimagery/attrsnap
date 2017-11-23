@@ -55,12 +55,28 @@ def map():
 
     goal = [random.randrange(-5, 5) for _ in range(3)]
     poly, _ = cmds.polySphere()
+    poly_at = poly + ".translate"
     cmds.xform(poly, t=goal)
 
-    for x in range(-10, 11):
-        for z in range(-10, 11):
+    curvesX = []
+    curvesY = []
+    for i, x in enumerate(range(-10, 11)):
+        for j, z in enumerate(range(-10, 11)):
             y = distance((x, 0, z), goal)
-            cmds.spaceLocator(p=(x, goal[1]-y, z))
+            point = (x,y,z)
+            if i:
+                cmds.curve(curvesX[j], a=True, p=point)
+            else:
+                curvesX.append(cmds.curve(p=point))
+
+            grp = cmds.group(em=True)
+            cmds.xform(grp, t=(x,0,z))
+            dist = cmds.shadingNode("distanceBetween", asUtility=True)
+            cmds.connectAttr(grp + ".translate", dist + ".point1")
+            cmds.connectAttr(poly_at, dist + ".point2")
+            cmds.connectAttr(dist + ".distance", curvesX[j] + ".controlPoints[%s].yValue" % i)
+
+
 
 def test():
 
