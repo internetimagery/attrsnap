@@ -23,3 +23,21 @@ def plane(p1, p2, p3):
     return (crs[0], crs[1], crs[2], -sum(vMul(crs, p1)))
 
 print plane((1,2,-2), (3,-2,1), (5,1,-4))
+
+# Take three nearest points (heap should keep them sorted if axis is X)
+# Check not in straight line... grab different point if so
+# get cross product of the points
+# check if cross product goes below or above the plane
+# remove axis, and normalize resulting vector
+# multiply unit vector by step size
+# take result, and add that to point list.
+
+
+def predict(p1, p2, p3):
+    p1p2 = vSub(p2, p1)
+    p1p3 = vSub(p3, p1)
+    crs = cross(p1p2, p1p3)
+    crs = crs[:-1]
+    mag2 = sum(a*a for a in crs)
+    mag = mag and (mag ** -0.5) * mag
+    return tuple(a/mag for a in crs)
