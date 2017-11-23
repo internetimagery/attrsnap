@@ -34,6 +34,13 @@ def position(p1, p2, p3):
     cmds.curve(p=[p1, vAdd(p1, norm(crs))])
     return crs
 
+def dyn_dist(pos, obj, attr):
+    grp = cmds.group(em=True)
+    cmds.xform(grp, t=pos)
+    dist = cmds.shadingNode("distanceBetween", asUtility=True)
+    cmds.connectAttr(grp + ".translate", dist + ".point1")
+    cmds.connectAttr(obj + ".translate", dist + ".point2")
+    cmds.connectAttr(dist + ".distance", attr)
 
 
 # Take three nearest points (heap should keep them sorted if axis is X)
@@ -53,37 +60,36 @@ import heapq
 def map():
     cmds.file(new=True, force=True)
 
+    rand = lambda: random.randrange(-10, 11)
+
     goal = [random.randrange(-5, 5) for _ in range(3)]
     poly, _ = cmds.polySphere()
-    poly_at = poly + ".translate"
     cmds.xform(poly, t=goal)
 
+    points = []
     curvesX = []
-    curvesY = []
     for i, x in enumerate(range(-10, 11)):
-        # curveY = None
         for j, z in enumerate(range(-10, 11)):
             y = distance((x, 0, z), goal)
             point = (x,y,z)
+            points.append(point)
             if i:
                 cmds.curve(curvesX[j], a=True, p=point)
             else:
                 curvesX.append(cmds.curve(p=point))
 
-            # if curveY:
-            #     cmds.curve(curveY, a=True, p=point)
-            # else:
-            #     curveY = cmds.curve(p=point)
-
-            grp = cmds.group(em=True)
-            cmds.xform(grp, t=(x,0,z))
-            dist = cmds.shadingNode("distanceBetween", asUtility=True)
-            cmds.connectAttr(grp + ".translate", dist + ".point1")
-            cmds.connectAttr(poly_at, dist + ".point2")
-            cmds.connectAttr(dist + ".distance", curvesX[j] + ".controlPoints[%s].yValue" % i)
-            # cmds.connectAttr(dist + ".distance", curveY + ".controlPoints[%s].yValue" % j)
+            dyn_dist((x,0,z), poly, curvesX[j] + ".controlPoints[%s].yValue" % i)
     cmds.loft(curvesX)
     cmds.hide(curvesX)
+
+    # Pick random point to start search
+    def position(x, y):
+        p1 = cmds.spaceLocator()[0]
+        cmds.xform(p1, t=(x, 0, y))
+        dyn_dist((x,0,y), poly, p1 + ".ty")
+        return cmds.xform(p1, q=True, t=True)
+
+    p1 = position(rand(), rand())
 
 
 def test():
