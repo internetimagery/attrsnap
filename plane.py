@@ -31,6 +31,7 @@ print plane((1,2,-2), (3,-2,1), (5,1,-4))
 # remove axis, and normalize resulting vector
 # multiply unit vector by step size
 # take result, and add that to point list.
+# if axis (x?) of cross is almost 0, we are at our destination!
 
 
 def predict(p1, p2, p3):
