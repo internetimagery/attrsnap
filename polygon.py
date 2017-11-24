@@ -54,13 +54,14 @@ def test():
         p = rand()
         simplex[p] = distance(p, goal)
 
-    for _ in range(50):
+    for i in range(1000):
         # Step 1: Order
         points = sorted(simplex, key=lambda x: simplex[x])
 
         # Step 2: Centroid
         Xo = centroid(*points[:-1])
-        cmds.spaceLocator(p=Xo)
+        if not i % 10:
+            cmds.spaceLocator(p=Xo)
 
         # Step 3: Reflection
         A = 1 # > 0
@@ -69,7 +70,7 @@ def test():
         if simplex[points[0]] <= Dr and simplex[points[-2]] > Dr:
             del simplex[points[-1]]
             simplex[Xr] = Dr
-            print "Reflection"
+            # print "Reflection"
             continue
 
         # Step 4: Expansion
@@ -82,7 +83,7 @@ def test():
                 simplex[Xe] = De
             else:
                 simplex[Xr] = Dr
-            print "Expansion"
+            # print "Expansion"
             continue
 
         # Step 5: Contraction
@@ -92,7 +93,7 @@ def test():
         if Dc < simplex[points[-1]]:
             del simplex[points[-1]]
             simplex[Xc] = Dc
-            print "Contraction"
+            # print "Contraction"
             continue
 
         # Step 6: Shrink
@@ -102,4 +103,4 @@ def test():
             p = vAdd(vMul(vSub(p, points[0]), O), points[0])
             simplex[p] = distance(p, goal)
 
-        print "Shrink"
+        # print "Shrink"
