@@ -36,7 +36,9 @@ def position(p1, p2, p3):
 
 def dyn_dist(pos, obj, attr):
     grp = cmds.group(em=True)
-    cmds.xform(grp, t=pos)
+    cmds.connectAttr(pos + ".tx", grp + ".tx", force=True)
+    cmds.connectAttr(pos + ".tz", grp + ".tz", force=True)
+
     dist = cmds.shadingNode("distanceBetween", asUtility=True)
     cmds.connectAttr(grp + ".translate", dist + ".point1")
     cmds.connectAttr(obj + ".translate", dist + ".point2")
@@ -157,7 +159,9 @@ def map():
             else:
                 curvesX.append(cmds.curve(p=point))
 
-            dyn_dist((x,0,z), poly, curvesX[j] + ".controlPoints[%s].yValue" % i)
+            grp = cmds.group(em=True)
+            cmds.xform(grp, t=(x,0,z))
+            dyn_dist(grp, poly, curvesX[j] + ".controlPoints[%s].yValue" % i)
     cmds.loft(curvesX)
     cmds.hide(curvesX)
 
@@ -165,7 +169,7 @@ def map():
     def position(x, y, name):
         p1 = cmds.spaceLocator(n=name)[0]
         cmds.xform(p1, t=(x, 0, y))
-        dyn_dist((x,0,y), poly, p1 + ".ty")
+        dyn_dist(p1, poly, p1 + ".ty")
         return p1
 
     p1 = position(rand(), rand(), "pos1")
