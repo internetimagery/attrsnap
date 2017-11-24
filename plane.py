@@ -42,7 +42,54 @@ def dyn_dist(pos, obj, attr):
     cmds.connectAttr(obj + ".translate", dist + ".point2")
     cmds.connectAttr(dist + ".distance", attr)
 
+def dyn_cross(p1, p2, p3, name):
+    pma1 = cmds.shadingNode("plusMinusAverage", asUtility=True)
+    pma2 = cmds.shadingNode("plusMinusAverage", asUtility=True)
 
+    cmds.setAttr(pma1 + ".operation", 2)
+    cmds.connectAttr(p2 + ".translate", pma1 + ".input3D[0]", force=True)
+    cmds.connectAttr(p1 + ".translate", pma1 + ".input3D[1]", force=True)
+
+    cmds.setAttr(pma2 + ".operation", 2)
+    cmds.connectAttr(p3 + ".translate", pma2 + ".input3D[0]", force=True)
+    cmds.connectAttr(p1 + ".translate", pma2 + ".input3D[1]", force=True)
+
+    components = []
+    for ax1, ax2 in ["yz", "zx", "xy"]:
+        m1 = cmds.shadingNode("multiplyDivide", asUtility=True)
+        pma3 = cmds.shadingNode("plusMinusAverage", asUtility=True)
+        cmds.setAttr(pma3 + ".operation", 2)
+        cmds.connectAttr(pma1 + ".output3D%s" % ax1, m1 + ".input1X" , force=True)
+        cmds.connectAttr(pma2 + ".output3D%s" % ax2, m1 + ".input2X" , force=True)
+
+        cmds.connectAttr(pma1 + ".output3D%s" % ax2, m1 + ".input1Y" , force=True)
+        cmds.connectAttr(pma2 + ".output3D%s" % ax1, m1 + ".input2Y" , force=True)
+
+        cmds.connectAttr(m1 + ".outputX", pma3 + ".input1D[0]")
+        cmds.connectAttr(m1 + ".outputY", pma3 + ".input1D[1]")
+        components.append(pma3)
+
+    quat1 = cmds.shadingNode("quatNormalize", asUtility=True)
+    for i, ax in enumerate("XYZ"):
+        cmds.connectAttr(components[i] + ".output1D", quat1 + ".inputQuat.inputQuat%s" % ax, force=True)
+
+    length = 5
+    m2 = cmds.shadingNode("multiplyDivide", asUtility=True)
+    for ax in "XYZ":
+        cmds.setAttr(m2 + ".input1%s" % ax, length)
+        cmds.connectAttr(quat1 + ".outputQuat%s" % ax, m2 + ".input2%s" % ax, force=True)
+
+    pma4 = cmds.shadingNode("plusMinusAverage", asUtility=True)
+    cmds.connectAttr(m2 + ".output", pma4 + ".input3D[0]", force=True)
+    cmds.connectAttr(p1 + ".translate", pma4 + ".input3D[1]", force=True)
+
+    curve1 = cmds.curve(p=[(0,0,0), (0,0,0)])
+    result = cmds.spaceLocator()[0]
+
+    cmds.connectAttr(p1 + ".translate", curve1 + ".controlPoints[0]", force=True)
+    cmds.connectAttr(pma4 + ".output3D", curve1 + ".controlPoints[1]", force=True)
+    cmds.connectAttr(pma4 + ".output3D", result + ".translate", force=True)
+    return result
 # Take three nearest points (heap should keep them sorted if axis is X)
 # Check not in straight line... grab different point if so
 # get cross product of the points
@@ -83,13 +130,16 @@ def map():
     cmds.hide(curvesX)
 
     # Pick random point to start search
-    def position(x, y):
-        p1 = cmds.spaceLocator()[0]
+    def position(x, y, name):
+        p1 = cmds.spaceLocator(n=name)[0]
         cmds.xform(p1, t=(x, 0, y))
         dyn_dist((x,0,y), poly, p1 + ".ty")
-        return cmds.xform(p1, q=True, t=True)
+        return p1
 
-    p1 = position(rand(), rand())
+    p1 = position(rand(), rand(), "pos1")
+    p2 = position(rand(), rand(), "pos2")
+    p3 = position(rand(), rand(), "pos3")
+    crs = dyn_cross(p1, p2, p3, "cross1")
 
 
 def test():
