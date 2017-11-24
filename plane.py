@@ -79,8 +79,20 @@ def dyn_cross(p1, p2, p3, name):
         cmds.setAttr(m2 + ".input1%s" % ax, length)
         cmds.connectAttr(quat1 + ".outputQuat%s" % ax, m2 + ".input2%s" % ax, force=True)
 
+    m3 = cmds.shadingNode("multiplyDivide", asUtility=True)
+    for ax in "XYZ":
+        cmds.setAttr(m3 + ".input1%s" % ax, -1)
+    cmds.connectAttr(m2 + ".output", m2 + ".input2", force=True)
+
+    cond1 = cmds.shadingNode("condition", asUtility=True)
+    cmds.connectAttr(m2 + ".output", cond1 + ".colorIfFalse", force=True)
+    cmds.connectAttr(m3 + ".output", cond1 + ".colorIfTrue", force=True)
+
+    cmds.setAttr(cond1 + ".operation", 4)
+    cmds.connectAttr(m2 + ".outputY", cond1 + ".firstTerm", force=True)
+
     pma4 = cmds.shadingNode("plusMinusAverage", asUtility=True)
-    cmds.connectAttr(m2 + ".output", pma4 + ".input3D[0]", force=True)
+    cmds.connectAttr(cond1 + ".outColor", pma4 + ".input3D[0]", force=True)
     cmds.connectAttr(p1 + ".translate", pma4 + ".input3D[1]", force=True)
 
     curve1 = cmds.curve(p=[(0,0,0), (0,0,0)])
@@ -90,6 +102,26 @@ def dyn_cross(p1, p2, p3, name):
     cmds.connectAttr(pma4 + ".output3D", curve1 + ".controlPoints[1]", force=True)
     cmds.connectAttr(pma4 + ".output3D", result + ".translate", force=True)
     return result
+
+def project(obj, poly, name):
+    grp = cmds.group(em=True)
+    p1 = cmds.spaceLocator(n=name)[0]
+    cmds.connectAttr(obj + ".tx", grp + ".tx", force=True)
+    cmds.connectAttr(obj + ".tz", grp + ".tz", force=True)
+
+    cmds.connectAttr(obj + ".tx", p1 + ".tx", force=True)
+    cmds.connectAttr(obj + ".tz", p1 + ".tz", force=True)
+
+    dist = cmds.shadingNode("distanceBetween", asUtility=True)
+    cmds.connectAttr(grp + ".translate", dist + ".point1")
+    cmds.connectAttr(poly + ".translate", dist + ".point2")
+    cmds.connectAttr(dist + ".distance", p1 + ".ty")
+
+    curve = cmds.curve(p=[(0,0,0),(0,0,0)])
+    cmds.connectAttr(p1 + ".translate", curve + ".controlPoints[0]", force=True)
+    cmds.connectAttr(obj + ".translate", curve + ".controlPoints[1]", force=True)
+    return p1
+
 # Take three nearest points (heap should keep them sorted if axis is X)
 # Check not in straight line... grab different point if so
 # get cross product of the points
@@ -140,6 +172,7 @@ def map():
     p2 = position(rand(), rand(), "pos2")
     p3 = position(rand(), rand(), "pos3")
     crs = dyn_cross(p1, p2, p3, "cross1")
+    pln = project(crs, poly, "projection")
 
 
 def test():
