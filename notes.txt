@@ -15,3 +15,10 @@ https://en.wikipedia.org/wiki/Polynomial_regression
 https://blog.demofox.org/2016/12/22/incremental-least-squares-curve-fitting/
 https://spin.atomicobject.com/2014/06/24/gradient-descent-linear-regression/
 https://en.wikipedia.org/wiki/Stochastic_gradient_descent#Background
+
+could try:
+take three points. order by distance.
+get point in between closest two controlPoints
+get vector from midpoint to furthest point
+normal and scale by scalar
+repeat!
