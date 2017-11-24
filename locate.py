@@ -15,6 +15,11 @@ def sqrt(a):
 def sqr(a):
     return a * a
 
+def unit(a):
+    mag = dot(a,a)
+    mag2 = sqrt(mag)
+    return a[0] * mag2, a[1] * mag2, a[2] * mag2
+
 def norm(a):
     mag = dot(a,a)
     return sqrt(mag)
@@ -43,6 +48,8 @@ def trilateration(P1, P2, P3, D1, D2, D3, return_middle=False):
     D1~3 = distance to point
     return_middle = Return middle of positions if more than one is found
     """
+    if len(set([P1,P2,P3])) != 3:
+        raise RuntimeError("Need three unique points")
 
     # Calculate plane
     n = vector_subtract(P2, P1)

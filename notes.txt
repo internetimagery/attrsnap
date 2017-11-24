@@ -22,3 +22,6 @@ get point in between closest two controlPoints
 get vector from midpoint to furthest point
 normal and scale by scalar
 repeat!
+
+
+https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
