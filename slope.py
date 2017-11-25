@@ -50,13 +50,14 @@ def test():
 
     goal = rand()
     poly, _ = cmds.polySphere()
+    cmds.xform(poly, t=goal)
 
     start = rand()
     cmds.spaceLocator(p=start)
+    step = 1
 
-    for _ in range(10):
-        aim = norm(gradient(start, goal, 1))
-        print start
-        # aim = norm(aim)
-        start = vAdd(vMul(aim, -2), start)
+
+    for _ in range(80):
+        aim = norm(gradient(start, goal, 0.01))
+        start = vAdd(vMul(aim, -step), start)
         cmds.spaceLocator(p=start)
