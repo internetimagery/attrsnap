@@ -71,10 +71,15 @@ def test():
     cmds.setAttr(m3 + ".scaleX", 3)
     curve = cmds.curve(p=cmds.xform(m2, q=True, ws=True, t=True))
 
-    step = 2
-    for _ in range(10):
+    step = 0.5
+    velocity = [0]*len(grp)
+    friction = 0.7
+    for _ in range(30):
         curr_val = grp.get_values()
         cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))
-        aim = norm(gradient(grp, 0.01))
-        new_val = vAdd(vMul(aim, -step), curr_val)
+        aim = gradient(grp, 0.01)
+        velocity = vMul(vSub(velocity, vMul(aim, step)), friction)
+
+        new_val = vAdd(velocity, curr_val)
+        # new_val = vAdd(vMul(aim, -step), curr_val)
         grp.set_values(new_val)
