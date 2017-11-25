@@ -25,3 +25,9 @@ repeat!
 
 
 https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
+
+https://www.youtube.com/watch?v=TEB2z7ZlRAw
+https://cs231n.github.io/neural-networks-3/
+https://cs231n.github.io/neural-networks-3/#gradcheck
+
+http://mathinsight.org/directional_derivative_gradient_introduction
