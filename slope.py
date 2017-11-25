@@ -54,6 +54,7 @@ def gradient(grp, step=0.1):
 # dF(x) / dx = (F(x+h) - F(x-h)) / 2h
 
 
+# https://cs231n.github.io/neural-networks-3/#gradcheck
 def test():
     cmds.file(new=True, force=True)
 
@@ -77,6 +78,8 @@ def test():
     for _ in range(30):
         curr_val = grp.get_values()
         cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))
+        ahead = vAdd(curr_val, vMul(velocity, friction))
+        grp.set_values(ahead)
         aim = gradient(grp, 0.01)
         velocity = vMul(vSub(velocity, vMul(aim, step)), friction)
 
