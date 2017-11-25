@@ -3,6 +3,7 @@ from __future__ import division
 import maya.cmds as cmds
 import random
 import math
+import groups
 
 def vAdd(v1, v2):
     return tuple(v1[i] + v2[i] for i in range(len(v1)))
@@ -38,8 +39,16 @@ def distance(p1, p2):
 def rand():
     return tuple(random.randrange(-10,10) for _ in range(3))
 
-def gradient(p1, p2, step=0.1):
-    return [(distance([p1[j] + step if j == i else p1[j] for j, _ in enumerate(p1)], p2) - distance(p1, p2)) / step for i, _ in enumerate(p1)]
+def gradient(grp, step=0.1):
+    curr_val = grp.get_values()
+    curr_dist = grp.get_distance()
+    result = []
+    for i in range(len(grp)):
+        new_val = [v+step if i == j else v for j, v in enumerate(curr_val)]
+        grp.set_values(new_val)
+        new_dist = grp.get_distance()
+        result.append((new_dist - curr_dist) / step)
+    return result
 
 # dF(x) / dx = (F(x+h) - F(x)) / h
 # dF(x) / dx = (F(x+h) - F(x-h)) / 2h
@@ -48,16 +57,24 @@ def gradient(p1, p2, step=0.1):
 def test():
     cmds.file(new=True, force=True)
 
-    goal = rand()
-    poly, _ = cmds.polySphere()
-    cmds.xform(poly, t=goal)
+    m1, _ = cmds.polySphere()
+    m2 = cmds.spaceLocator()[0]
+    m3 = cmds.group(m2)
 
-    start = rand()
-    cmds.spaceLocator(p=start)
-    step = 1
+    grp = groups.Group(
+        markers=(m1, m2),
+        attributes=[(m2, "translateX"), (m2, "translateZ")]
+    )
 
+    cmds.xform(m1, t=rand())
+    cmds.xform(m2, t=rand())
+    cmds.setAttr(m3 + ".scaleX", 3)
+    curve = cmds.curve(p=cmds.xform(m2, q=True, ws=True, t=True))
 
-    for _ in range(80):
-        aim = norm(gradient(start, goal, 0.01))
-        start = vAdd(vMul(aim, -step), start)
-        cmds.spaceLocator(p=start)
+    step = 2
+    for _ in range(10):
+        curr_val = grp.get_values()
+        cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))
+        aim = norm(gradient(grp, 0.01))
+        new_val = vAdd(vMul(aim, -step), curr_val)
+        grp.set_values(new_val)
