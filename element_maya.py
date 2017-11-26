@@ -88,6 +88,15 @@ class Marker_Set(object):
         for a in (s.node1, s.node2):
             yield a
 
+class Curve(object):
+    def __init__(s, point):
+        """ Path tool for debugging """
+        from maya.cmds import curve
+        s.func = curve
+        s.curve = curve(p=point)
+    def add(s, point):
+        s.func(s.curve, a=True, p=point)
+
 if __name__ == '__main__':
     cmds.file(new=True, force=True)
     obj, _ = cmds.polySphere()
