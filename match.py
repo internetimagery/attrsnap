@@ -11,7 +11,15 @@ except NameError:
 # https://cs231n.github.io/neural-networks-3/#gradcheck
 
 DEBUG = True
-import maya.cmds as cmds
+
+class Curve(object):
+    def __init__(s, point):
+        """ Path tool for debugging """
+        from maya.cmds import curve
+        s.func = curve
+        s.curve = curve(p=point)
+    def add(s, point):
+        s.func(s.curve, a=True, p=point)
 
 class Vector(tuple):
     """ Abstract vector class """
@@ -67,16 +75,16 @@ def match(group, rate=0.5, friction=0.7, tolerance=0.01, limit=500):
     curr_values = closest_values = Vector(group.get_values())
 
     if DEBUG:
-        curve1 = cmds.curve(p=group.markers.node1.get_position())
-        curve2 = cmds.curve(p=group.markers.node2.get_position())
+        curve1 = Curve(group.markers.node1.get_position())
+        curve2 = Curve(group.markers.node2.get_position())
 
     # GO!
     for i in xrange(limit):
         group.set_values(curr_values)
 
         if DEBUG:
-            cmds.curve(curve1, a=True, p=group.markers.node1.get_position())
-            cmds.curve(curve2, a=True, p=group.markers.node2.get_position())
+            curve1.add(group.markers.node1.get_position())
+            curve2.add(group.markers.node2.get_position())
 
         # Check if we have overshot our target.
         # If so, reduce our sample rate because we are close.
