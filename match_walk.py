@@ -24,14 +24,9 @@ def match(group, update_callback, timeout=30):
     step = curr_distance * 0.3
 
     attempts = 0
-    def log():
-        print("Match complete {} attempts.".format(attempts))
-        print("Using {} of combinations.".format(len(combinations)))
-
 
     if root_distance < 0.001:
         update_callback(1)
-        log()
         return curr_values
 
     end = time.time() + timeout
@@ -40,7 +35,7 @@ def match(group, update_callback, timeout=30):
     #     if step > 0.001:
     #         break
         if time.time() > end:
-            print("Match Timed Out!")
+            # print("Match Timed Out!")
             break
         chunk = {}
         for j in range(len(combinations)):
@@ -51,7 +46,6 @@ def match(group, update_callback, timeout=30):
             chunk[new_distance] = new_values
             if new_distance < 0.001:
                 update_callback(1)
-                log()
                 return curr_values
 
             diff = abs(new_distance - curr_distance)
@@ -75,5 +69,4 @@ def match(group, update_callback, timeout=30):
         # Reset ready for round two
         group.set_values(curr_values)
     update_callback(1)
-    log()
     return curr_values

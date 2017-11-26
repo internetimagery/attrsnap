@@ -57,6 +57,11 @@ tests["match"] = (
     lambda s1, s2, s3: groups.Group("name", groups.POSITION, markers=(s1, s2), attributes=[(s1, "tx"), (s1, "ty"), (s1, "tz")]),
     lambda s1, s2, s3: equals(s1, (-2, 2, 0))) # Object should match
 
+# Matching when scales are not linear
+tests["scaling"] = (
+    lambda s1, s2, s3: [cmds.setAttr(s2 + ".sx", 3), groups.Group("name", groups.POSITION, markers=(s1, s3), attributes=[(s3, "tx"), (s3, "ty"), (s3, "tz")])][1],
+    lambda s1, s2, s3: equals(s3, (2, 0, 2))) # Object should match
+
 # Match is possible. But certain combinations can lead to a cat/mouse chase.
 tests["chase"] = (
     lambda s1, s2, s3: groups.Group("name", groups.POSITION, markers=(s1, s2), attributes=[(s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")]),
