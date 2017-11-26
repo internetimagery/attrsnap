@@ -3,6 +3,7 @@
 from __future__ import print_function, division
 import maya.cmds as cmds
 import maya.mel as mel
+import collections
 import functools
 import utility
 import groups
@@ -18,6 +19,11 @@ YELLOW = (0.7, 0.7, 0.1)
 
 OK = "Ok"
 CANCEL = "Cancel"
+
+options = collections.OrderedDict()
+options["Position"] = groups.POSITION
+options["Rotation"] = groups.ROTATION
+
 
 class Widget(object):
     """ Simple widget """
@@ -156,9 +162,9 @@ class Tab(object):
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
         s.GUI_enable = cmds.checkBox(l="Enable", v=enabled, cc=s.enable)
-        cmds.optionMenu()
-        cmds.menuItem(l="opt1")
-        cmds.menuItem(l="other opt")
+        s.GUI_type = cmds.optionMenu()
+        for opt in options:
+            cmds.menuItem(l=opt)
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New markers from selection", c=lambda _: s.markers.set(*utility.get_selection(2)))
@@ -186,6 +192,11 @@ class Tab(object):
         """ Set title of tab """
         s.name = title
         cmds.tabLayout(s.parent, e=True, tl=(s.layout, title))
+
+    def get_type(s):
+        """ Get type """
+        typ = cmds.optionMenu(s.GUI_type, q=True, v=True)
+        return options[typ]
 
     def enable(s, state):
         """ Enable / disable """
@@ -215,11 +226,15 @@ class Tab(object):
 
     def export(s):
         """ Export information into a clean group from gui """
-        group = groups.Group()
-        group.set_name(s.name)
-        group.set_markers(s.markers.m1.value, s.markers.m2.value)
-        group.add_attributes(*(at[0].split(".") for at in s.attributes.export()))
-        return group
+        name = s.name
+        match_type = s.get_type()
+        markers = [s.markers.m1.value, s.markers.m2.value]
+        attributes = [at[0].split(".") for at in s.attributes.export()]
+        return groups.Group(
+            name=name,
+            match_type=match_type,
+            markers=markers,
+            attributes=attributes)
 
     def __str__(s):
         """ Make class usable """
