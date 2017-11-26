@@ -2,6 +2,17 @@
 from __future__ import print_function
 import groups
 
+try:
+    xrange
+except NameError:
+    xrange = range
+
+# Reference:
+# https://cs231n.github.io/neural-networks-3/#gradcheck
+
+DEBUG = True
+import maya.cmds as cmds
+
 class Vector(tuple):
     """ Abstract vector class """
     __slots__ = ()
@@ -33,62 +44,85 @@ class Vector(tuple):
     def __rmul__(s, lhs):
         return s.__mul__(lhs, True)
 
+def match(group, rate=0.5, friction=0.7, tolerance=0.01, limit=500):
+    """
+    Match using gradient descent + momentum.
+    rate = sample size of each step.
+    friction = how much dampening do we get.
+    tolerance = how small an incriment before we stop?
+    limit = how many steps do we take before giving up?
+    """
+    # Validate parameters
+    if rate <= 0:
+        raise RuntimeError("Rate needs to be greater than zero.\nValue was {}".format(rate))
+    if friction < 0 or friction > 1:
+        raise RuntimeError("Friction must be between 0 and 1.\nValue was {}".format(friction))
+    if tolerance <= 0:
+        raise RuntimeError("Tolerance needs to be greater than zero.\nValue was {}".format(rate))
+    limit = abs(int(limit))
 
-def match(group, update):
-    """ Match using gradient descent + momentum """
-    pass
+    # Initialize variables
+    velocity = Vector([0]*len(group))
+    prev_dist = closest_dist = group.get_distance()
+    curr_values = closest_values = Vector(group.get_values())
+
+    if DEBUG:
+        curve1 = cmds.curve(p=group.markers.node1.get_position())
+        curve2 = cmds.curve(p=group.markers.node2.get_position())
+
+    # GO!
+    for i in xrange(limit):
+        group.set_values(curr_values)
+
+        if DEBUG:
+            cmds.curve(curve1, a=True, p=group.markers.node1.get_position())
+            cmds.curve(curve2, a=True, p=group.markers.node2.get_position())
+
+        # Check if we have overshot our target.
+        # If so, reduce our sample rate because we are close.
+        # Also reduce our momentum so we can turn faster.
+        dist = group.get_distance()
+        if dist > prev_dist:
+            rate *= 0.5
+            velocity *= 0.5
+            prev_dist = dist
+
+        # Check if we are closer than ever before.
+        # Record it if so.
+        if dist < closest_dist:
+            closest_dist = dist
+            closest_values = curr_values
+
+        # Check if we are stable enough to stop.
+        if rate < tolerance:
+            break
+
+        # Update our momentum
+        gradient = Vector(group.get_gradient())
+        velocity = velocity * friction - gradient * rate
+        curr_values += velocity
+    print("Finished after {} steps".format(i))
 
 def test():
-    v1 = Vector(1,2,3)
-    v2 = Vector(3,2,1)
-    print(v1 * v2)
+    import maya.cmds as cmds
+    import random
 
-#
-#
-#
-# # https://cs231n.github.io/neural-networks-3/#gradcheck
-# def test():
-#     cmds.file(new=True, force=True)
-#
-#     m1, _ = cmds.polySphere()
-#     m2 = cmds.group(em=True)
-#     m3 = cmds.group(m2)
-#
-#     grp = groups.Group(
-#         markers=(m1, m2),
-#         attributes=[(m2, "translateX"), (m2, "translateZ")]
-#     )
-#
-#     cmds.xform(m1, t=rand())
-#     cmds.xform(m2, t=rand())
-#     cmds.setAttr(m2 + ".ty", 0)
-#     cmds.setAttr(m3 + ".scaleX", 3)
-#     cmds.setAttr(m3 + ".scaleZ", 6)
-#     curve = cmds.curve(p=cmds.xform(m2, q=True, ws=True, t=True))
-#
-#     step = 0.5
-#     velocity = [0]*len(grp)
-#     friction = 0.7
-#     last_vals = grp.get_values()
-#     last_dist = grp.get_distance()
-#     i = 0
-#     while step > 0.001:
-#         i += 1
-#
-#         # Check if we overshot our target
-#         # If so. Shrink our step size (because we are close),
-#         # and dampen our momentum to help us turn.
-#         dist = grp.get_distance()
-#         if dist >= last_dist:
-#             step *= 0.8
-#             velocity = vMul(velocity, 0.8)
-#         last_dist = dist
-#
-#         grp.set_values(last_vals)
-#         cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))
-#
-#         prev_velocity = velocity
-#         velocity = vSub(vMul(velocity, friction), vMul(grp.get_gradient(), step))
-#         last_vals = vAdd(vMul(prev_velocity, -friction), vMul(velocity, 1+friction))
-#
-#     print "Found target in %s steps." % i
+    rand = lambda: tuple(random.randrange(-10,10) for _ in range(3))
+
+    cmds.file(new=True, force=True)
+
+    m1, _ = cmds.polySphere()
+    m2 = cmds.group(em=True)
+    m3 = cmds.group(m2)
+
+    grp = groups.Group(
+        markers=(m1, m2),
+        attributes=[(m2, "translateX"), (m2, "translateZ")]
+    )
+
+    cmds.xform(m1, t=rand())
+    cmds.xform(m2, t=rand())
+    cmds.setAttr(m2 + ".ty", 0)
+    cmds.setAttr(m3 + ".scaleX", 3)
+    cmds.setAttr(m3 + ".scaleZ", 6)
+    match(grp)
