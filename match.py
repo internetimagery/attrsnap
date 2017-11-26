@@ -1,177 +1,96 @@
-# Perform matching.
-from __future__ import print_function, division
-# import collections
-import itertools
-import time
-import heapq
+# Match two objects as close together as possible using as few steps as possible (still brute force!)
+from __future__ import print_function
+import groups
+
+class Vector(tuple):
+    """ Abstract vector class """
+    __slots__ = ()
+    def __new__(cls, *pos):
+        return tuple.__new__(cls, pos[0] if len(pos) == 1 else pos)
+    def dot(s, rhs):
+        return sum(s[i]*rhs[i] for i in range(len(s)))
+    def length(s):
+        dot = s.dot(s)
+        return dot and (dot ** -0.5) * dot
+    def normalize(s):
+        mag = s.length()
+        return Vector(mag and a/mag for a in s)
+    def __add__(s, rhs):
+        return s.__class__(s[i]+rhs[i] for i in range(len(s)))
+    def __radd__(s, lhs):
+        return s.__add__(lhs)
+    def __sub__(s, rhs, lhs=False):
+        if lhs:
+            s, rhs = rhs, s
+        return s.__class__(s[i]-rhs[i] for i in range(len(s)))
+    def __rsub(s, lhs):
+        return s.__sub__(s, lhs, True)
+    def __mul__(s, rhs, lhs=False):
+        if lhs:
+            s, rhs = rhs, s
+        try: # Scalar
+            return s.__class__(a*rhs for a in s)
+        except ValueError: # Dot product
+            return s.dot(rhs)
+    def __rmul__(s, lhs, True):
+        return s.__mul__(lhs)
 
 
-# TODO: Add this as some sort of callback. Keep maya stuff out of here.
-def update():
-    import maya.cmds as cmds
-    cmds.refresh()
+def match(group, update):
+    """ Match using gradient descent + momentum """
+    pass
 
-# Values = values of attributes at the time
-# Distance = number representing distance from goal
-# Stride = How far we will attempt to step
-# Real = We have tested this value and not predicted?
-# Node = collections.namedtuple("Node", ["values", "distance", "stride", "real"])
+def test():
+    v1 = Vector(1,2,3)
+    v2 = Vector(3,2,1)
+    print(v1 + v2)
 
-class Task(object):
-    """ Ordered set of tasks """
-    def __init__(s, *heap):
-        s.heap = heapq.heapify(heap)
-        s.id = 0
-    def add(s, priority, task):
-        s.id += 1
-        heapq.heappush(s.heap, tuple(priority, s.id, task))
-    def get(s):
-        return heapq.heappop(s.heap)[2]
-    def __len__(s):
-        return len(s.heap)
-
-
-class Group(object):
-    """ A group of objects and attributes for matching """
-    def __init__(s, match_type, markers, *attributes):
-        s.match_type, s.markers, s.attributes = match_type, markers, attributes
-
-    def get_positions(s):
-        """ Get a list of positions / rotations from objects """
-        raise NotImplementedError()
-
-    def get_values(s):
-        """ Get a list of attribute values at the current time """
-        raise NotImplementedError()
-
-    def set_values(s, vals):
-        """ Set a list of values to each attribute """
-        raise NotImplementedError()
-
-    def get_distance(s, mark1, mark2):
-        """ Calculate a distance value from two positionals """
-        raise NotImplementedError()
-
-    def keyframe(s, values):
-        """ Set a bunch of keyframes for each attribute """
-        raise NotImplementedError()
-
-    # TODO: Investigate any issues if "step" runs us up against min/max barriers...
-    # TODO: Theoretically, calibrating a step next to a barrier would result in
-    # TODO: no distance being recorded, and thus a step size of 0. Even though
-    # TODO: the value may have movement further in the range of motion...
-    def calibrate(s):
-        """ Determine how much of an impact each attribute has on our heuristic and thus our step size """
-        # TODO: This number doesn't mean a lot. What is important is the relationship between the scale and value.
-        # TODO: There can be a check that ensures we are not butted up against any min/max ranges. Nudge us out of the way if so.
-        combinations = [(-1, 0, 1)]*len(s.attributes) # Set some standard movement.
-        root_value = s.get_values() # Get our initial attribute values
-        root_position = s.get_positions() # Get our initial object positions
-        normalized = set()
-
-        for combo in itertools.product(*combinations): # Jump through different step combos
-            step = (a + b for a, b in zip(root_value, combo)) # Calculate a step
-            s.set_values(step) # Set values to make a step
-
-            new_position = s.get_positions() # Get new position
-            distance = s.get_distance(root_position, new_position) # Heuristic
-            scale = (1.0 / distance) if distance else 0
-            normalized.add(tuple(a * scale for a in combo)) # Normalize motion
-
-        # Return us back where we were.
-        s.set_values(root_position)
-        s.motion = list(normalized) # Convert to list for faster iteration later
-
-
-
-def match(groups, timeout=2.5, step_length=0.25, stop_threshold=0.001, update_interval=0.5, update_callback=lambda: None):
-    """ Match a bunch of groups """
-    start_time = last_refresh = time.time()
-    # Firstly calibrate our motions to efficiently use each attribute.
-    print("Matching...")
-    # Loop each combo. Brute force, but we don't want different combinations from making us miss our mark.
-    for combo in itertools.permutations(groups):
-        for group in combo:
-            # Mark how long sice last forward motion.
-            last_success = time.time()
-
-            # Initialize our position.
-            current_distance = group.get_distance()
-            current_values = group.get_values()
-            current_stride = current_distance * step_length # Set up our initial stride size
-
-            # Create our first node!
-            current_node = Node(
-                values = current_values,
-                distance = current_distance,
-                stride = current_stride,
-                real = True)
-
-            # Record where we have been
-            visited = set() # Don't retrace our steps...
-            to_visit = Task(current_node)
-            closest = current_node
-
-            # Here we go!
-            try:
-                while len(to_visit):
-                    deadend = True
-                    curr_node = to_visit.get()
-                    for move_values in group.motion: # Make one step each way!
-                        new_values = [a * b for a, b in zip(move_values, curr_node.values)]
-                        if new_values not in visited: # Do not backtrack!
-                            visited.add(new_values)
-
-                            # Move to position, and get distance
-                            group.set_values(new_values)
-                            new_distance = group.get_distance()
-
-                            # Build a new node.
-                            new_node = Node(
-                                values = new_values,
-                                distance = new_distance,
-                                stride = curr_stride,
-                                real = True)
-                            to_visit.add(new_distance, new_node)
-
-                            # Have we reached a dead end? Where we cannot get any closer?
-                            if new_distance < curr_node.distance: # Are we closer?
-                                deadend = False # We have somewhere to go!
-
-                            # Are we on the right track?
-                            if new_distance < closest.distance: # Are we the closest we have ever been?
-                                closest = new_node
-                                curr_time = time.time()
-                                if curr_time - last_refresh > update_interval:
-                                    last_refresh = curr_time
-                                    update_callback()
-
-                            # If we are close enough to call it quits.
-                            if new_distance < stop_threshold: raise StopIteration # We made it!
-
-                    if deadend: # Deadend? Take smaller steps.
-                        new_stride = curr_node.stride * 0.5 # Take smaller steps.
-                        if 0.001 < new_stride:
-                            new_node = Node(
-                                values = new_values,
-                                distance = curr_node.distance,
-                                stride = new_stride,
-                                real = True)
-                            to_visit.add(curr_node.distance, new_node)
-
-                    elapsed_time = time.time() - last_success
-                    if timeout < elapsed_time: # Important!
-                        print("Timed out...")
-                        break
-                else: # This should never really run.
-                    print("Exhausted all options.")
-            except StopIteration:
-                print("Made it!")
-
-            # Set our final keyframe
-            group.keyframe(closest.values)
-
-    total_time = (time.time() - start_time) * 1000
-    print("Travel complete with a time of %s ms." % total_time)
-    print("Finished with a distance of %s." % closest[0])
-    print("Made %s attempts to get there with a time of %s ms per attempt." % (count, (total_time / count)))
+#
+#
+#
+# # https://cs231n.github.io/neural-networks-3/#gradcheck
+# def test():
+#     cmds.file(new=True, force=True)
+#
+#     m1, _ = cmds.polySphere()
+#     m2 = cmds.group(em=True)
+#     m3 = cmds.group(m2)
+#
+#     grp = groups.Group(
+#         markers=(m1, m2),
+#         attributes=[(m2, "translateX"), (m2, "translateZ")]
+#     )
+#
+#     cmds.xform(m1, t=rand())
+#     cmds.xform(m2, t=rand())
+#     cmds.setAttr(m2 + ".ty", 0)
+#     cmds.setAttr(m3 + ".scaleX", 3)
+#     cmds.setAttr(m3 + ".scaleZ", 6)
+#     curve = cmds.curve(p=cmds.xform(m2, q=True, ws=True, t=True))
+#
+#     step = 0.5
+#     velocity = [0]*len(grp)
+#     friction = 0.7
+#     last_vals = grp.get_values()
+#     last_dist = grp.get_distance()
+#     i = 0
+#     while step > 0.001:
+#         i += 1
+#
+#         # Check if we overshot our target
+#         # If so. Shrink our step size (because we are close),
+#         # and dampen our momentum to help us turn.
+#         dist = grp.get_distance()
+#         if dist >= last_dist:
+#             step *= 0.8
+#             velocity = vMul(velocity, 0.8)
+#         last_dist = dist
+#
+#         grp.set_values(last_vals)
+#         cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))
+#
+#         prev_velocity = velocity
+#         velocity = vSub(vMul(velocity, friction), vMul(grp.get_gradient(), step))
+#         last_vals = vAdd(vMul(prev_velocity, -friction), vMul(velocity, 1+friction))
+#
+#     print "Found target in %s steps." % i

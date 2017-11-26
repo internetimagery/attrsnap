@@ -79,24 +79,24 @@ def test():
     friction = 0.7
     last_vals = grp.get_values()
     last_dist = grp.get_distance()
+    i = 0
     while step > 0.001:
+        i += 1
+
+        # Check if we overshot our target
+        # If so. Shrink our step size (because we are close),
+        # and dampen our momentum to help us turn.
         dist = grp.get_distance()
         if dist >= last_dist:
-            step *= 0.5
-            velocity = vMul(velocity, 0.5)
+            step *= 0.8
+            velocity = vMul(velocity, 0.8)
         last_dist = dist
 
-        ahead = vAdd(last_vals, vMul(velocity, friction))
-        grp.set_values(ahead)
-        aim = grp.get_gradient()
-
-        # print length(aim)
-
-        velocity = vMul(vSub(velocity, vMul(aim, step)), friction)
-
-        new_val = vAdd(velocity, last_vals)
-        last_vals = new_val
-
-        grp.set_values(new_val)
-        grp.keyframe(new_val)
+        grp.set_values(last_vals)
         cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))
+
+        prev_velocity = velocity
+        velocity = vSub(vMul(velocity, friction), vMul(grp.get_gradient(), step))
+        last_vals = vAdd(vMul(prev_velocity, -friction), vMul(velocity, 1+friction))
+
+    print "Found target in %s steps." % i
