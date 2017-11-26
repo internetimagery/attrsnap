@@ -46,7 +46,7 @@ def update(dist):
 
 matches = {
     "gradient": match.match,
-    "walk": match_walk.match,
+    # "walk": match_walk.match,
     # "prediction": match_prediction.match
     }
 
@@ -116,8 +116,8 @@ def main():
     failed = {}
     for match_name, match in matches.items():
         for name, (test, result) in tests.items():
-            # if name != "match":
-                # continue
+            if name != "match rotation":
+                continue
             times = []
             print("Running match \"{}\" on \"{}\"...".format(match_name, name), end="")
             try:
@@ -125,7 +125,7 @@ def main():
                     scene = scene_setup()
                     match_group = test(*scene)
                     start = time.time()
-                    match(match_group, update)
+                    match(match_group, update, debug=True, tolerance=0.000001)
                     times.append(time.time() - start)
                     assert result(*scene)
                 print("OK! - {}".format(sum(times)))

@@ -15,6 +15,6 @@ def test():
     for x in range(-180, 180, 10):
         for z in range(-180, 180, 10):
             # for k in range(-180, 180, 10):
-            cmds.xform(p2, ro=(x,0,z))
+            cmds.xform(p2, ro=(0,x,z))
             dist = mkr.get_rot_distance()
             cmds.spaceLocator(p=(x*0.1, dist*10, z*0.1))
