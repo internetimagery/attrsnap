@@ -9,8 +9,9 @@ try:
 except ImportError:
     import profile
 
+import match
 import match_walk
-import match_prediction
+# import match_prediction
 
 DEBUG = False
 
@@ -44,40 +45,41 @@ def update(dist):
         cmds.refresh()
 
 matches = {
-    # "walk": match_walk.match,
-    "prediction": match_prediction.match
+    "gradient": match.match,
+    "walk": match_walk.match,
+    # "prediction": match_prediction.match
     }
 
 tests = {}
 
 # Ideal matching situation. Linear movement and can 100% match.
 tests["match"] = (
-    lambda s1, s2, s3: groups.Group("name", groups.POSITION, (s1, s2), [(s1, "tx"), (s1, "ty"), (s1, "tz")]),
+    lambda s1, s2, s3: groups.Group("name", groups.POSITION, markers=(s1, s2), attributes=[(s1, "tx"), (s1, "ty"), (s1, "tz")]),
     lambda s1, s2, s3: equals(s1, (-2, 2, 0))) # Object should match
 
 # Match is possible. But certain combinations can lead to a cat/mouse chase.
 tests["chase"] = (
-    lambda s1, s2, s3: groups.Group("name", groups.POSITION, (s1, s2), [(s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")]),
+    lambda s1, s2, s3: groups.Group("name", groups.POSITION, markers=(s1, s2), attributes=[(s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "tx"), (s2, "ty"), (s2, "tz")]),
     lambda s1, s2, s3: equals(s1, cmds.xform(s2, q=True, t=True))) # Objects should match somewhere in space.
 
 # Parallel movement. Distance will never close.
 tests["parallel"] = (
-    lambda s1, s2, s3: [cmds.parentConstraint(s1, s2, mo=True), groups.Group("name", groups.POSITION, (s1, s2), [(s1, "tx")])][1],
+    lambda s1, s2, s3: [cmds.parentConstraint(s1, s2, mo=True), groups.Group("name", groups.POSITION, markers=(s1, s2), attributes=[(s1, "tx")])][1],
     lambda s1, s2, s3: equals(s1, (2,0,2))) # No result works. Should stay where we are.
 
 # Cannot reach target, but can reach a point of minimal distance.
 tests["lookat"] = (
-    lambda s1, s2, s3: groups.Group("name", groups.POSITION, (s1, s3), [(s2, "rx"), (s2, "ry")]),
+    lambda s1, s2, s3: groups.Group("name", groups.POSITION, markers=(s1, s3), attributes=[(s2, "rx"), (s2, "ry")]),
     lambda s1, s2, s3: equals(s3, (0, 1, 1)))
 
 # Many possibilities exist.
 tests["possibilities"] = (
-    lambda s1, s2, s3: groups.Group("name", groups.POSITION, (s1, s3), [(s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")]),
+    lambda s1, s2, s3: groups.Group("name", groups.POSITION, markers=(s1, s3), attributes=[(s1, "tx"), (s1, "ty"), (s1, "tz"), (s2, "rx"), (s2, "ry"), (s2, "rz")]),
     lambda s1, s2, s3: equals(s3, cmds.xform(s1, q=True, t=True)))
 
 # No movement at all.
 tests["zero"] = (
-    lambda s1, s2, s3: groups.Group("name", groups.POSITION, (s1, s2), [(s1, "rx"), (s1, "ry"), (s1, "rz")]),
+    lambda s1, s2, s3: groups.Group("name", groups.POSITION, markers=(s1, s2), attributes=[(s1, "rx"), (s1, "ry"), (s1, "rz")]),
     lambda s1, s2, s3: equals(s1, (2,0,2)))
 
 # Match rotation
@@ -109,8 +111,8 @@ def main():
     failed = {}
     for match_name, match in matches.items():
         for name, (test, result) in tests.items():
-            if name != "match":
-                continue
+            # if name != "match":
+                # continue
             times = []
             print("Running match \"{}\" on \"{}\"...".format(match_name, name), end="")
             try:

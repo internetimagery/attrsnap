@@ -93,14 +93,17 @@ def match(group, update, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, de
             update(dist and dist/root_dist)
 
         # Check if we are stable enough to stop.
+        # If rate is low enough we're not going to move anywhere anyway...
         if rate < tolerance:
-            print("Rate below tolerance. Done.")
+            if debug:
+                print("Rate below tolerance. Done.")
             break
 
         # Check if we are sitting on a flat plateau.
         gradient = Vector(group.get_gradient())
-        if (gradient - prev_gradient).length() < tolerance:
-            print("Gradient flat. Done.")
+        if (gradient - prev_gradient).length() < 0.0000001:
+            if debug:
+                print("Gradient flat. Done.")
             break
         prev_gradient = gradient
 
@@ -109,7 +112,8 @@ def match(group, update, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, de
         velocity = velocity * friction - gradient * rate
         curr_values += prev_velocity * -friction + velocity * (1+friction)
 
-    print("Finished after {} steps".format(i))
+    if debug:
+        print("Finished after {} steps".format(i))
     return closest_values
 
 def test():
