@@ -1,7 +1,8 @@
 # Match two objects as close together as possible using as few steps as possible (still brute force!)
 from __future__ import print_function
-import groups
 import element
+import utility
+import groups
 
 try:
     xrange
@@ -42,7 +43,7 @@ class Vector(tuple):
     def __rmul__(s, lhs):
         return s.__mul__(lhs, True)
 
-def match(group, update, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=False):
+def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=False):
     """
     Match using gradient descent + momentum.
     rate = sample size of each step.
@@ -63,6 +64,8 @@ def match(group, update, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, de
     velocity = prev_gradient = Vector([0]*len(group))
     root_dist = prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
+
+    yield 0, curr_values
 
     if debug:
         curve1 = element.Curve(group.markers.node1.get_position())
@@ -90,7 +93,7 @@ def match(group, update, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, de
         if dist < closest_dist:
             closest_dist = dist
             closest_values = curr_values
-            update(dist and dist/root_dist)
+            yield 1-(dist and dist/root_dist), closest_values
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -114,14 +117,27 @@ def match(group, update, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, de
 
     if debug:
         print("Finished after {} steps".format(i))
-    return closest_values
+    yield 1, closest_values
+
+def match(grps, start_frame=None, end_frame=None, **kwargs):
+    """
+    Match groups across frames.
+    update. function run updating matching progress.
+    start_frame (optional). Current frame if not given.
+    end_frame (optional). Single frame if not provided else the full range.
+    """
+    start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
+    end_frame = start_frame if end_frame is None else int(end_frame)
+
+    for frame in range(start_frame, end_frame+1):
+        utility.set_frame(frame)
+        for grp in grps:
+            for update, values in search(grp, **kwargs):
+                yield update, values
 
 def test():
     import maya.cmds as cmds
     import random
-
-    def say(m):
-        print("closest:", m)
 
     rand = lambda: tuple(random.randrange(-10,10) for _ in range(3))
 
@@ -141,7 +157,9 @@ def test():
     cmds.setAttr(m2 + ".ty", 0)
     cmds.setAttr(m3 + ".scaleX", 3)
     cmds.setAttr(m3 + ".scaleZ", 6)
-    grp.set_values(match(grp, say, debug=True))
+    for prog, values in match([grp], debug=True):
+        print("Closer:", prog, values)
+    grp.set_values(values)
 
     x1, _, z1 = cmds.xform(m1, q=True, ws=True, t=True)
     x2, _, z2 = cmds.xform(m2, q=True, ws=True, t=True)

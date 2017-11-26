@@ -3,6 +3,14 @@ import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
 
+def get_frame():
+    """ Get current frame """
+    return cmds.currentTime(q=True)
+
+def set_frame(f):
+    """ Move to frame """
+    cmds.currentTime(f)
+
 def get_selection(num=0):
     """ Get current selection. num = expected selection number """
     sel = set(cmds.ls(sl=True) or [])
