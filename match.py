@@ -40,7 +40,7 @@ class Vector(tuple):
         return s.__add__(lhs)
     def __sub__(s, rhs, rev=False):
         lhs, rhs = (rhs, s) if rev else (s, rhs)
-        return s.__class__(lhs[i]-rhs[i] for i in range(len(lhs)))
+        return s.__class__(lhs[i]-rhs[i] for i in range(len(s)))
     def __rsub(s, lhs):
         return s.__sub__(s, lhs, True)
     def __mul__(s, rhs, rev=False):
@@ -52,7 +52,7 @@ class Vector(tuple):
     def __rmul__(s, lhs):
         return s.__mul__(lhs, True)
 
-def match(group, rate=0.5, friction=0.7, tolerance=0.01, limit=500):
+def match(group, rate=0.5, friction=0.3, tolerance=0.01, limit=500):
     """
     Match using gradient descent + momentum.
     rate = sample size of each step.
@@ -65,6 +65,7 @@ def match(group, rate=0.5, friction=0.7, tolerance=0.01, limit=500):
         raise RuntimeError("Rate needs to be greater than zero.\nValue was {}".format(rate))
     if friction < 0 or friction > 1:
         raise RuntimeError("Friction must be between 0 and 1.\nValue was {}".format(friction))
+    friction = 1 - friction
     if tolerance <= 0:
         raise RuntimeError("Tolerance needs to be greater than zero.\nValue was {}".format(rate))
     limit = abs(int(limit))
@@ -93,11 +94,12 @@ def match(group, rate=0.5, friction=0.7, tolerance=0.01, limit=500):
         if dist > prev_dist:
             rate *= 0.5
             velocity *= 0.5
-            prev_dist = dist
+        prev_dist = dist
 
         # Check if we are closer than ever before.
         # Record it if so.
         if dist < closest_dist:
+            print("closest on ", i)
             closest_dist = dist
             closest_values = curr_values
 
@@ -106,9 +108,11 @@ def match(group, rate=0.5, friction=0.7, tolerance=0.01, limit=500):
             break
 
         # Update our momentum
+        prev_velocity = velocity
         gradient = Vector(group.get_gradient())
         velocity = velocity * friction - gradient * rate
-        curr_values += velocity
+        curr_values += prev_velocity * -friction + velocity * (1+friction)
+
     print("Finished after {} steps".format(i))
 
 def test():
