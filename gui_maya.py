@@ -9,6 +9,10 @@ import utility
 import groups
 import match
 
+
+# TODO: Make attributes deleteable
+# TODO: Make attributes use limits
+
 BLACK = (0.1,0.1,0.1)
 GREEN = (0.2, 0.5, 0.4)
 RED = (0.4, 0.3, 0.3)
