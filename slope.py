@@ -59,7 +59,7 @@ def test():
     cmds.file(new=True, force=True)
 
     m1, _ = cmds.polySphere()
-    m2 = cmds.spaceLocator()[0]
+    m2 = cmds.group(em=True)
     m3 = cmds.group(m2)
 
     grp = groups.Group(
@@ -69,20 +69,34 @@ def test():
 
     cmds.xform(m1, t=rand())
     cmds.xform(m2, t=rand())
+    cmds.setAttr(m2 + ".ty", 0)
     cmds.setAttr(m3 + ".scaleX", 3)
+    cmds.setAttr(m3 + ".scaleZ", 6)
     curve = cmds.curve(p=cmds.xform(m2, q=True, ws=True, t=True))
 
     step = 0.5
     velocity = [0]*len(grp)
     friction = 0.7
-    for _ in range(30):
-        curr_val = grp.get_values()
-        cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))
-        ahead = vAdd(curr_val, vMul(velocity, friction))
+    last_vals = grp.get_values()
+    last_dist = grp.get_distance()
+    while step > 0.001:
+        dist = grp.get_distance()
+        if dist >= last_dist:
+            step *= 0.5
+            velocity = vMul(velocity, 0.5)
+        last_dist = dist
+
+        ahead = vAdd(last_vals, vMul(velocity, friction))
         grp.set_values(ahead)
-        aim = gradient(grp, 0.01)
+        aim = grp.get_gradient()
+
+        # print length(aim)
+
         velocity = vMul(vSub(velocity, vMul(aim, step)), friction)
 
-        new_val = vAdd(velocity, curr_val)
-        # new_val = vAdd(vMul(aim, -step), curr_val)
+        new_val = vAdd(velocity, last_vals)
+        last_vals = new_val
+
         grp.set_values(new_val)
+        grp.keyframe(new_val)
+        cmds.curve(curve, a=True, p=cmds.xform(m2, ws=True, q=True, t=True))

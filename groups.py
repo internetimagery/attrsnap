@@ -1,7 +1,6 @@
 # Match positions / rotations.
-from __future__ import print_function
+from __future__ import print_function, division
 import element
-import uuid
 
 POSITION = 0
 ROTATION = 1
@@ -71,6 +70,15 @@ class Group(object):
         """ Set a bunch of keyframes for each attribute """
         for at, val in zip(s.attributes, values):
             at.key(val)
+
+    def get_gradient(s, precision=0.001):
+        """ Get gradient at current position. """
+        result = []
+        for attr in s.attributes:
+            dist = s.get_distance()
+            attr.set_value(attr.get_value() + precision)
+            result.append((s.get_distance() - dist) / precision)
+        return result
 
     def __len__(s):
         return len(s.attributes)
