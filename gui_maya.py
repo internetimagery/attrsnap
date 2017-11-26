@@ -3,10 +3,10 @@
 from __future__ import print_function, division
 import maya.cmds as cmds
 import maya.mel as mel
-import match_walk
 import functools
 import utility
 import groups
+import match
 
 BLACK = (0.1,0.1,0.1)
 GREEN = (0.2, 0.5, 0.4)
@@ -302,17 +302,8 @@ class Window(object):
 
             # TODO: Put in proper matching!
             with utility.progress() as prog:
-                def update(progress):
-                    print("Progress", progress)
+                for progress, values in match.match(valid, frame_range[0], frame_range[1]):
                     prog(progress)
-                    # prog(prog_frame_scale + prog_grp_scale * prog_frame_scale + progress)
-
-                for i, frame in enumerate(utility.frame_walk(*frame_range)):
-                    prog_frame_scale = i * frame_scale
-                    cmds.currentTime(frame)
-                    for j, grp in enumerate(valid):
-                        prog_grp_scale = j * grp_scale
-                        values = match_walk.match(grp, update)
-                        grp.set_values(values)
-                        grp.keyframe(values)
+                for grp in valid:
+                    grp.keyframe(values)
         s.idle = True

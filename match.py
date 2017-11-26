@@ -1,5 +1,6 @@
 # Match two objects as close together as possible using as few steps as possible (still brute force!)
 from __future__ import print_function
+import itertools
 import element
 import utility
 import groups
@@ -65,7 +66,7 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
     root_dist = prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
 
-    yield 0, curr_values
+    yield 0, closest_dist, closest_values
 
     if debug:
         curve1 = element.Curve(group.markers.node1.get_position())
@@ -93,7 +94,7 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         if dist < closest_dist:
             closest_dist = dist
             closest_values = curr_values
-            yield 1-(dist and dist/root_dist), closest_values
+            yield 1-(dist and dist/root_dist), dist, closest_values
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -117,7 +118,6 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
 
     if debug:
         print("Finished after {} steps".format(i))
-    yield 1, closest_values
 
 def match(grps, start_frame=None, end_frame=None, **kwargs):
     """
@@ -129,11 +129,18 @@ def match(grps, start_frame=None, end_frame=None, **kwargs):
     start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
     end_frame = start_frame if end_frame is None else int(end_frame)
 
-    for frame in range(start_frame, end_frame+1):
+    # TODO: Keep track of closest values here, before passing them on.
+    for i, frame in enumerate(range(start_frame, end_frame+1)):
         utility.set_frame(frame)
-        for grp in grps:
-            for update, values in search(grp, **kwargs):
-                yield update, values
+        for combo in itertools.product(grps):
+            for grp in combo:
+                for update, dist, values in search(grp, **kwargs):
+                    yield update, values
+                yield 1, values
+                if not i:
+                    # TODO: First run through. Add some random
+                    # positions and search those too. For extra coverage
+                    pass
 
 def test():
     import maya.cmds as cmds
