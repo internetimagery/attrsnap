@@ -80,8 +80,11 @@ class Marker_Set(object):
 
     def get_rot_distance(s):
         """ Get rotational distance """
-        dot = sum(a * b for a, b in zip(s.node1.get_rotation(), s.node2.get_rotation()))
-        return math.degrees(1 - dot ** 2) * 10
+        r1 = s.node1.get_rotation()
+        r2 = s.node2.get_rotation()
+        diff = (r1[i]-r2[i] for i in range(len(r1)))
+        return sum(a*a for a in diff)
+        # return mag2 and (mag2 ** -0.5) * mag2
 
     def __iter__(s):
         """ Loop over entries """
