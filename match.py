@@ -129,18 +129,21 @@ def match(grps, start_frame=None, end_frame=None, **kwargs):
     start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
     end_frame = start_frame if end_frame is None else int(end_frame)
 
+    result = {}
     # TODO: Keep track of closest values here, before passing them on.
     for i, frame in enumerate(range(start_frame, end_frame+1)):
         utility.set_frame(frame)
         for combo in itertools.product(grps):
             for grp in combo:
                 for update, dist, values in search(grp, **kwargs):
-                    yield update, values
-                yield 1, values
+                    result[grp] = values
+                    yield update, None
+                yield 1, None
                 if not i:
                     # TODO: First run through. Add some random
                     # positions and search those too. For extra coverage
                     pass
+        yield None, result
 
 def test():
     import maya.cmds as cmds

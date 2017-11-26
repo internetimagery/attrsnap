@@ -303,7 +303,9 @@ class Window(object):
             # TODO: Put in proper matching!
             with utility.progress() as prog:
                 for progress, values in match.match(valid, frame_range[0], frame_range[1]):
-                    prog(progress)
-                for grp in valid:
-                    grp.keyframe(values)
+                    if progress is None: # We're recieving values
+                        for grp, vals in values.items():
+                            grp.keyframe(vals)
+                    else:
+                        prog(progress)
         s.idle = True
