@@ -66,7 +66,7 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
     root_dist = prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
 
-    yield 0, closest_dist, closest_values
+    yield closest_dist, closest_values
 
     if debug:
         curve1 = element.Curve(group.markers.node1.get_position())
@@ -94,7 +94,7 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         if dist < closest_dist:
             closest_dist = dist
             closest_values = curr_values
-            yield 1-(dist and dist/root_dist), dist, closest_values
+            yield closest_dist, closest_values
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -118,6 +118,7 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
 
     if debug:
         print("Finished after {} steps".format(i))
+    yield closest_dist, closest_values
 
 def match(grps, start_frame=None, end_frame=None, **kwargs):
     """
@@ -129,21 +130,24 @@ def match(grps, start_frame=None, end_frame=None, **kwargs):
     start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
     end_frame = start_frame if end_frame is None else int(end_frame)
 
-    result = {}
     # TODO: Keep track of closest values here, before passing them on.
     for i, frame in enumerate(range(start_frame, end_frame+1)):
         utility.set_frame(frame)
         for combo in itertools.product(grps):
             for grp in combo:
-                for update, dist, values in search(grp, **kwargs):
-                    result[grp] = values
-                    yield update, None
-                yield 1, None
+                for j, (dist, values) in enumerate(search(grp, **kwargs)):
+                    if not j:
+                        total_dist = dist
+                    if not dist: # Break early if we're there
+                        break
+                    progress = 1-dist/total_dist
+                    yield progress
+                grp.keyframe(values)
+                yield 1
                 if not i:
                     # TODO: First run through. Add some random
                     # positions and search those too. For extra coverage
                     pass
-        yield None, result
 
 def test():
     import maya.cmds as cmds

@@ -47,12 +47,10 @@ class Attribute(object):
         """ Get current value """
         return s._attr.asDouble()
 
-    def key(s, value, time=None):
+    def key(s, value):
         """ Keyframe value at current time """
-        if time is None:
-            cmds.setKeyframe(str(s), v=value)
-        else:
-            cmds.setKeyframe(str(s), v=value, t=time)
+        s.set_value(value) # Can't use values directly, as some attributes work in radians
+        cmds.setKeyframe(str(s))
 
 class Marker(object):
     """ A maya object """
