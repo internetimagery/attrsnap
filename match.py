@@ -7,33 +7,31 @@ class Vector(tuple):
     __slots__ = ()
     def __new__(cls, *pos):
         return tuple.__new__(cls, pos[0] if len(pos) == 1 else pos)
-    def dot(s, rhs):
-        return sum(s[i]*rhs[i] for i in range(len(s)))
+    def dot(lhs, rhs):
+        return sum(lhs[i]*rhs[i] for i in range(len(lhs)))
     def length(s):
         dot = s.dot(s)
         return dot and (dot ** -0.5) * dot
     def normalize(s):
         mag = s.length()
         return Vector(mag and a/mag for a in s)
-    def __add__(s, rhs):
-        return s.__class__(s[i]+rhs[i] for i in range(len(s)))
+    def __add__(lhs, rhs):
+        return lhs.__class__(lhs[i]+rhs[i] for i in range(len(lhs)))
     def __radd__(s, lhs):
         return s.__add__(lhs)
-    def __sub__(s, rhs, lhs=False):
-        if lhs:
-            s, rhs = rhs, s
-        return s.__class__(s[i]-rhs[i] for i in range(len(s)))
+    def __sub__(s, rhs, rev=False):
+        lhs, rhs = (rhs, s) if rev else (s, rhs)
+        return s.__class__(lhs[i]-rhs[i] for i in range(len(lhs)))
     def __rsub(s, lhs):
         return s.__sub__(s, lhs, True)
-    def __mul__(s, rhs, lhs=False):
-        if lhs:
-            s, rhs = rhs, s
+    def __mul__(s, rhs, rev=False):
+        lhs, rhs = (rhs, s) if rev else (s, rhs)
         try: # Scalar
-            return s.__class__(a*rhs for a in s)
-        except ValueError: # Dot product
+            return s.__class__(a*rhs for a in lhs)
+        except TypeError: # Dot product
             return s.dot(rhs)
-    def __rmul__(s, lhs, True):
-        return s.__mul__(lhs)
+    def __rmul__(s, lhs):
+        return s.__mul__(lhs, True)
 
 
 def match(group, update):
@@ -43,7 +41,7 @@ def match(group, update):
 def test():
     v1 = Vector(1,2,3)
     v2 = Vector(3,2,1)
-    print(v1 + v2)
+    print(v1 * v2)
 
 #
 #
