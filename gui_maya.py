@@ -276,16 +276,20 @@ class Tab(object):
 class Range(object):
     """ Frame range widget """
     def __init__(s, parent):
-        row = cmds.rowLayout(nc=2, p=parent)
-        col = cmds.columnLayout(p=row)
+        s.row = cmds.rowLayout(nc=2, p=parent)
+        col = cmds.columnLayout(p=s.row)
         s.dynamic = IconCheckBox(col, lambda x: "", v=True,
-        ann="RIGHT CLICK: Additional options.\nON: Auto frame range. OFF: Manual.")
+        ann="RIGHT CLICK: Additional options.\nON: Auto frame range.\nOFF: Manual.")
         cmds.popupMenu(p=col)
         cmds.menuItem(l="Set to playback range.", c=lambda x: s.set_range(*utility.get_playback_range()))
-        col = cmds.columnLayout(p=row)
+        col = cmds.columnLayout(p=s.row)
         frame = utility.get_frame()
         s.min = IntBox(col, s.validate, frame)
         s.max = IntBox(col, s.validate, frame)
+
+        # Detect things!
+        s.loop = True
+        threading.Thread(target=s.inner_loop).start()
 
     def validate(s, *_):
         """ Validate our timeline range """
@@ -304,6 +308,31 @@ class Range(object):
         s.min.value = start
         s.max.value = end
 
+    def inner_loop(s):
+        """ Detect things on loop, with low priority """
+        while s.loop:
+            SEM.acquire()
+            utils.executeDeferred(cmds.scriptJob, ro=True, e=("idle", s.update_timeline_highlight))
+            time.sleep(0.3)
+
+    def update_timeline_highlight(s):
+        """ If the timeline is highlighted, update range values """
+        try:
+            if cmds.layout(s.row, q=True, ex=True):
+                fr = utility.get_frame_range()
+                if fr:
+                    s.set_range(*fr, auto=True)
+                else:
+                    frame = utility.get_frame()
+                    s.set_range(frame, frame, auto=True)
+            else:
+                s.loop = False
+        except Exception as err:
+            print("ERROR:", err)
+            s.loop = False
+        finally:
+            SEM.release()
+
     def export(s):
         """ Pump out values """
         return s.min.value, s.max.value
@@ -314,7 +343,6 @@ class Window(object):
         s.idle = True
         s.tabs = []
         s.group_index = 0
-        s.loop = True
         name = "attrsnap"
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
@@ -343,34 +371,6 @@ class Window(object):
 
         # Initial group
         s.new_group()
-
-        # Detect things!
-        threading.Thread(target=s.inner_loop).start()
-
-    def inner_loop(s):
-        """ Detect things on loop """
-        while s.loop:
-            SEM.acquire()
-            utils.executeDeferred(cmds.scriptJob, ro=True, e=("idle", s.update_timeline_highlight))
-            time.sleep(0.3)
-
-    def update_timeline_highlight(s):
-        """ If the timeline is highlighted, update range values """
-        try:
-            if cmds.window(s.win, q=True, ex=True):
-                fr = utility.get_frame_range()
-                if fr:
-                    s.range.set_range(*fr, auto=True)
-                else:
-                    s.range.set_range(*[utility.get_frame()]*2, auto=True)
-            else:
-                s.loop = False
-        except Exception as err:
-            print(err)
-            s.loop = False
-        finally:
-            SEM.release()
-
 
     def delete_tab(s, *_):
         """ Delete active tab """
