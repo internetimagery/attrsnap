@@ -205,7 +205,7 @@ class Tab(object):
         s.markers = Markers(markers, s.validate, template.markers)
         # -----
         cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="Add Attribute from Channelbox", c=lambda _: s.attributes.add_attribute(*utility.get_attribute()),
+        cmds.button(l="Add Attribute from Channelbox", c=lambda _: [s.attributes.add_attribute(a) for a in utility.get_attribute()],
         ann="Highlight attributes in the channelbox, and click the button to add them.")
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
         # attributes = cmds.scrollLayout(cr=True, h=300, bgc=BLACK)
@@ -417,7 +417,9 @@ class Window(object):
 
     def load_template(s, *_):
         """ Load template file """
-        raise NotImplementedError("Sorry... Not yet.")
+        path = cmds.fileDialog2(fm=1, ff="Snap file (*.snap)")
+        if path:
+            Window(groups.load(path[0]))
 
     def save_template(s, *_):
         """ Save template file """
