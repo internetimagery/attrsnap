@@ -120,7 +120,7 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         print("Finished after {} steps".format(i))
     yield closest_dist, closest_values
 
-def match(grps, start_frame=None, end_frame=None, **kwargs):
+def match(templates, start_frame=None, end_frame=None, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
@@ -129,6 +129,7 @@ def match(grps, start_frame=None, end_frame=None, **kwargs):
     """
     start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
     end_frame = start_frame if end_frame is None else int(end_frame)
+    grps = [groups.Group(t) for t in templates]
 
     # TODO: Keep track of closest values here, before passing them on.
     framestep = 1 / (end_frame - start_frame)

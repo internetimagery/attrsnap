@@ -123,18 +123,19 @@ class Attributes(object):
             c = cmds.columnLayout(adj=True, p=rows)
             cmds.text(l=col, p=c, bgc=GREY)
             s.cols.append(c)
-        s.attributes = [Attribute(s.cols, update, a) for a in attributes or []]
+        s.attributes = []
+        for attr in attributes or []:
+            name = ".".join(attr[:2])
+            args = [name] + attr[2:]
+            s.add_attribute(*args)
 
-    def add_attributes(s, *names):
+    def add_attribute(s, name, min_=-9999, max_=9999):
         """ Add a new attribute """
-        duplicates = set()
         for attr in s.attributes:
-            for name in names:
-                if name == attr.attr.value:
-                    duplicates.add(name)
-        for name in set(names) - duplicates:
-            attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name)
-            s.attributes.append(attr)
+            if name == attr.attr.value:
+                return
+        attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name, min_, max_)
+        s.attributes.append(attr)
 
     def del_attribute(s, name):
         """ Remove attribute! """
@@ -159,10 +160,12 @@ class Attributes(object):
 
 class Markers(object):
     """ Gui for markers """
-    def __init__(s, parent, update, m1="", m2=""):
+    def __init__(s, parent, update, markers):
         s.parent = cmds.columnLayout(adj=True, p=parent)
         s.m1 = TextBox(s.parent, update)
         s.m2 = TextBox(s.parent, update)
+        for m, gui in zip(markers, [s.m1, s.m2]):
+            gui.value = m
         s.validate()
 
     def validate(s, *_):
@@ -181,34 +184,36 @@ class Markers(object):
 
 class Tab(object):
     """ Tab holding information! """
-    def __init__(s, tab_parent, name="Group", enabled=True):
+    def __init__(s, tab_parent, template):
         s.parent = tab_parent
         s.layout = cmds.columnLayout(adj=True, p=s.parent)
         s.ready = False
 
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
-        s.GUI_enable = cmds.checkBox(l="Enable", v=enabled, cc=s.enable,
+        s.GUI_enable = cmds.checkBox(l="Enable", v=template.enabled, cc=s.enable,
         ann="Disabled groups will not be evaluated. Useful if you don't want to use a group, while not wanting to delete it.")
         s.GUI_type = cmds.optionMenu(
         ann="Matching type. Position: Moves objects closer together. Rotation: Orients objects closer together.")
         for opt in options:
+            # TODO: MAKE THIS PICK THE RIGHT ONE WHEN TEMPLATE SAYS SO
             cmds.menuItem(l=opt)
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)),
         ann="Select two objects in the scene that you wish to be moved/rotated closer together.")
-        s.markers = Markers(markers, s.validate)
+        s.markers = Markers(markers, s.validate, template.markers)
         # -----
         cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="Add Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()),
+        cmds.button(l="Add Attribute from Channelbox", c=lambda _: s.attributes.add_attribute(*utility.get_attribute()),
         ann="Highlight attributes in the channelbox, and click the button to add them.")
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
         # attributes = cmds.scrollLayout(cr=True, h=300, bgc=BLACK)
-        s.attributes = Attributes(attributes, s.validate)
+        s.attributes = Attributes(attributes, s.validate, template.attributes)
         # -----
 
-        s.set_title(name)
+        # Pre fill information
+        s.set_title(template.name)
         s.ready = True
         s.validate()
 
@@ -262,7 +267,8 @@ class Tab(object):
         match_type = s.get_type()
         markers = [s.markers.m1.value, s.markers.m2.value]
         attributes = list(s.attributes.export())
-        return groups.Group(
+        return groups.Template(
+            enabled=s.is_active(),
             name=name,
             match_type=match_type,
             markers=markers,
@@ -341,7 +347,8 @@ class Range(object):
 
 class Window(object):
     """ Main window! """
-    def __init__(s):
+    def __init__(s, templates=None):
+        templates = templates or []
         s.idle = True
         s.tabs = []
         s.group_index = 0
@@ -372,7 +379,11 @@ class Window(object):
         cmds.showWindow(s.win)
 
         # Initial group
-        s.new_group()
+        if templates:
+            for t in templates:
+                s.new_group(t)
+        else:
+            s.new_group()
 
     def delete_tab(s, *_):
         """ Delete active tab """
@@ -391,15 +402,17 @@ class Window(object):
         for tab in (t for t in s.tabs if selected in t.layout):
             tab.rename()
 
-    def new_group(s, *_):
+    def new_group(s, template=None):
         """ Create a new group """
-        tab_names = cmds.tabLayout(s.tab_grp, q=True, tl=True) or []
-        while True:
-            s.group_index += 1
-            name = "Group{}".format(s.group_index)
-            if name not in tab_names:
-                break
-        s.tabs.append(Tab(s.tab_grp, "Group{}".format(s.group_index)))
+        if not template:
+            tab_names = cmds.tabLayout(s.tab_grp, q=True, tl=True) or []
+            while True:
+                s.group_index += 1
+                name = "Group{}".format(s.group_index)
+                if name not in tab_names:
+                    break
+            template = groups.Template(name="Group{}".format(s.group_index))
+        s.tabs.append(Tab(s.tab_grp, template))
         cmds.tabLayout(s.tab_grp, e=True, sti=cmds.tabLayout(s.tab_grp, q=True, nch=True))
 
     def load_template(s, *_):
@@ -408,10 +421,10 @@ class Window(object):
 
     def save_template(s, *_):
         """ Save template file """
-        grps = [tab.export() for tab in s.tabs if tab.validate()]
+        templates = [tab.export() for tab in s.tabs]
         path = cmds.fileDialog2(fm=0, ff="Snap file (*.snap)")
         if path:
-            groups.save(grps, path[0])
+            groups.save(templates, path[0])
 
     def run_match(s, *_):
         """ Run match! Woot """
