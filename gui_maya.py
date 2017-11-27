@@ -89,7 +89,7 @@ class Attribute(object):
                 max_ = limit[1]
         s.min = IntBox(cols[1], update, min_)
         s.max = IntBox(cols[2], update, max_)
-        s.trash = cmds.iconTextButton(p=cols[3], i="trash.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
+        s.trash = cmds.iconTextButton(p=cols[3], i="removeRenderable.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
@@ -279,7 +279,7 @@ class Range(object):
         col = cmds.columnLayout(p=s.row)
         s.dynamic = IconCheckBox(col, lambda x: "", v=True,
         l="Automatic\nFrame Range:",
-        i="playblast.png",
+        i="autoload.png",
         st="iconAndTextHorizontal",
         ann="RIGHT CLICK: Additional options.\nON: Auto frame range.\nOFF: Manual.")
         cmds.popupMenu(p=col)
@@ -408,8 +408,10 @@ class Window(object):
 
     def save_template(s, *_):
         """ Save template file """
-        valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
-        raise NotImplementedError("Sorry... Load doesn't work! Why would this?")
+        grps = [tab.export() for tab in s.tabs if tab.validate()]
+        path = cmds.fileDialog2(fm=0, ff="Snap file (*.snap)")
+        if path:
+            groups.save(grps, path[0])
 
     def run_match(s, *_):
         """ Run match! Woot """

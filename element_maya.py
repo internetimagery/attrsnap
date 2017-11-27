@@ -34,7 +34,7 @@ class Attribute(object):
         if query(mxe=True):
             s.max = min(query(max=True), s.max)
 
-    def __str__(s):
+    def __repr__(s):
         """ Represent object in a usable state for cmds """
         return s._attr.name()
 
@@ -57,7 +57,7 @@ class Marker(object):
     def __init__(s, name):
         node = get_node(name)
         s.node = om.MFnTransform(om.MDagPath.getAPathTo(node))
-    def __str__(s):
+    def __repr__(s):
         return s.node.name()
     def get_position(s):
         """ Get position of object """
@@ -86,8 +86,8 @@ class Marker_Set(object):
 
     def __iter__(s):
         """ Loop over entries """
-        for a in (s.node1, s.node2):
-            yield a
+        yield s.node1
+        yield s.node2
 
 class Curve(object):
     def __init__(s, point):

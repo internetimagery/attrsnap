@@ -1,10 +1,27 @@
 # Match positions / rotations.
 from __future__ import print_function, division
 import element
+import json
 
 POSITION = 0
 ROTATION = 1
 
+def save(groups, file_path):
+    """ Export a list of groups into a file """
+    data = []
+    for group in groups:
+        data.append({
+            "name": group.get_name(),
+            "type": group.get_type(),
+            "markers": [str(a) for a in group.get_markers()],
+            "attributes": [str(a) for a in group.get_attributes()]
+            })
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+
+def load(file_path):
+    """ Load a list of groups from a file """
+    pass
 
 class Group(object):
     """ A group of objects and attributes for matching """
