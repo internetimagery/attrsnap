@@ -140,10 +140,10 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
         frame_prog = i * framestep
 
         # Collect information
-        collective = {}
+        # collective = {}
         for combo in itertools.product(grps):
-            result = []
-            totals = 0
+            # result = []
+            # totals = 0
             for j, grp in enumerate(combo):
                 group_prog = j * groupstep
                 total_dist = None
@@ -154,13 +154,14 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
                         break
                     progress = 1-dist/total_dist
                     yield progress * groupstep + group_prog + frame_prog
-                result.append((grp, values))
-                totals += dist
-            collective[totals] = result
+                grp.keyframe(vals)
+                # result.append((grp, values))
+                # totals += dist
+            # collective[totals] = result
 
         # Key the nearest combo
-        for grp, vals in collective[min(collective)]:
-            grp.keyframe(vals)
+        # for grp, vals in collective[min(collective)]:
+        #     grp.keyframe(vals)
 
     yield 1
 
