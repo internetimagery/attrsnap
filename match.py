@@ -132,13 +132,19 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     grps = [groups.Group(t) for t in templates]
 
     # TODO: Keep track of closest values here, before passing them on.
-    framestep = 1 / (end_frame - start_frame)
+    frame_diff = end_frame - start_frame
+    framestep = frame_diff and 1 / frame_diff
     groupstep = 1 / framestep
-    yield 0
+    yield 0 # Kick us off
     for i, frame in enumerate(range(start_frame, end_frame+1)):
         utility.set_frame(frame)
         frame_prog = i * framestep
+
+        # Collect information
+        collective = {}
         for combo in itertools.product(grps):
+            result = []
+            totals = 0
             for j, grp in enumerate(combo):
                 group_prog = j * groupstep
                 total_dist = None
@@ -149,11 +155,14 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
                         break
                     progress = 1-dist/total_dist
                     yield progress * groupstep + group_prog + frame_prog
-                grp.keyframe(values)
-                # if not i:
-                #     # TODO: First run through. Add some random
-                #     # positions and search those too. For extra coverage
-                #     pass
+                result.append((grp, values))
+                totals += dist
+            collective[totals] = result
+
+        # Key the nearest combo
+        for grp, vals in collective[min(collective)]:
+            grp.keyframe(vals)
+
     yield 1
 
 def test():

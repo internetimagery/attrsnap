@@ -1,12 +1,5 @@
-Throw error if attribute is out of range at the beginning of matching.
-OR move it to the nearest range limit in one swoop.
+Throw error if attribute is out of range at the beginning of matching. OR move it to the nearest range limit in one swoop.
 
-Move button below the action.
+create object matching tool to assist in finding objects when their names don't entirely match. Will happen when importing.
 
-Replace above button with frame range digits. run range from this value
-but update it if someone selects something in the timeline.
-
-flesh out import / export functionality
-
-create object matching tool to assist in finding objects when their
-names don't entirely match. Will happen when importing.
+when matching combos, keep track of nearest combo and run with that.
