@@ -183,17 +183,21 @@ class Tab(object):
 
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
-        s.GUI_enable = cmds.checkBox(l="Enable", v=enabled, cc=s.enable)
-        s.GUI_type = cmds.optionMenu()
+        s.GUI_enable = cmds.checkBox(l="Enable", v=enabled, cc=s.enable,
+        ann="Disabled groups will not be evaluated. Useful if you don't want to delete a group, but wish to keep it around.")
+        s.GUI_type = cmds.optionMenu(
+        ann="Matching type. Position: Moves objects closer together. Rotation: Orients objects closer together.")
         for opt in options:
             cmds.menuItem(l=opt)
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)))
+        cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)),
+        ann="Select two objects in the scene that you wish to be moved/rotated closer together.")
         s.markers = Markers(markers, s.validate)
         # -----
         cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="Add Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()))
+        cmds.button(l="Add Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()),
+        ann="Highlight attributes in the channelbox, and click the button to add them.")
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
         # attributes = cmds.scrollLayout(cr=True, h=300, bgc=BLACK)
         s.attributes = Attributes(attributes, s.validate)
@@ -312,16 +316,21 @@ class Window(object):
         root = cmds.columnLayout(adj=True)
         cmds.menuBarLayout()
         cmds.menu(l="Groups")
-        cmds.menuItem(l="New Group", c=s.new_group)
-        cmds.menuItem(l="Remove Group", c=s.delete_tab)
-        cmds.menuItem(l="Load Template", c=s.load_template)
-        cmds.menuItem(l="Save Template", c=s.save_template)
+        cmds.menuItem(l="New Group", c=s.new_group,
+        ann="Create a new group.")
+        cmds.menuItem(l="Remove Group", c=s.delete_tab,
+        ann="Remove currently visible group.")
+        cmds.menuItem(l="Load Template", c=s.load_template,
+        ann="Get groups from a template file.")
+        cmds.menuItem(l="Save Template", c=s.save_template,
+        ann="Save current groups into a template file. For later retrieval.")
         s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab, p=root)
 
         cmds.separator(p=root)
         row = cmds.rowLayout(nc=2, adj=2, p=root)
         s.range = Range(row)
-        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, c=s.run_match, p=row)
+        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, c=s.run_match, p=row,
+        ann="Click to start matching. Using all enabled groups.")
         cmds.helpLine(p=root)
         cmds.showWindow(s.win)
 
