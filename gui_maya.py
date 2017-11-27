@@ -190,7 +190,7 @@ class Tab(object):
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
         s.GUI_enable = cmds.checkBox(l="Enable", v=enabled, cc=s.enable,
-        ann="Disabled groups will not be evaluated. Useful if you don't want to delete a group, but wish to keep it around.")
+        ann="Disabled groups will not be evaluated. Useful if you don't want to use a group, while not wanting to delete it.")
         s.GUI_type = cmds.optionMenu(
         ann="Matching type. Position: Moves objects closer together. Rotation: Orients objects closer together.")
         for opt in options:
