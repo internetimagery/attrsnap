@@ -55,7 +55,7 @@ class Widget(object):
 class IntBox(Widget):
     """ Int box """
     def __init__(s, parent, update, val=0):
-        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, bgc=BLACK)
+        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK)
 
 class CheckBox(Widget):
     """ Int box """
@@ -69,18 +69,17 @@ class TextBox(Widget):
 
 class Attribute(object):
     """ gui for single attribute """
-    def __init__(s, parent, update, delete, attribute="", min_=-9999, max_=9999):
-        s.row = cmds.rowLayout(nc=4, adj=1, p=parent)
-        s.attr = TextBox(s.row, update, attribute)
+    def __init__(s, cols, update, delete, attribute="", min_=-9999, max_=9999):
+        s.attr = TextBox(cols[0], update, attribute)
         if utility.valid_attribute(attribute):
             limit = utility.attribute_range(attribute)
             if limit[0] is not None:
                 min_ = limit[0]
             if limit[1] is not None:
                 max_ = limit[1]
-        s.min = IntBox(s.row, update, min_)
-        s.max = IntBox(s.row, update, max_)
-        cmds.iconTextButton(i="trash.png", st="iconOnly", p=s.row, c=delete)
+        s.min = IntBox(cols[1], update, min_)
+        s.max = IntBox(cols[2], update, max_)
+        s.trash = cmds.iconTextButton(p=cols[3], i="trash.png", st="iconOnly", c=delete)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
@@ -101,14 +100,19 @@ class Attribute(object):
 
     def remove(s):
         """ Remove element """
-        cmds.deleteUI(s.row)
+        cmds.deleteUI([s.trash, s.attr.gui, s.min.gui, s.max.gui])
 
 class Attributes(object):
     """ Gui for attributes """
     def __init__(s, parent, update, attributes=None):
-        s.parent = parent
         s.update = update
-        s.attributes = [Attribute(parent, update, a) for a in attributes or []]
+        columns = ["Name", "Min", "Max", ""]
+        rows = cmds.rowLayout(nc=len(columns), adj=1, p=parent)
+        s.cols = []
+        for col in columns:
+            s.cols.append(cmds.columnLayout(adj=True, p=rows))
+            cmds.text(l=col)
+        s.attributes = [Attribute(s.cols, update, a) for a in attributes or []]
 
     def add_attributes(s, *names):
         """ Add a new attribute """
@@ -118,7 +122,7 @@ class Attributes(object):
                 if name == attr.attr.value:
                     duplicates.add(name)
         for name in set(names) - duplicates:
-            attr = Attribute(s.parent, s.update, functools.partial(s.del_attribute, name), name)
+            attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name)
             s.attributes.append(attr)
 
     def del_attribute(s, name):
@@ -179,11 +183,11 @@ class Tab(object):
             cmds.menuItem(l=opt)
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="New markers from selection", c=lambda _: s.markers.set(*utility.get_selection(2)))
+        cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)))
         s.markers = Markers(markers, s.validate)
         # -----
         cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="New Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()))
+        cmds.button(l="Add Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()))
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
         # attributes = cmds.scrollLayout(cr=True, h=300, bgc=BLACK)
         s.attributes = Attributes(attributes, s.validate)

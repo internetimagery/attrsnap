@@ -10,7 +10,3 @@ flesh out import / export functionality
 
 create object matching tool to assist in finding objects when their
 names don't entirely match. Will happen when importing.
-
-Create table-style layout for attriubtes, so each field is named
-
-rename "marker" button to something more descriptive and verbose
