@@ -154,7 +154,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
                         break
                     progress = 1-dist/total_dist
                     yield progress * groupstep + group_prog + frame_prog
-                grp.keyframe(vals)
+                grp.keyframe(values)
                 # result.append((grp, values))
                 # totals += dist
             # collective[totals] = result
