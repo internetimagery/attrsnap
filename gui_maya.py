@@ -67,6 +67,12 @@ class CheckBox(Widget):
     def __init__(s, parent, update, val=True):
         Widget.__init__(s, cmds.checkBox, "v", v=val, p=parent, cc=update, bgc=BLACK)
 
+class IconCheckBox(Widget):
+    """ Checkbox with image! """
+    def __init__(s, parent, update, val=False, **kwargs):
+        Widget.__init__(s, cmds.iconTextCheckBox, "v", l="Frame Range:",
+            i="playblast.png", st="iconAndTextHorizontal", cc=update, **kwargs)
+
 class TextBox(Widget):
     """ Text box full of boxy text! """
     def __init__(s, parent, update, text=""):
@@ -271,13 +277,11 @@ class Range(object):
     """ Frame range widget """
     def __init__(s, parent):
         row = cmds.rowLayout(nc=2, p=parent)
-        cmds.columnLayout(p=row)
-        cmds.iconTextButton(
-            l="Frame Range:",
-            ann="Single Click: To set time to current frame only.\nDouble Click: To set time to playback range.",
-            i="playblast.png", st="iconAndTextHorizontal",
-            dcc=lambda: s.set_range(*utility.get_playback_range()),
-            c=lambda: s.set_range(*[utility.get_frame()]*2))
+        col = cmds.columnLayout(p=row)
+        s.dynamic = IconCheckBox(col, lambda x: "", v=True,
+        ann="RIGHT CLICK: Additional options.\nON: Auto frame range. OFF: Manual.")
+        cmds.popupMenu(p=col)
+        cmds.menuItem(l="Set to playback range.", c=lambda x: s.set_range(*utility.get_playback_range()))
         col = cmds.columnLayout(p=row)
         frame = utility.get_frame()
         s.min = IntBox(col, s.validate, frame)
@@ -292,8 +296,11 @@ class Range(object):
             ok = False
         return ok
 
-    def set_range(s, start, end):
+    def set_range(s, start, end, auto=False):
         """ Set range to values """
+        if auto and not s.dynamic.value:
+            return
+        s.dynamic.value = auto
         s.min.value = start
         s.max.value = end
 
@@ -353,7 +360,9 @@ class Window(object):
             if cmds.window(s.win, q=True, ex=True):
                 fr = utility.get_frame_range()
                 if fr:
-                    s.range.set_range(*fr)
+                    s.range.set_range(*fr, auto=True)
+                else:
+                    s.range.set_range(*[utility.get_frame()]*2, auto=True)
             else:
                 s.loop = False
         except Exception as err:
