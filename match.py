@@ -129,13 +129,13 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     """
     start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
     end_frame = start_frame if end_frame is None else int(end_frame)
+    end_frame += 1
     grps = [groups.Group(t) for t in templates]
 
-    frame_diff = end_frame - start_frame
-    framestep = frame_diff and 1 / frame_diff
+    framestep = frame_diff and 1 / (end_frame - start_frame)
     groupstep = 1 / framestep
     yield 0 # Kick us off
-    for i, frame in enumerate(range(start_frame, end_frame+1)):
+    for i, frame in enumerate(range(start_frame, end_frame)):
         utility.set_frame(frame)
         frame_prog = i * framestep
 
