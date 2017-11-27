@@ -71,8 +71,8 @@ class TextBox(Widget):
 
 class Attribute(object):
     """ gui for single attribute """
-    def __init__(s, parent, update, attribute="", min_=-9999, max_=9999):
-        s.row = cmds.rowLayout(nc=3, adj=1, p=parent)
+    def __init__(s, parent, update, delete, attribute="", min_=-9999, max_=9999):
+        s.row = cmds.rowLayout(nc=4, adj=1, p=parent)
         s.attr = TextBox(s.row, update, attribute)
         if utility.valid_attribute(attribute):
             limit = utility.attribute_range(attribute)
@@ -82,6 +82,7 @@ class Attribute(object):
                 max_ = limit[1]
         s.min = IntBox(s.row, update, min_)
         s.max = IntBox(s.row, update, max_)
+        cmds.iconTextButton(i="trash.png", st="iconOnly", p=s.row, c=delete)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
@@ -100,6 +101,10 @@ class Attribute(object):
         """ Return representation of data """
         return s.attr.value, s.min.value, s.max.value
 
+    def remove(s):
+        """ Remove element """
+        cmds.deleteUI(s.row)
+
 class Attributes(object):
     """ Gui for attributes """
     def __init__(s, parent, update, attributes=None):
@@ -115,11 +120,15 @@ class Attributes(object):
                 if name == attr.attr.value:
                     duplicates.add(name)
         for name in set(names) - duplicates:
-            s.attributes.append(Attribute(s.parent, s.update, name))
+            attr = Attribute(s.parent, s.update, functools.partial(s.del_attribute, name), name)
+            s.attributes.append(attr)
 
     def del_attribute(s, name):
         """ Remove attribute! """
-        pass
+        to_remove = [(i, a) for i, a in enumerate(s.attributes) if a.attr.value == name]
+        for i, attr in to_remove:
+            del s.attributes[i]
+            attr.remove()
 
     def validate(s):
         """ Validate attributes """
