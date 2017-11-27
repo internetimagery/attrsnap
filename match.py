@@ -131,7 +131,6 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     end_frame = start_frame if end_frame is None else int(end_frame)
     grps = [groups.Group(t) for t in templates]
 
-    # TODO: Keep track of closest values here, before passing them on.
     frame_diff = end_frame - start_frame
     framestep = frame_diff and 1 / frame_diff
     groupstep = 1 / framestep
