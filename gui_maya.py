@@ -268,12 +268,18 @@ class Range(object):
     def __init__(s, parent):
         row = cmds.rowLayout(nc=2, p=parent)
         cmds.columnLayout(p=row)
-        cmds.iconTextButton(l="Frame Range:", ann="Click to set time to playback range", i="playblast.png", st="iconAndTextHorizontal")
+        cmds.iconTextButton(
+            l="Frame Range:",
+            ann="Single Click: To set time to current frame only.\nDouble Click: To set time to playback range.",
+            i="playblast.png", st="iconAndTextHorizontal",
+            dcc=lambda: s.set_range(*utility.get_playback_range()),
+            c=lambda: s.set_range(*[utility.get_frame()]*2))
         col = cmds.columnLayout(p=row)
-        s.min = IntBox(col, s.validate)
-        s.max = IntBox(col, s.validate)
+        frame = utility.get_frame()
+        s.min = IntBox(col, s.validate, frame)
+        s.max = IntBox(col, s.validate, frame)
 
-    def validate(s):
+    def validate(s, *_):
         """ Validate our timeline range """
         ok = True
         if not s.min.validate(lambda x: x <= s.max.value):
@@ -281,6 +287,15 @@ class Range(object):
         if not s.max.validate(lambda x: x >= s.min.value):
             ok = False
         return ok
+
+    def set_range(s, start, end):
+        """ Set range to values """
+        s.min.value = start
+        s.max.value = end
+
+    def export(s):
+        """ Pump out values """
+        return s.min.value, s.max.value
 
 class Window(object):
     """ Main window! """
@@ -305,8 +320,9 @@ class Window(object):
 
         cmds.separator(p=root)
         row = cmds.rowLayout(nc=2, adj=2, p=root)
-        Range(row)
+        s.range = Range(row)
         cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, c=s.run_match, p=row)
+        cmds.helpLine(p=root)
         cmds.showWindow(s.win)
 
         # Initial group
@@ -328,7 +344,7 @@ class Window(object):
             if cmds.window(s.win, q=True, ex=True):
                 fr = utility.get_frame_range()
                 if fr:
-                    print("FRAME RANGE!", fr)
+                    s.range.set_range(*fr)
             else:
                 s.loop = False
         except Exception as err:
@@ -383,7 +399,9 @@ class Window(object):
             num_valid = len(valid)
             if not valid:
                 return
-            frame_range = utility.get_frame_range()
+            if not s.range.validate():
+                return
+            frame_range = s.range.export()
             frame_diff = (frame_range[1] - frame_range[0]) + 1
             frame_scale = 1 / frame_diff
             grp_scale = 1 / num_valid

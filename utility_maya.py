@@ -47,6 +47,10 @@ def get_frame_range():
     return []
     # return [cmds.currentTime(q=True)]*2
 
+def get_playback_range():
+    """ Get frame range from playback """
+    return cmds.playbackOptions(q=True, min=True), cmds.playbackOptions(q=True, max=True)
+
 def frame_walk(start, end):
     """ Move along frames """
     origin = cmds.currentTime(q=True)
