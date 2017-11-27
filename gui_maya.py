@@ -9,8 +9,6 @@ import utility
 import groups
 import match
 
-
-# TODO: Make attributes deleteable
 # TODO: Make attributes use limits
 
 BLACK = (0.1,0.1,0.1)
@@ -141,7 +139,8 @@ class Attributes(object):
     def export(s):
         """ Send out attributes """
         for at in s.attributes:
-            yield at.export()
+            attr, min_, max_ = at.export()
+            yield attr.split(".") + [min_, max_]
 
 class Markers(object):
     """ Gui for markers """
@@ -185,7 +184,8 @@ class Tab(object):
         # -----
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="New Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()))
-        attributes = cmds.scrollLayout(h=300, bgc=BLACK)
+        attributes = cmds.columnLayout(adj=True, bgc=BLACK)
+        # attributes = cmds.scrollLayout(cr=True, h=300, bgc=BLACK)
         s.attributes = Attributes(attributes, s.validate)
         # -----
 
@@ -242,7 +242,7 @@ class Tab(object):
         name = s.name
         match_type = s.get_type()
         markers = [s.markers.m1.value, s.markers.m2.value]
-        attributes = [at[0].split(".") for at in s.attributes.export()]
+        attributes = list(s.attributes.export())
         return groups.Group(
             name=name,
             match_type=match_type,

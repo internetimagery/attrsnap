@@ -47,7 +47,7 @@ class Group(object):
         return s.attributes
     def add_attributes(s, *attrs):
         """ Add some attributes """
-        s.attributes += [element.Attribute(a, b) for a, b in attrs]
+        s.attributes += [element.Attribute(*at) for at in attrs]
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
