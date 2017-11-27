@@ -1,5 +1,5 @@
 # Match two objects as close together as possible using as few steps as possible (still brute force!)
-from __future__ import print_function
+from __future__ import print_function, division
 import itertools
 import element
 import utility
@@ -131,23 +131,29 @@ def match(grps, start_frame=None, end_frame=None, **kwargs):
     end_frame = start_frame if end_frame is None else int(end_frame)
 
     # TODO: Keep track of closest values here, before passing them on.
+    framestep = 1 / (end_frame - start_frame)
+    groupstep = 1 / framestep
+    yield 0
     for i, frame in enumerate(range(start_frame, end_frame+1)):
         utility.set_frame(frame)
+        frame_prog = i * framestep
         for combo in itertools.product(grps):
-            for grp in combo:
-                for j, (dist, values) in enumerate(search(grp, **kwargs)):
-                    if not j:
+            for j, grp in enumerate(combo):
+                group_prog = j * groupstep
+                total_dist = None
+                for dist, values in search(grp, **kwargs):
+                    if total_dist is None:
                         total_dist = dist
                     if not dist: # Break early if we're there
                         break
                     progress = 1-dist/total_dist
-                    yield progress
+                    yield progress * groupstep + group_prog + frame_prog
                 grp.keyframe(values)
-                yield 1
-                if not i:
-                    # TODO: First run through. Add some random
-                    # positions and search those too. For extra coverage
-                    pass
+                # if not i:
+                #     # TODO: First run through. Add some random
+                #     # positions and search those too. For extra coverage
+                #     pass
+    yield 1
 
 def test():
     import maya.cmds as cmds
