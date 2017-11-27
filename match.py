@@ -132,7 +132,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     end_frame += 1
     grps = [groups.Group(t) for t in templates]
 
-    framestep = frame_diff and 1 / (end_frame - start_frame)
+    framestep = 1 / (end_frame - start_frame)
     groupstep = 1 / framestep
     yield 0 # Kick us off
     for i, frame in enumerate(range(start_frame, end_frame)):
