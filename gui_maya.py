@@ -1,20 +1,25 @@
 # Prepare and run gui!
 
 from __future__ import print_function, division
+import maya.utils as utils
 import maya.cmds as cmds
 import maya.mel as mel
 import collections
 import functools
+import threading
 import utility
 import groups
 import match
+import time
 
-# TODO: Make attributes use limits
+SEM = threading.BoundedSemaphore(1)
+WIDGET_HEIGHT = 30
 
 BLACK = (0.1,0.1,0.1)
 GREEN = (0.2, 0.5, 0.4)
 RED = (0.4, 0.3, 0.3)
 YELLOW = (0.7, 0.7, 0.1)
+GREY = (0.2,0.2,0.2)
 # L_GREEN = [a * 1.5 for a in GREEN]
 # D_GREEN = [a * 0.4 for a in GREEN]
 # D_RED = [a * 0.4 for a in RED]
@@ -55,7 +60,7 @@ class Widget(object):
 class IntBox(Widget):
     """ Int box """
     def __init__(s, parent, update, val=0):
-        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK)
+        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK, h=WIDGET_HEIGHT)
 
 class CheckBox(Widget):
     """ Int box """
@@ -65,7 +70,7 @@ class CheckBox(Widget):
 class TextBox(Widget):
     """ Text box full of boxy text! """
     def __init__(s, parent, update, text=""):
-        Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK)
+        Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK, h=WIDGET_HEIGHT)
 
 class Attribute(object):
     """ gui for single attribute """
@@ -79,7 +84,7 @@ class Attribute(object):
                 max_ = limit[1]
         s.min = IntBox(cols[1], update, min_)
         s.max = IntBox(cols[2], update, max_)
-        s.trash = cmds.iconTextButton(p=cols[3], i="trash.png", st="iconOnly", c=delete)
+        s.trash = cmds.iconTextButton(p=cols[3], i="trash.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
@@ -110,8 +115,9 @@ class Attributes(object):
         rows = cmds.rowLayout(nc=len(columns), adj=1, p=parent)
         s.cols = []
         for col in columns:
-            s.cols.append(cmds.columnLayout(adj=True, p=rows))
-            cmds.text(l=col)
+            c = cmds.columnLayout(adj=True, p=rows)
+            cmds.text(l=col, p=c, bgc=GREY)
+            s.cols.append(c)
         s.attributes = [Attribute(s.cols, update, a) for a in attributes or []]
 
     def add_attributes(s, *names):
@@ -235,10 +241,10 @@ class Tab(object):
                 if m_ok and a_ok:
                     cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
                 else:
-                    cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
+                    cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
                     ok = False
             else:
-                cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
+                cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
         return ok
 
     def export(s):
@@ -257,17 +263,37 @@ class Tab(object):
         """ Make class usable """
         return s.layout
 
+class Range(object):
+    """ Frame range widget """
+    def __init__(s, parent):
+        row = cmds.rowLayout(nc=2, p=parent)
+        cmds.columnLayout(p=row)
+        cmds.iconTextButton(l="Frame Range:", ann="Click to set time to playback range", i="playblast.png", st="iconAndTextHorizontal")
+        col = cmds.columnLayout(p=row)
+        s.min = IntBox(col, s.validate)
+        s.max = IntBox(col, s.validate)
+
+    def validate(s):
+        """ Validate our timeline range """
+        ok = True
+        if not s.min.validate(lambda x: x <= s.max.value):
+            ok = False
+        if not s.max.validate(lambda x: x >= s.min.value):
+            ok = False
+        return ok
+
 class Window(object):
     """ Main window! """
     def __init__(s):
         s.idle = True
         s.tabs = []
         s.group_index = 0
+        s.loop = True
         name = "attrsnap"
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
 
-        win = cmds.window(t="Attribute Snapping!")
+        s.win = cmds.window(t="Attribute Snapping!")
         root = cmds.columnLayout(adj=True)
         cmds.menuBarLayout()
         cmds.menu(l="Groups")
@@ -275,12 +301,42 @@ class Window(object):
         cmds.menuItem(l="Remove Group", c=s.delete_tab)
         cmds.menuItem(l="Load Template", c=s.load_template)
         cmds.menuItem(l="Save Template", c=s.save_template)
-        cmds.button(l="-- Do it! --", h=50, bgc=GREEN, c=s.run_match)
         s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab, p=root)
-        cmds.showWindow(win)
+
+        cmds.separator(p=root)
+        row = cmds.rowLayout(nc=2, adj=2, p=root)
+        Range(row)
+        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, c=s.run_match, p=row)
+        cmds.showWindow(s.win)
 
         # Initial group
         s.new_group()
+
+        # Detect things!
+        threading.Thread(target=s.inner_loop).start()
+
+    def inner_loop(s):
+        """ Detect things on loop """
+        while s.loop:
+            SEM.acquire()
+            utils.executeDeferred(cmds.scriptJob, ro=True, e=("idle", s.update_timeline_highlight))
+            time.sleep(0.3)
+
+    def update_timeline_highlight(s):
+        """ If the timeline is highlighted, update range values """
+        try:
+            if cmds.window(s.win, q=True, ex=True):
+                fr = utility.get_frame_range()
+                if fr:
+                    print("FRAME RANGE!", fr)
+            else:
+                s.loop = False
+        except Exception as err:
+            print(err)
+            s.loop = False
+        finally:
+            SEM.release()
+
 
     def delete_tab(s, *_):
         """ Delete active tab """

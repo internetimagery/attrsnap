@@ -40,11 +40,12 @@ def attribute_range(attr):
     return result
 
 def get_frame_range():
-    """ Get either a single frame, or selected region """
+    """ Get selected region """
     slider = mel.eval("$tmp = $gPlayBackSlider") # Get timeslider
     if cmds.timeControl(slider, q=True, rangeVisible=True): # Get framerange
         return cmds.timeControl(slider, q=True, rangeArray=True)
-    return [cmds.currentTime(q=True)]*2
+    return []
+    # return [cmds.currentTime(q=True)]*2
 
 def frame_walk(start, end):
     """ Move along frames """
