@@ -70,8 +70,7 @@ class CheckBox(Widget):
 class IconCheckBox(Widget):
     """ Checkbox with image! """
     def __init__(s, parent, update, val=False, **kwargs):
-        Widget.__init__(s, cmds.iconTextCheckBox, "v", l="Frame Range:",
-            i="playblast.png", st="iconAndTextHorizontal", cc=update, **kwargs)
+        Widget.__init__(s, cmds.iconTextCheckBox, "v", cc=update, **kwargs)
 
 class TextBox(Widget):
     """ Text box full of boxy text! """
@@ -279,6 +278,9 @@ class Range(object):
         s.row = cmds.rowLayout(nc=2, p=parent)
         col = cmds.columnLayout(p=s.row)
         s.dynamic = IconCheckBox(col, lambda x: "", v=True,
+        l="Automatic\nFrame Range:",
+        i="playblast.png",
+        st="iconAndTextHorizontal",
         ann="RIGHT CLICK: Additional options.\nON: Auto frame range.\nOFF: Manual.")
         cmds.popupMenu(p=col)
         cmds.menuItem(l="Set to playback range.", c=lambda x: s.set_range(*utility.get_playback_range()))
