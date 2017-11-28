@@ -65,6 +65,9 @@ def search(group, rate=0.8, beta1=0.9, beta2=0.99, tolerance=0.0001, limit=500, 
     # Validate parameters
     limit = abs(int(limit))
 
+    beta1 = 0.8
+    beta2 = 0.8
+
     # Initialize variables
     v = m = Vector([0]*len(group))
     root_dist = prev_dist = closest_dist = group.get_distance()
