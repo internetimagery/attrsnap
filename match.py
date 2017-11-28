@@ -145,6 +145,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
 
     framestep = 1 / (end_frame - start_frame)
     groupstep = 1 / framestep
+    combo_len = min(2, len(grps)) # Max number of combos to use at once. KEEP THIS NUMBER LOW!
     yield 0 # Kick us off
     for i, frame in enumerate(range(start_frame, end_frame)):
         utility.set_frame(frame)
@@ -152,7 +153,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
 
         # Collect information
         # collective = {}
-        for combo in itertools.permutations(grps):
+        for combo in itertools.permutations(grps, combo_len):
             # result = []
             # totals = 0
             for j, grp in enumerate(combo):
