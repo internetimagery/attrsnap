@@ -39,7 +39,7 @@ class Vector(tuple):
         return s.__sub__(s, lhs, True)
     def __div__(s, rhs, rev=False):
         lhs, rhs = (rhs, s) if rev else (s, rhs)
-        return s.__class__(lhs[i]/rhs[i] for i in range(len(s)))
+        return s.__class__(rhs[i] and lhs[i]/rhs[i] for i in range(len(s)))
     def __rdiv__(s, lhs):
         return s.__sub__(s, lhs, True)
     def __truediv__(s, rhs):
