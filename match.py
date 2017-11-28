@@ -33,8 +33,17 @@ class Vector(tuple):
     def __sub__(s, rhs, rev=False):
         lhs, rhs = (rhs, s) if rev else (s, rhs)
         return s.__class__(lhs[i]-rhs[i] for i in range(len(s)))
-    def __rsub(s, lhs):
+    def __rsub__(s, lhs):
         return s.__sub__(s, lhs, True)
+    def __div__(s, rhs, rev=False):
+        lhs, rhs = (rhs, s) if rev else (s, rhs)
+        return s.__class__(lhs[i]/rhs[i] for i in range(len(s)))
+    def __rdiv__(s, lhs):
+        return s.__sub__(s, lhs, True)
+    def __truediv__(s, rhs):
+        return s.__div__(rhs)
+    def __rtruediv__(s, lhs):
+        return s.__div__(lhs, True)
     def __mul__(s, rhs, rev=False):
         lhs, rhs = (rhs, s) if rev else (s, rhs)
         try: # Scalar
@@ -73,8 +82,19 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         curve2 = element.Curve(group.markers.node2.get_position())
 
     # GO!
+    m = v = Vector([0]*len(group))
+    beta1 = 0.9
+    beta2 = 0.999
+    learning_rate = 0.8
+    x = Vector(group.get_values())
+    eps = 0.000000000001
     for i in xrange(limit):
-        group.set_values(curr_values)
+        dx = Vector(group.get_gradient())
+        m = m*beta1 + dx*(1-beta1)
+        v = v*beta2 + Vector(a*a for a in dx)*(1-beta2)
+        x += m*-learning_rate / Vector(a and (a ** -0.5) * a + eps for a in v)
+
+        group.set_values(x)
 
         if debug:
             curve1.add(group.markers.node1.get_position())
@@ -84,10 +104,10 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         # If so, reduce our sample rate because we are close.
         # Also reduce our momentum so we can turn faster.
         dist = group.get_distance()
-        if dist > prev_dist:
-            rate *= 0.5
-            velocity *= 0.5
-        prev_dist = dist
+        # if dist > prev_dist:
+        #     rate *= 0.5
+        #     velocity *= 0.5
+        # prev_dist = dist
 
         # Check if we are closer than ever before.
         # Record it if so.
@@ -98,7 +118,7 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
-        if rate < tolerance:
+        if learning_rate < tolerance:
             if debug:
                 print("Rate below tolerance. Done.")
             break
@@ -112,11 +132,11 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         prev_gradient = gradient
 
         # Update our momentum
-        prev_velocity = velocity
-        velocity = velocity * friction - gradient * rate
-        curr_values += prev_velocity * -friction + velocity * (1+friction)
-        # Fit our position within our bounds
-        curr_values = tuple(at.min if curr_values[i] < at.min else at.max if curr_values[i] > at.max else curr_values[i] for i, at in enumerate(group))
+        # prev_velocity = velocity
+        # velocity = velocity * friction - gradient * rate
+        # curr_values += prev_velocity * -friction + velocity * (1+friction)
+        # # Fit our position within our bounds
+        # curr_values = tuple(at.min if curr_values[i] < at.min else at.max if curr_values[i] > at.max else curr_values[i] for i, at in enumerate(group))
 
     if debug:
         print("Finished after {} steps".format(i))
