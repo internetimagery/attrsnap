@@ -41,10 +41,14 @@ class Attribute(object):
 
     def set_value(s, val):
         """ Set attribute value """
-        if val <= s.max and s.min <= val:
-            if s._is_angle:
-                return s._attr.setMAngle(om.MAngle(val, om.MAngle.kDegrees))
-            s._attr.setDouble(val)
+        if val < s.min:
+            val = s.min
+        elif val > s.max:
+            val = s.max
+        if s._is_angle:
+            return s._attr.setMAngle(om.MAngle(val, om.MAngle.kDegrees))
+        s._attr.setDouble(val)
+        return val
 
     def get_value(s):
         """ Get current value """

@@ -67,7 +67,11 @@ class Group(object):
         result = []
         for attr in s.attributes:
             dist = s.get_distance()
-            attr.set_value(attr.get_value() + precision)
+            value = attr.get_value()
+            new_val = value + precision
+            if new_val > attr.max:
+                new_val = value - precision
+            attr.set_value(new_val)
             result.append((s.get_distance() - dist) / precision)
         return result
 
