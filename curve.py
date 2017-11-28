@@ -1,10 +1,39 @@
 # Match a curve to the position
 import maya.cmds as cmds
+import math
 
-def curve(a, b, c, x):
-    """ sample curve """
-    y = a*x**2 + b*x + c
-    return y
+class Bell(object):
+    def __call__(s, x, a, b, c):
+        return a ** -(x-b)**2/(2*c**2)
+    def __len__(s):
+        return 3
+
+class Sin(object):
+    def __call__(s, x, a, b, c):
+        return a * math.sin(b * x) + c
+    def __len__(s):
+        return 3
+
+class Abs(object):
+    def __call__(s, x, a, b, c):
+        return a * abs(x - b) + c
+    def __len__(s):
+        return 3
+
+class Poly2(object):
+    def __call__(s, x, a, b, c):
+        a *= 0.5
+        b *= 0.5
+        return a*x**2 + b*x + c
+    def __len__(s):
+        return 3
+
+class Poly3(object):
+    def __call__(s, x, a, b, c, d):
+        return a*x**3 + b*x**2 + c*x + d
+    def __len__(s):
+        return 4
+
 
 def distance(obj1, obj2):
     p1 = cmds.xform(obj1, q=True, ws=True, t=True)
@@ -12,6 +41,10 @@ def distance(obj1, obj2):
     p1p2 = (b-a for a,b in zip(p1, p2))
     mag2 = sum(a*a for a in p1p2)
     return mag2 and (mag2 ** -0.5) * mag2
+
+def length(vec):
+    mag2 = sum(a*a for a in vec)
+    return (mag2 ** -0.5) * mag2
 
 def gradient(vector, function, precision=0.001):
     base_err = function(*vector)
@@ -22,12 +55,12 @@ def gradient(vector, function, precision=0.001):
         result.append((new_err-base_err)/precision)
     return result
 
-def match(points):
+def match(points, curve):
 
-    ERR = lambda A,B,C: sum((curve(A,B,C,x)-y)**2 for x,y,z in points)
-    vals = [1,1,1]
+    ERR = lambda *vals: sum((curve(x, *vals)-y)**2 for x,y,z in points)
+    vals = [1]*len(curve)
 
-    rate = 0.0001
+    rate = 0.0000001
     friction = 0.8
     prev_err = closest_err = ERR(*vals)
     closest_values = vals
@@ -40,6 +73,8 @@ def match(points):
         # Also reduce our momentum so we can turn faster.
         err = ERR(*vals)
         grad = gradient(vals, ERR)
+        if not i:
+            print "GRADLEN", length(grad)
         if err > prev_err:
             rate *= 0.5
             velocity = [a*0.5 for a in velocity]
@@ -89,7 +124,7 @@ def test():
     loc1 = cmds.spaceLocator()[0]
 
     points = []
-    for x in range(-10, 10):
+    for x in range(-10, 10, 2):
         # for z in range(-10, 10):
         z = 0
         cmds.xform(loc1, t=(x, 0, z))
@@ -98,14 +133,15 @@ def test():
         cmds.spaceLocator(p=pnt)
         points.append(pnt)
 
-    A,B,C = match(points)
+    curve = Bell()
 
-    print "Result", A,B,C
-    print points[3][1], curve(A,B,C,points[3][0])
+    vals = match(points, curve)
+
+    print "Result", vals
 
     # crv = cmds.curve(p=(0,0,0))
     for i in range(-10, 11):
-        pos = (i, curve(A,B,C,i), 0)
+        pos = (i, curve(i, *vals), 0)
         try:
             cmds.curve(crv, a=True, p=pos)
         except NameError:
