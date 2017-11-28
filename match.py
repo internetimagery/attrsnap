@@ -122,6 +122,7 @@ def search(group, rate=0.8, beta1=0.9, beta2=0.99, tolerance=0.0001, limit=500, 
         m = m*beta1 + gradient*(1-beta1)
         v = v*beta2 + Vector(a*a for a in gradient)*(1-beta2)
         curr_values += m*-rate / v.sqrt()
+        curr_values = Vector(at.min if curr_values[i] < at.min else at.max if curr_values[i] > at.max else curr_values[i] for i, at in enumerate(group))
 
     if debug:
         print("Finished after {} steps".format(i))
