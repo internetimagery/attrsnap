@@ -55,7 +55,7 @@ class Vector(tuple):
     def __rmul__(s, lhs):
         return s.__mul__(lhs, True)
 
-def search(group, rate=0.8, beta1=0.9, beta2=0.99, tolerance=0.0001, limit=500, debug=False):
+def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, debug=False):
     """
     Match using gradient descent + momentum.
     rate = sample size of each step.
@@ -65,8 +65,8 @@ def search(group, rate=0.8, beta1=0.9, beta2=0.99, tolerance=0.0001, limit=500, 
     # Validate parameters
     limit = abs(int(limit))
 
-    beta1 = 0.8
-    beta2 = 0.8
+    # beta1 = 0.8
+    # beta2 = 0.8
 
     # Initialize variables
     v = m = Vector([0]*len(group))
@@ -92,9 +92,9 @@ def search(group, rate=0.8, beta1=0.9, beta2=0.99, tolerance=0.0001, limit=500, 
         # Also reduce our momentum so we can turn faster.
         dist = group.get_distance()
         if dist > prev_dist:
-            rate *= 0.7
-            beta1 *= 0.8
-            beta2 *= 0.8
+            rate *= 0.5
+            beta1 *= 0.5
+            beta2 *= 0.5
             v *= 0.5
             m *= 0.5
         prev_dist = dist
@@ -191,7 +191,7 @@ def test():
     cmds.xform(m1, t=rand())
     cmds.xform(m2, t=rand())
     cmds.setAttr(m2 + ".ty", 0)
-    cmds.setAttr(m3 + ".scaleX", 3)
+    cmds.setAttr(m3 + ".scaleX", 2)
     cmds.setAttr(m3 + ".scaleZ", 6)
 
     template = groups.Template(
