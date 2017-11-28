@@ -26,6 +26,8 @@ class Vector(tuple):
     def normalize(s):
         mag = s.length()
         return Vector(mag and a/mag for a in s)
+    def sqrt(s):
+        return Vector(a and (a ** -0.5)*a for a in s)
     def __add__(lhs, rhs):
         return lhs.__class__(lhs[i]+rhs[i] for i in range(len(lhs)))
     def __radd__(s, lhs):
@@ -53,7 +55,7 @@ class Vector(tuple):
     def __rmul__(s, lhs):
         return s.__mul__(lhs, True)
 
-def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=False):
+def search(group, rate=0.8, beta1=0.9, beta2=0.99, tolerance=0.0001, limit=500, debug=False):
     """
     Match using gradient descent + momentum.
     rate = sample size of each step.
@@ -61,17 +63,10 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
     limit = how many steps do we take before giving up?
     """
     # Validate parameters
-    if rate <= 0:
-        raise RuntimeError("Rate needs to be greater than zero.\nValue was {}".format(rate))
-    if friction < 0 or friction > 1:
-        raise RuntimeError("Friction must be between 0 and 1.\nValue was {}".format(friction))
-    friction = 1 - friction
-    if tolerance <= 0:
-        raise RuntimeError("Tolerance needs to be greater than zero.\nValue was {}".format(rate))
     limit = abs(int(limit))
 
     # Initialize variables
-    velocity = prev_gradient = Vector([0]*len(group))
+    v = m = Vector([0]*len(group))
     root_dist = prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
 
@@ -82,19 +77,8 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         curve2 = element.Curve(group.markers.node2.get_position())
 
     # GO!
-    m = v = Vector([0]*len(group))
-    beta1 = 0.9
-    beta2 = 0.999
-    learning_rate = 0.8
-    x = Vector(group.get_values())
-    eps = 0.000000000001
     for i in xrange(limit):
-        dx = Vector(group.get_gradient())
-        m = m*beta1 + dx*(1-beta1)
-        v = v*beta2 + Vector(a*a for a in dx)*(1-beta2)
-        x += m*-learning_rate / Vector(a and (a ** -0.5) * a + eps for a in v)
-
-        group.set_values(x)
+        group.set_values(curr_values)
 
         if debug:
             curve1.add(group.markers.node1.get_position())
@@ -105,8 +89,11 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         # Also reduce our momentum so we can turn faster.
         dist = group.get_distance()
         if dist > prev_dist:
-            learning_rate *= 0.5
+            rate *= 0.7
+            beta1 *= 0.8
+            beta2 *= 0.8
             v *= 0.5
+            m *= 0.5
         prev_dist = dist
 
         # Check if we are closer than ever before.
@@ -118,25 +105,23 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
-        if learning_rate < tolerance:
+        if rate < tolerance:
             if debug:
                 print("Rate below tolerance. Done.")
             break
 
         # Check if we are sitting on a flat plateau.
         gradient = Vector(group.get_gradient())
-        if (gradient - prev_gradient).length() < 0.0000001:
+        if i and (gradient - prev_gradient).length() < 0.0000001:
             if debug:
                 print("Gradient flat. Done.")
             break
         prev_gradient = gradient
 
-        # Update our momentum
-        # prev_velocity = velocity
-        # velocity = velocity * friction - gradient * rate
-        # curr_values += prev_velocity * -friction + velocity * (1+friction)
-        # # Fit our position within our bounds
-        # curr_values = tuple(at.min if curr_values[i] < at.min else at.max if curr_values[i] > at.max else curr_values[i] for i, at in enumerate(group))
+        # Calculate our path
+        m = m*beta1 + gradient*(1-beta1)
+        v = v*beta2 + Vector(a*a for a in gradient)*(1-beta2)
+        curr_values += m*-rate / v.sqrt()
 
     if debug:
         print("Finished after {} steps".format(i))
@@ -219,5 +204,5 @@ def test():
     x2, _, z2 = cmds.xform(m2, q=True, ws=True, t=True)
     # print(x1, z1)
     # print(x2, z2)
-    # assert abs(x1-x2) < 0.01
-    # assert abs(z1-z2) < 0.01
+    assert abs(x1-x2) < 0.01
+    assert abs(z1-z2) < 0.01
