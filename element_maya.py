@@ -4,7 +4,6 @@
 from __future__ import print_function
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
-import math
 
 def get_node(name):
     """ Get Node """
@@ -27,6 +26,8 @@ class Attribute(object):
         if not query(ex=True):
             raise RuntimeError("\"{}\" does not exist.".format(attr))
         s._attr = get_plug(obj, attr)
+        # We are working in radians
+        s._is_angle = "doubleAngle" == query(at=True)
 
         s.min, s.max = min_, max_ # Initialize max / min range
         if query(mne=True):
@@ -41,10 +42,14 @@ class Attribute(object):
     def set_value(s, val):
         """ Set attribute value """
         if val <= s.max and s.min <= val:
+            if s._is_angle:
+                return s._attr.setMAngle(om.MAngle(val, om.MAngle.kDegrees))
             s._attr.setDouble(val)
 
     def get_value(s):
         """ Get current value """
+        if s._is_angle:
+            return s._attr.asMAngle().asDegrees()
         return s._attr.asDouble()
 
     def key(s, value):
