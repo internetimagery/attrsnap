@@ -27,20 +27,23 @@ def match(points):
     ERR = lambda A,B,C: sum((curve(A,B,C,x)-y)**2 for x,y,z in points)
     vals = [1,1,1]
 
-    rate = 0.00001
+    rate = 0.0001
+    friction = 0.8
     prev_err = closest_err = ERR(*vals)
     closest_values = vals
+    velocity = [0]*len(vals)
 
-    for i in range(100000)
+    for i in range(100000):
 
         # Check if we have overshot our target.
         # If so, reduce our sample rate because we are close.
         # Also reduce our momentum so we can turn faster.
         err = ERR(*vals)
         grad = gradient(vals, ERR)
-        # if err > prev_err:
-        #     rate *= 0.5
-        # prev_err = err
+        if err > prev_err:
+            rate *= 0.5
+            velocity = [a*0.5 for a in velocity]
+        prev_err = err
 
         # Check if we are closer than ever before.
         # Record it if so.
@@ -63,7 +66,14 @@ def match(points):
             pass
         prev_grad = grad
 
-        vals = [-rate * g + v for v, g in zip(vals, grad)]
+        # Update our momentum
+        prev_velocity = velocity
+        velocity = [v*friction - g * rate for v,g in zip(velocity, grad)]
+        vals = [p * -friction + v * (1+friction) + vv for p, v, vv in zip(prev_velocity, velocity, vals)]
+        # curr_values += prev_velocity * -friction + velocity * (1+friction)
+        #
+        #
+        # vals = [-rate * g + v for v, g in zip(vals, grad)]
 
     print "closest", closest_err
     return closest_values
