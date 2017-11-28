@@ -22,8 +22,8 @@ class Abs(object):
 
 class Poly2(object):
     def __call__(s, x, a, b, c):
-        a *= 0.5
-        b *= 0.5
+        a *= 0.2
+        b *= 0.2
         return a*x**2 + b*x + c
     def __len__(s):
         return 3
@@ -46,23 +46,24 @@ def length(vec):
     mag2 = sum(a*a for a in vec)
     return (mag2 ** -0.5) * mag2
 
-def gradient(vector, function, precision=0.001):
-    base_err = function(*vector)
+def gradient(vector, points, curve, precision=0.001):
+    base_err = least_squares(vector, points, curve)
     result = []
     for i, val in enumerate(vector):
         pos = [a+precision if i == j else a for j, a in enumerate(vector)]
-        new_err = function(*pos)
+        new_err = least_squares(pos, points, curve)
         result.append((new_err-base_err)/precision)
     return result
 
-def match(points, curve):
+def least_squares(vals, points, curve):
+    return sum((curve(x, *vals)-y)**2 for x,y,z in points)
 
-    ERR = lambda *vals: sum((curve(x, *vals)-y)**2 for x,y,z in points)
-    vals = [1]*len(curve)
 
-    rate = 0.0000001
-    friction = 0.8
-    prev_err = closest_err = ERR(*vals)
+def fit(points, curve, vals=None, rate=0.0001, friction=0.8):
+
+    vals = [1]*len(curve) if vals is None else vals
+
+    prev_err = closest_err = least_squares(vals, points, curve)
     closest_values = vals
     velocity = [0]*len(vals)
 
@@ -71,8 +72,8 @@ def match(points, curve):
         # Check if we have overshot our target.
         # If so, reduce our sample rate because we are close.
         # Also reduce our momentum so we can turn faster.
-        err = ERR(*vals)
-        grad = gradient(vals, ERR)
+        err = least_squares(vals, points, curve)
+        grad = gradient(vals, points, curve)
         if not i:
             print "GRADLEN", length(grad)
         if err > prev_err:
@@ -133,9 +134,9 @@ def test():
         cmds.spaceLocator(p=pnt)
         points.append(pnt)
 
-    curve = Bell()
+    curve = Poly2()
 
-    vals = match(points, curve)
+    vals = fit(points, curve)
 
     print "Result", vals
 
