@@ -152,7 +152,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
 
         # Collect information
         # collective = {}
-        for combo in itertools.product(grps):
+        for combo in itertools.permutations(grps):
             # result = []
             # totals = 0
             for j, grp in enumerate(combo):
