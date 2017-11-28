@@ -104,10 +104,10 @@ def search(group, rate=0.5, friction=0.3, tolerance=0.0001, limit=500, debug=Fal
         # If so, reduce our sample rate because we are close.
         # Also reduce our momentum so we can turn faster.
         dist = group.get_distance()
-        # if dist > prev_dist:
-        #     rate *= 0.5
-        #     velocity *= 0.5
-        # prev_dist = dist
+        if dist > prev_dist:
+            learning_rate *= 0.5
+            v *= 0.5
+        prev_dist = dist
 
         # Check if we are closer than ever before.
         # Record it if so.
