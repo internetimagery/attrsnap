@@ -195,6 +195,8 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     end_frame = start_frame if end_frame is None else int(end_frame)
     end_frame += 1
     grps = form_heirarchy([groups.Group(t) for t in templates])
+    print("Matching Groups Now!")
+    print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
 
     yield 0 # Kick us off
