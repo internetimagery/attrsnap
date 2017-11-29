@@ -2,4 +2,5 @@ Throw error if attribute is out of range at the beginning of matching. OR move i
 
 create object matching tool to assist in finding objects when their names don't entirely match. Will happen when importing.
 
-when matching combos, keep track of nearest combo and run with that.
+
+figure out a way to get out of gimbal lock situations...

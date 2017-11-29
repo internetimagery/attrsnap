@@ -61,16 +61,18 @@ def form_heirarchy(grps):
     cache_dist = {g: g.get_distance() for g in grps} # Keep track of distance values
     sorted_grp = list(grps) # Our list of groups in sorted order
     child_grp = collections.defaultdict(list) # Groups with relation to their children
+    precision = 0.001
 
     # Check all groups
     for grp1 in grps:
         grp1.shift() # Move values slightly
         for grp2 in grps: # Check what happened because of this
             dist = grp2.get_distance()
-            if dist != cache_dist[grp2]:
-                cache_dist[grp2] = dist
+            diff = abs(dist - cache_dist[grp2])
+            if diff > precision**3:
                 if grp2 is not grp1: # Don't add self as child of self
                     child_grp[grp1].append(grp2)
+            cache_dist[grp2] = dist
         if child_grp[grp1]: # We have some children to sort through
             for i, child in enumerate(sorted_grp):
                 if child is grp1:
@@ -94,14 +96,12 @@ def form_heirarchy(grps):
     new_sorted_grp = []
     for i, grp in enumerate(sorted_grp):
         new_sorted_grp.append(grp)
-        try:
+        if i:
             # Check if the two cyclic groups are side by side
             # TODO: Add functionality for more than two cyclic pairs (ie triplets etc)
             prev_grp = sorted_grp[i-1]
             if grp in cycles and prev_grp in cycles[grp]:
                 new_sorted_grp.append(prev_grp)
-        except IndexError:
-            pass
     return new_sorted_grp
 
 def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, debug=False):
