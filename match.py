@@ -148,6 +148,8 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     combo_step = 1 / len(combos)
     group_step = 1 / combo_len
 
+    print("combos", len(combos))
+
     yield 0 # Kick us off
     for i, frame in enumerate(range(start_frame, end_frame)):
         utility.set_frame(frame)
@@ -163,7 +165,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
                     if not dist: # Break early if we're there
                         break
                     progress = 1-dist/total_dist
-                    yield progress * group_step + group_prog + combo_prog
+                    yield (progress * group_step + group_prog) * combo_step + combo_prog
                 grp.keyframe(values)
                 # result.append((grp, values))
                 # totals += dist
