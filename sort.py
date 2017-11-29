@@ -33,8 +33,11 @@ def sort(grps, precision=0.001):
                     sorted_grp.insert(i, grp)
                     break
 
-    cycles = set(tuple(sorted([a, b])) for a in child_grp for b in child_grp[a] if a in child_grp[b])
-    print cycles
+    cycles = {a: b for a in child_grp for b in child_grp[a] if a in child_grp[b]}
+    for i in range(len(sorted_grp) -1):
+        if sorted_grp[i] in cycles and sorted_grp[i+1] == cycles[sorted_grp[i]]:
+            # We have one cycle as a child of another
+            print sorted_grp[i].match_type, sorted_grp[i+1].match_type
 
 
     for g in sorted_grp:
