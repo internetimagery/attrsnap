@@ -106,6 +106,12 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
             closest_values = curr_values
             yield closest_dist, closest_values
 
+        # Break if we are there.
+        if dist < 0.001:
+            if debug:
+                print("Distance below minimum.")
+            break
+
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
         if rate < tolerance:
