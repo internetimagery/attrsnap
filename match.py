@@ -64,7 +64,6 @@ def form_heirarchy(grps):
     precision_move = 0.0001
     precision_check = 0.000000001
 
-
     # Check all groups
     for grp1 in grps:
         grp1.shift(precision_move) # Move values slightly
