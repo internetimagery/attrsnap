@@ -365,11 +365,22 @@ class Window(object):
         ann="Create a new group.")
         cmds.menuItem(l="Remove Group", c=s.delete_tab,
         ann="Remove currently visible group.")
+        cmds.menuItem(d=True)
+        cmds.menuItem(l="Enable All", c=lambda x: s.enable_all(True),
+        ann="Enable all groups.")
+        cmds.menuItem(l="Disable All", c=lambda x: s.enable_all(False),
+        ann="Disable all groups.")
+        cmds.menuItem(d=True)
         cmds.menuItem(l="Load Template", c=s.load_template,
         ann="Get groups from a template file.")
         cmds.menuItem(l="Save Template", c=s.save_template,
         ann="Save current groups into a template file. For later retrieval.")
-        s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab, p=root)
+
+        s.tab_grp = cmds.tabLayout(
+            snt=True,
+            newTabCommand=s.new_group,
+            doubleClickCommand=s.rename_tab,
+            p=root)
 
         cmds.separator(p=root)
         row = cmds.rowLayout(nc=2, adj=2, p=root)
@@ -385,6 +396,11 @@ class Window(object):
                 s.new_group(t)
         else:
             s.new_group()
+
+    def enable_all(s, status=True):
+        """ Enable every group """
+        for tab in s.tabs:
+            tab.enable(status)
 
     def delete_tab(s, *_):
         """ Delete active tab """
