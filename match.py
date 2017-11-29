@@ -143,21 +143,19 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     end_frame += 1
     grps = [groups.Group(t) for t in templates]
 
-    framestep = 1 / (end_frame - start_frame)
-    groupstep = 1 / framestep
     combo_len = min(2, len(grps)) # Max number of combos to use at once. KEEP THIS NUMBER LOW!
+    combos = tuple(itertools.permutations(grps, combo_len))
+    combo_step = 1 / len(combos)
+    group_step = 1 / combo_len
+
     yield 0 # Kick us off
     for i, frame in enumerate(range(start_frame, end_frame)):
         utility.set_frame(frame)
-        frame_prog = i * framestep
 
-        # Collect information
-        # collective = {}
-        for combo in itertools.permutations(grps, combo_len):
-            # result = []
-            # totals = 0
-            for j, grp in enumerate(combo):
-                group_prog = j * groupstep
+        for j, combo in enumerate(combos):
+            combo_prog = j * combo_step
+            for k, grp in enumerate(combo):
+                group_prog = k * group_step
                 total_dist = None
                 for dist, values in search(grp, **kwargs):
                     if total_dist is None:
@@ -165,7 +163,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
                     if not dist: # Break early if we're there
                         break
                     progress = 1-dist/total_dist
-                    yield progress * groupstep + group_prog + frame_prog
+                    yield progress * group_step + group_prog + combo_prog
                 grp.keyframe(values)
                 # result.append((grp, values))
                 # totals += dist
