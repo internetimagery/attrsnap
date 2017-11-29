@@ -114,13 +114,13 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
     # Validate parameters
     limit = abs(int(limit))
 
-    # beta1 = 0.8
-    # beta2 = 0.8
+
 
     # Initialize variables
     v = m = Vector([0]*len(group))
     root_dist = prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
+    cutoff = 0.00000001 if group.match_type == groups.ROTATION else 0.0001
 
     yield closest_dist, closest_values
 
@@ -155,8 +155,8 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
             closest_values = curr_values
             yield closest_dist, closest_values
 
-        # Break if we are there.
-        if dist < 0.001:
+        # Break if we are there. Especially low number for rotations
+        if dist < cutoff:
             if debug:
                 print("Distance below minimum.")
             break
@@ -196,7 +196,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
     end_frame = start_frame if end_frame is None else int(end_frame)
     end_frame += 1
-    grps = form_heirarchy([groups.Group(t) for t in templates])
+    grps = form_heirarchy([groups.Group(t) for t in templates if t.enabled])
     print("Matching Groups Now!")
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
@@ -215,6 +215,12 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
                 yield progress * group_step + j * group_step
             grp.keyframe(values)
     yield 1
+
+def testfile(file_path):
+    templates = groups.load(file_path)
+    if templates:
+        for _ in match(templates, debug=True):
+            pass
 
 def test2():
     import maya.cmds as cmds
