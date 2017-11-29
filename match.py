@@ -73,6 +73,8 @@ def form_heirarchy(grps):
                     child_grp[grp1].append(grp2)
         if child_grp[grp1]: # We have some children to sort through
             for i, child in enumerate(sorted_grp):
+                if child is grp1:
+                    break
                 if child in child_grp[grp1]: # Find earliest child and swap positions
                     sorted_grp.remove(grp1)
                     sorted_grp.insert(i, grp1)
