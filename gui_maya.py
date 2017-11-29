@@ -195,9 +195,10 @@ class Tab(object):
         ann="Disabled groups will not be evaluated. Useful if you don't want to use a group, while not wanting to delete it.")
         s.GUI_type = cmds.optionMenu(
         ann="Matching type. Position: Moves objects closer together. Rotation: Orients objects closer together.")
-        for opt in options:
-            # TODO: MAKE THIS PICK THE RIGHT ONE WHEN TEMPLATE SAYS SO
+        for i, opt in enumerate(options):
             cmds.menuItem(l=opt)
+            if template.match_type == options[opt]:
+                cmds.optionMenu(s.GUI_type, e=True, sl=i+1)
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)),
