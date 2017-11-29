@@ -89,17 +89,18 @@ def form_heirarchy(grps):
         utility.warn("The following groups have cycle issues, and may not evaluate correctly:\n{}".format(", ".join(c.get_name() for c in cycles)))
 
     # Throw in duplicates for cyclic groups to ensure they get evaluated in differing orders
-    for i in itertools.count(0):
+    new_sorted_grp = []
+    for i, grp in enumerate(sorted_grp):
+        new_sorted_grp.append(grp)
         try:
-            grp1 = sorted_grp[i]
-            grp2 = sorted_grp[i+1]
-            if grp1 in cycles and grp2 in cycles[grp1]:
-                # TODO: Make this work with more than cycles of 2, ie:
-                # combos = list(itertools.permutations(itertools.chain(cycles[grp], [grp])))
-                sorted_grp.insert(i+2, grp1) # Shove group back inside list for reevaluation
+            # Check if the two cyclic groups are side by side
+            # TODO: Add functionality for more than two cyclic pairs (ie triplets etc)
+            prev_grp = sorted_grp[i-1]
+            if grp in cycles and prev_grp in cycles[grp]:
+                new_sorted_grp.append(prev_grp)
         except IndexError:
             pass
-    return sorted_grp
+    return new_sorted_grp
 
 def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, debug=False):
     """
@@ -183,7 +184,7 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
         print("Finished after {} steps".format(i))
     yield closest_dist, closest_values
 
-def match(templates, start_frame=None, end_frame=None, combo_max=2, **kwargs):
+def match(templates, start_frame=None, end_frame=None, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
@@ -193,41 +194,56 @@ def match(templates, start_frame=None, end_frame=None, combo_max=2, **kwargs):
     start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
     end_frame = start_frame if end_frame is None else int(end_frame)
     end_frame += 1
-    grps = [groups.Group(t) for t in templates]
-
-    combo_len = min(combo_max, len(grps)) # Max number of combos to use at once. KEEP THIS NUMBER LOW!
-    combos = tuple(itertools.permutations(grps, combo_len))
-    combo_step = 1 / len(combos)
-    group_step = 1 / combo_len
-
-    print("combos", len(combos))
+    grps = form_heirarchy([groups.Group(t) for t in templates])
+    group_step = 1 / len(grps)
 
     yield 0 # Kick us off
     for i, frame in enumerate(range(start_frame, end_frame)):
         utility.set_frame(frame)
-
-        for j, combo in enumerate(combos):
-            combo_prog = j * combo_step
-            for k, grp in enumerate(combo):
-                group_prog = k * group_step
-                total_dist = None
-                for dist, values in search(grp, **kwargs):
-                    if total_dist is None:
-                        total_dist = dist
-                    if not dist: # Break early if we're there
-                        break
-                    progress = 1-dist/total_dist
-                    yield (progress * group_step + group_prog) * combo_step + combo_prog
-                grp.keyframe(values)
-                # result.append((grp, values))
-                # totals += dist
-            # collective[totals] = result
-
-        # Key the nearest combo
-        # for grp, vals in collective[min(collective)]:
-        #     grp.keyframe(vals)
-
+        for j, grp in enumerate(grps):
+            total_dist = None
+            for dist, values in search(grp, **kwargs):
+                if total_dist is None:
+                    total_dist = dist
+                if not dist: # Break early if we're there
+                    break
+                progress = 1-dist/total_dist
+                yield progress * group_step + j * group_step
+            grp.keyframe(values)
     yield 1
+
+def test2():
+    import maya.cmds as cmds
+    import random
+    cmds.file(new=True, force=True)
+
+    # Create two test chains
+    chain1 = [cmds.joint(p=a) for a in [(1,2,3),(2,1,3),(3,2,1),(4,4,4),(2,1,3),(6,4,2)]]
+    cmds.select(clear=True)
+    chain2 = [cmds.joint(p=a) for a in [(2,3,4),(4,4,5),(4,5,2),(2,3,1),(4,3,1),(3,2,3)]]
+    mrk = cmds.spaceLocator()[0]
+
+    # Create some outliers
+    temp = groups.Template(
+        match_type=groups.POSITION,
+        markers=(chain1[3], mrk),
+        attributes=[(chain1[3], "tx")])
+
+    axis = ["rx", "ry", "rz"]
+
+    templates = [temp]
+    for i in range(len(chain1)):
+        if i:
+            templates.append(groups.Template(
+                match_type=groups.POSITION,
+                markers=(chain1[i], chain2[i]),
+                attributes=[(chain1[i-1], a) for a in axis]
+                ))
+    grps = [groups.Group(a) for a in templates]
+    random.shuffle(grps) # Randomize order
+    sorted_grps = form_heirarchy(grps)
+    for s in sorted_grps:
+        print(list(s), list(s.markers))
 
 def test():
     import maya.cmds as cmds

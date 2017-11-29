@@ -36,9 +36,14 @@ class Template(object):
 class Group(object):
     """ A group of objects and attributes for matching """
     def __init__(s, template):
+        s.name = template.name
         s.match_type = template.match_type
         s.markers = element.Marker_Set(*template.markers)
         s.attributes = [element.Attribute(*at) for at in template.attributes]
+
+    def get_name(s):
+        """ Useful for debugging """
+        return s.name
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
