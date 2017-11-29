@@ -61,15 +61,17 @@ def form_heirarchy(grps):
     cache_dist = {g: g.get_distance() for g in grps} # Keep track of distance values
     sorted_grp = list(grps) # Our list of groups in sorted order
     child_grp = collections.defaultdict(list) # Groups with relation to their children
-    precision = 0.001
+    precision_move = 0.0001
+    precision_check = 0.000000001
+
 
     # Check all groups
     for grp1 in grps:
-        grp1.shift() # Move values slightly
+        grp1.shift(precision_move) # Move values slightly
         for grp2 in grps: # Check what happened because of this
             dist = grp2.get_distance()
             diff = abs(dist - cache_dist[grp2])
-            if diff > precision**3:
+            if diff > precision_check:
                 if grp2 is not grp1: # Don't add self as child of self
                     child_grp[grp1].append(grp2)
             cache_dist[grp2] = dist
