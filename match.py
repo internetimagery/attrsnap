@@ -131,7 +131,7 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
         print("Finished after {} steps".format(i))
     yield closest_dist, closest_values
 
-def match(templates, start_frame=None, end_frame=None, **kwargs):
+def match(templates, start_frame=None, end_frame=None, combo_max=2, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
@@ -143,7 +143,7 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     end_frame += 1
     grps = [groups.Group(t) for t in templates]
 
-    combo_len = min(2, len(grps)) # Max number of combos to use at once. KEEP THIS NUMBER LOW!
+    combo_len = min(combo_max, len(grps)) # Max number of combos to use at once. KEEP THIS NUMBER LOW!
     combos = tuple(itertools.permutations(grps, combo_len))
     combo_step = 1 / len(combos)
     group_step = 1 / combo_len

@@ -385,8 +385,13 @@ class Window(object):
         cmds.separator(p=root)
         row = cmds.rowLayout(nc=2, adj=2, p=root)
         s.range = Range(row)
-        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, c=s.run_match, p=row,
-        ann="Click to start matching. Using all enabled groups.")
+        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=lambda x: s.run_match(2),
+        ann="CLICK: Start matching, using all enabled groups.\nRIGHT CLICK: More options...")
+        cmds.popupMenu()
+        cmds.menuItem(l="Shallow Match (faster, less accurate)", c=lambda x: s.run_match(1),
+        ann="Runs a single match per group.")
+        cmds.menuItem(l="Deep Match (slower, more accurate)", c=lambda x: s.run_match(3),
+        ann="Runs many matchs on groups in different orders. Assists in matching groups with heirarchy dependencies.")
         cmds.helpLine(p=root)
         cmds.showWindow(s.win)
 
@@ -445,7 +450,7 @@ class Window(object):
         if path:
             groups.save(templates, path[0])
 
-    def run_match(s, *_):
+    def run_match(s, combo_level=2):
         """ Run match! Woot """
         if s.idle:
             s.idle = False
@@ -462,6 +467,6 @@ class Window(object):
 
             # TODO: Put in proper matching!
             with utility.progress() as prog:
-                for progress in match.match(valid, frame_range[0], frame_range[1]):
+                for progress in match.match(valid, frame_range[0], frame_range[1], combo_max=combo_level):
                     prog(progress)
         s.idle = True
