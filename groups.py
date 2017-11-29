@@ -1,53 +1,44 @@
 # Match positions / rotations.
 from __future__ import print_function, division
 import element
+import json
 
 POSITION = 0
 ROTATION = 1
 
+def save(templates, file_path):
+    """ Export a list of groups into a file """
+    data = []
+    for template in templates:
+        data.append({
+            "enabled": template.enabled,
+            "name": template.name,
+            "match_type": template.match_type,
+            "markers": template.markers,
+            "attributes": template.attributes})
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+
+def load(file_path):
+    """ Load a list of groups from a file """
+    with open(file_path, "r") as f:
+        return [Template(**d) for d in json.load(f)]
+
+class Template(object):
+    """ Hold information, for transfer """
+    def __init__(s, name="Group", enabled=True, match_type=POSITION, markers=None, attributes=None):
+        s.name = name
+        s.enabled = enabled
+        s.match_type=match_type
+        s.markers = markers or []
+        s.attributes = attributes or []
 
 class Group(object):
     """ A group of objects and attributes for matching """
-    def __init__(s, name="", match_type=POSITION, markers=None, attributes=None):
-        s.name = name
-        s.match_type = match_type
-        s.markers = []
-        if markers:
-            s.set_markers(*markers)
-        s.attributes = []
-        if attributes:
-            s.add_attributes(*attributes)
-
-    def get_name(s):
-        """ Get name value """
-        return s.name
-    def set_name(s, name):
-        """ Set name value """
-        s.name = name.strip()
-        return s
-
-    def get_type(s):
-        """ Get type value """
-        return s.match_type
-    def set_type(s, val):
-        """ Set type value """
-        s.match_type = val
-        return s
-
-    def get_markers(s):
-        """ Get current markers """
-        return s.markers
-    def set_markers(s, m1, m2):
-        """ Set markers """
-        s.markers = element.Marker_Set(m1, m2)
-        return s
-
-    def get_attributes(s):
-        """ List out attributes ascociated """
-        return s.attributes
-    def add_attributes(s, *attrs):
-        """ Add some attributes """
-        s.attributes += [element.Attribute(*at) for at in attrs]
+    def __init__(s, template):
+        s.match_type = template.match_type
+        s.markers = element.Marker_Set(*template.markers)
+        s.attributes = [element.Attribute(*at) for at in template.attributes]
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
@@ -76,7 +67,11 @@ class Group(object):
         result = []
         for attr in s.attributes:
             dist = s.get_distance()
-            attr.set_value(attr.get_value() + precision)
+            value = attr.get_value()
+            new_val = value + precision
+            if new_val > attr.max:
+                new_val = value - precision
+            attr.set_value(new_val)
             result.append((s.get_distance() - dist) / precision)
         return result
 
