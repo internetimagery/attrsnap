@@ -26,17 +26,16 @@ def sort(grps, precision=0.001):
                 if g is not grp: # Don't add self as child of self
                     child_grp[grp].append(g)
         if child_grp[grp]: # We have some children to sort through
-            for child in child_grp[grp]:
-                if grp in child_grp[child]: # Check for cycles where both groups have an affect on one another
-                    print "CYCLE!", list(grp), list(child)
-                    cycles.append((grp, child))
-
             for i, child in enumerate(sorted_grp):
                 if child in child_grp[grp]:
                     # Swap locations
                     sorted_grp.remove(grp)
                     sorted_grp.insert(i, grp)
                     break
+
+    cycles = set(tuple(sorted([a, b])) for a in child_grp for b in child_grp[a] if a in child_grp[b])
+    print cycles
+
 
     for g in sorted_grp:
         print list(g), list(g.markers)
