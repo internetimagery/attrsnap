@@ -191,7 +191,7 @@ class Tab(object):
 
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
-        s.GUI_enable = cmds.checkBox(l="Enable", v=template.enabled, cc=s.enable,
+        s.GUI_enable = cmds.checkBox(l="Enable", v=True, cc=s.enable,
         ann="Disabled groups will not be evaluated. Useful if you don't want to use a group, while not wanting to delete it.")
         s.GUI_type = cmds.optionMenu(
         ann="Matching type. Position: Moves objects closer together. Rotation: Orients objects closer together.")
@@ -217,6 +217,7 @@ class Tab(object):
         s.set_title(template.name)
         s.ready = True
         s.validate()
+        s.enable(template.enabled)
 
     def rename(s):
         """ Prompt rename """
