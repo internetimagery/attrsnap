@@ -376,22 +376,23 @@ class Window(object):
         cmds.menuItem(l="Save Template", c=s.save_template,
         ann="Save current groups into a template file. For later retrieval.")
 
-        s.tab_grp = cmds.tabLayout(
-            snt=True,
-            newTabCommand=s.new_group,
-            doubleClickCommand=s.rename_tab,
-            p=root)
+        try:
+            s.tab_grp = cmds.tabLayout(
+                snt=True,
+                newTabCommand=s.new_group,
+                doubleClickCommand=s.rename_tab,
+                p=root)
+        except TypeError:
+            s.tab_grp = cmds.tabLayout(
+                doubleClickCommand=s.rename_tab,
+                p=root)
+
 
         cmds.separator(p=root)
         row = cmds.rowLayout(nc=2, adj=2, p=root)
         s.range = Range(row)
-        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=lambda x: s.run_match(2),
-        ann="CLICK: Start matching, using all enabled groups.\nRIGHT CLICK: More options...")
-        cmds.popupMenu()
-        cmds.menuItem(l="Shallow Match (faster, less accurate)", c=lambda x: s.run_match(1),
-        ann="Runs a single match per group.")
-        cmds.menuItem(l="Deep Match (slower, more accurate)", c=lambda x: s.run_match(3),
-        ann="Runs many matchs on groups in different orders. Assists in matching groups with heirarchy dependencies.")
+        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=s.run_match,
+        ann="CLICK: Start matching, using all enabled groups.")
         cmds.helpLine(p=root)
         cmds.showWindow(s.win)
 
@@ -450,7 +451,7 @@ class Window(object):
         if path:
             groups.save(templates, path[0])
 
-    def run_match(s, combo_level=2):
+    def run_match(s, *_):
         """ Run match! Woot """
         if s.idle:
             s.idle = False
@@ -465,8 +466,8 @@ class Window(object):
             frame_scale = 1 / frame_diff
             grp_scale = 1 / num_valid
 
-            # TODO: Put in proper matching!
+            # Match this!
             with utility.progress() as prog:
-                for progress in match.match(valid, frame_range[0], frame_range[1], combo_max=combo_level):
+                for progress in match.match(valid, frame_range[0], frame_range[1]):
                     prog(progress)
         s.idle = True
