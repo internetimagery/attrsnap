@@ -62,17 +62,27 @@ class Group(object):
         for at, val in zip(s.attributes, values):
             at.key(val)
 
+    def shift(s, step=0.001):
+        """ Shift location a little. """
+        for attr in s.attributes:
+            val = attr.get_value() + step
+            if val > attr.max:
+                val -= 2 * step
+            attr.set_value(val)
+
     def get_gradient(s, precision=0.001):
         """ Get gradient at current position. """
         result = []
+        dist = s.get_distance()
         for attr in s.attributes:
-            dist = s.get_distance()
             value = attr.get_value()
             new_val = value + precision
             if new_val > attr.max:
                 new_val = value - precision
             attr.set_value(new_val)
-            result.append((s.get_distance() - dist) / precision)
+            new_dist = s.get_distance()
+            result.append((new_dist - dist) / precision)
+            dist = new_dist
         return result
 
     def __len__(s):

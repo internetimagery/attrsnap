@@ -3,6 +3,12 @@ import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
 
+def warn(message, popup=False):
+    """ Provide a warning """
+    cmds.warning(message)
+    if popup:
+        cmds.confirmDialog(t="Careful...", m=message)
+
 def get_frame():
     """ Get current frame """
     return cmds.currentTime(q=True)

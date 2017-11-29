@@ -1,5 +1,6 @@
 # Match two objects as close together as possible using as few steps as possible (still brute force!)
 from __future__ import print_function, division
+import collections
 import itertools
 import element
 import utility
@@ -54,6 +55,51 @@ class Vector(tuple):
             return s.dot(rhs)
     def __rmul__(s, lhs):
         return s.__mul__(lhs, True)
+
+def form_heirarchy(grps):
+    """ Sort groups into an efficient heirarchy """
+    cache_dist = {g: g.get_distance() for g in grps} # Keep track of distance values
+    sorted_grp = list(grps) # Our list of groups in sorted order
+    child_grp = collections.defaultdict(list) # Groups with relation to their children
+
+    # Check all groups
+    for grp1 in grps:
+        grp1.shift() # Move values slightly
+        for grp2 in grps: # Check what happened because of this
+            dist = grp2.get_distance()
+            if dist != cache_dist[grp2]:
+                cache_dist[grp2] = dist
+                if grp2 is not grp1: # Don't add self as child of self
+                    child_grp[grp1].append(grp2)
+        if child_grp[grp1]: # We have some children to sort through
+            for i, child in enumerate(sorted_grp):
+                if child in child_grp[grp1]: # Find earliest child and swap positions
+                    sorted_grp.remove(grp1)
+                    sorted_grp.insert(i, grp1)
+                    break
+    # Collect any cycles that have been dug up.
+    cycles = collections.defaultdict(list)
+    for parent in child_grp:
+        for child in child_grp[parent]:
+            if parent in child_grp[child]:
+                cycles[parent].append(child)
+
+    # If we have any cycles. Warn about them.
+    if cycles:
+        utility.warn("The following groups have cycle issues, and may not evaluate correctly:\n{}".format(", ".join(c.get_name() for c in cycles)))
+
+    # Throw in duplicates for cyclic groups to ensure they get evaluated in differing orders
+    for i in itertools.count(0):
+        try:
+            grp1 = sorted_grp[i]
+            grp2 = sorted_grp[i+1]
+            if grp1 in cycles and grp2 in cycles[grp1]:
+                # TODO: Make this work with more than cycles of 2, ie:
+                # combos = list(itertools.permutations(itertools.chain(cycles[grp], [grp])))
+                sorted_grp.insert(i+2, grp1) # Shove group back inside list for reevaluation
+        except IndexError:
+            pass
+    return sorted_grp
 
 def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, debug=False):
     """
