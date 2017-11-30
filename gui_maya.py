@@ -8,9 +8,11 @@ import collections
 import functools
 import threading
 import utility
+import os.path
 import groups
 import match
 import time
+import re
 
 SEM = threading.BoundedSemaphore(1)
 WIDGET_HEIGHT = 30
@@ -283,19 +285,18 @@ class Tab(object):
 class Range(object):
     """ Frame range widget """
     def __init__(s, parent):
-        s.row = cmds.rowLayout(nc=2, p=parent)
-        col = cmds.columnLayout(p=s.row)
-        s.dynamic = IconCheckBox(col, lambda x: "", v=True,
-        l="Automatic\nFrame Range:",
-        i="autoload.png",
-        st="iconAndTextHorizontal",
-        ann="RIGHT CLICK: Additional options.\nON: Auto frame range.\nOFF: Manual.")
+        col = cmds.columnLayout(p=parent)
+        s.dynamic = IconCheckBox(col, lambda x: "", v=True, h=WIDGET_HEIGHT,
+            l="Automatic\nFrame Range:",
+            i="autoload.png",
+            st="iconAndTextHorizontal",
+            ann="RIGHT CLICK: Additional options.\nON: Auto frame range.\nOFF: Manual.")
         cmds.popupMenu(p=col)
         cmds.menuItem(l="Set to playback range.", c=lambda x: s.set_range(*utility.get_playback_range()))
-        col = cmds.columnLayout(p=s.row)
+        s.row = cmds.rowLayout(nc=2, p=col)
         frame = utility.get_frame()
-        s.min = IntBox(col, s.validate, frame)
-        s.max = IntBox(col, s.validate, frame)
+        s.min = IntBox(s.row, s.validate, frame)
+        s.max = IntBox(s.row, s.validate, frame)
 
         # Detect things!
         s.loop = True
@@ -484,14 +485,21 @@ class Retarget(object):
         s.gui = TextBox(col3, s.validate, obj)
         s.validate()
 
+    def set_value(s, text):
+        """ Set value """
+        s.gui.value = text
+
     def reset(s, *_):
         """ Reset to old name """
         s.gui.value = s.old_obj
 
     def validate(s, *_):
         """ Check object exists """
-        ok = s.gui.validate(utility.valid_object)
+        return s.gui.validate(utility.valid_object)
 
+    def get_value(s):
+        """ Return value """
+        return s.gui.value
 
 class Fixer(object):
     """ Popup to assist in renaming missing objects """
@@ -516,12 +524,41 @@ class Fixer(object):
 
         win = cmds.window(rtf=True, t="Retarget")
         root = cmds.columnLayout(adj=True)
-        cmds.text(l="RENAME BATCH HERE")
+        cmds.popupMenu()
+        cmds.menuItem(l="Reset all.", c=s.reset_all,
+            ann="Return all names back to default.")
+        cmds.text(l="Some objects cannot be found.\nPlease use the following tools to rename them.")
+        cmds.frameLayout(l="Batch Rename", cll=True, cl=True, p=root)
+        row1 = cmds.rowLayout(nc=2, adj=1)
+        row2 = cmds.rowLayout(nc=2, adj=2)
+        cmds.columnLayout(adj=True, p=row2)
+        cmds.text(l="Search:", h=WIDGET_HEIGHT)
+        cmds.text(l="Replace:", h=WIDGET_HEIGHT)
+        col = cmds.columnLayout(adj=True, p=row2)
+        s.search = TextBox(col, (lambda x: ""), os.path.commonprefix(s.missing))
+        s.replace = TextBox(col, lambda x:"")
+        cmds.button(l="Rename", bgc=GREEN, p=row1, h=WIDGET_HEIGHT*2, c=s.rename_all,
+            ann="Click to run the rename on all entries. Uses 'Regular Expression' syntax.")
+        cmds.frameLayout(l="Individual Rename", cll=True, p=root)
         rows = cmds.rowLayout(nc=3, adj=3)
         c1 = cmds.columnLayout(adj=True, p=rows)
         c2 = cmds.columnLayout(adj=True, p=rows)
         c3 = cmds.columnLayout(adj=True, p=rows)
         s.retargets = [Retarget(c1, c2, c3, a) for a in s.missing]
-        cmds.button(l="UPDATEIT", p=root)
+        cmds.button(l="UPDATEIT", p=root, bgc=GREEN)
         cmds.helpLine(p=root)
         cmds.showWindow()
+
+    def reset_all(s, *_):
+        """ Reset all names """
+        for tgt in s.retargets:
+            tgt.reset()
+
+    def rename_all(s, *_):
+        """ Rename everything """
+        search = s.search.value
+        replace = s.replace.value
+
+        searcher = re.compile(search)
+        for tgt in s.retargets:
+            tgt.set_value(searcher.sub(replace, tgt.get_value()))
