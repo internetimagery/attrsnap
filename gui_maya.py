@@ -477,12 +477,18 @@ class Retarget(object):
     """ Retarget object """
     def __init__(s, col1, col2, col3, obj):
         s.old_obj = s.new_obj = obj
-        cmds.text(l=obj, p=col1 , h=WIDGET_HEIGHT, bgc=GREY)
-        cmds.text(l="=>", p=col2, h=WIDGET_HEIGHT)
+        cmds.text(l=obj, p=col1 , h=WIDGET_HEIGHT, bgc=GREY,
+        ann="Original object name.")
+        cmds.iconTextButton(i="arrowRight.png", p=col2, h=WIDGET_HEIGHT, w=WIDGET_HEIGHT, c=s.reset,
+        ann="Click to reset back to old name.")
         s.gui = TextBox(col3, s.validate, obj)
         s.validate()
 
-    def validate(s):
+    def reset(s, *_):
+        """ Reset to old name """
+        s.gui.value = s.old_obj
+
+    def validate(s, *_):
         """ Check object exists """
         ok = s.gui.validate(utility.valid_object)
 
@@ -509,10 +515,13 @@ class Fixer(object):
             return utility.warn("All objects are accounted for!")
 
         win = cmds.window(rtf=True, t="Retarget")
-        cmds.columnLayout(adj=True)
+        root = cmds.columnLayout(adj=True)
+        cmds.text(l="RENAME BATCH HERE")
         rows = cmds.rowLayout(nc=3, adj=3)
         c1 = cmds.columnLayout(adj=True, p=rows)
         c2 = cmds.columnLayout(adj=True, p=rows)
         c3 = cmds.columnLayout(adj=True, p=rows)
         s.retargets = [Retarget(c1, c2, c3, a) for a in s.missing]
+        cmds.button(l="UPDATEIT", p=root)
+        cmds.helpLine(p=root)
         cmds.showWindow()
