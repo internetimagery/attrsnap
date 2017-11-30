@@ -514,10 +514,10 @@ class Fixer(object):
                 all_objs.add(attribute[0])
 
         # Filter for missing objects
-        s.missing = {}
+        s.missing = []
         for obj in all_objs:
             if not utility.valid_object(obj):
-                s.missing[obj] = obj
+                s.missing.append(obj)
 
         if not s.missing:
             return utility.warn("All objects are accounted for!")
@@ -544,15 +544,16 @@ class Fixer(object):
         c1 = cmds.columnLayout(adj=True, p=rows)
         c2 = cmds.columnLayout(adj=True, p=rows)
         c3 = cmds.columnLayout(adj=True, p=rows)
-        s.retargets = [Retarget(c1, c2, c3, a) for a in s.missing]
-        cmds.button(l="UPDATEIT", p=root, bgc=GREEN)
+        s.retargets = {a: Retarget(c1, c2, c3, a) for a in s.missing}
+        cmds.button(l="Apply Rename", p=root, bgc=GREEN, h=WIDGET_HEIGHT*2, c=s.apply_all,
+            ann="Applies changes to objects.")
         cmds.helpLine(p=root)
         cmds.showWindow()
 
     def reset_all(s, *_):
         """ Reset all names """
-        for tgt in s.retargets:
-            tgt.reset()
+        for obj in s.retargets:
+            s.retargets[obj].reset()
 
     def rename_all(s, *_):
         """ Rename everything """
@@ -560,5 +561,12 @@ class Fixer(object):
         replace = s.replace.value
 
         searcher = re.compile(search)
-        for tgt in s.retargets:
-            tgt.set_value(searcher.sub(replace, tgt.get_value()))
+        for obj in s.retargets:
+            s.retargets[obj].set_value(searcher.sub(replace, s.retargets[obj].get_value()))
+
+    def apply_all(s, *_):
+        """ apply everything """
+        diff = ((a, s.retargets[a].get_value()) for a in s.missing)
+        changes = [(a,b) for a, b in diff if a != b]
+
+        print(changes)
