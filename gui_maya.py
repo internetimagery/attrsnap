@@ -473,6 +473,20 @@ class Window(object):
                     prog(progress)
         s.idle = True
 
+class Retarget(object):
+    """ Retarget object """
+    def __init__(s, col1, col2, col3, obj):
+        s.old_obj = s.new_obj = obj
+        cmds.text(l=obj, p=col1 , h=WIDGET_HEIGHT, bgc=GREY)
+        cmds.text(l="=>", p=col2, h=WIDGET_HEIGHT)
+        s.gui = TextBox(col3, s.validate, obj)
+        s.validate()
+
+    def validate(s):
+        """ Check object exists """
+        ok = s.gui.validate(utility.valid_object)
+
+
 class Fixer(object):
     """ Popup to assist in renaming missing objects """
     def __init__(s, templates):
@@ -493,3 +507,12 @@ class Fixer(object):
 
         if not s.missing:
             return utility.warn("All objects are accounted for!")
+
+        win = cmds.window(rtf=True, t="Retarget")
+        cmds.columnLayout(adj=True)
+        rows = cmds.rowLayout(nc=3, adj=3)
+        c1 = cmds.columnLayout(adj=True, p=rows)
+        c2 = cmds.columnLayout(adj=True, p=rows)
+        c3 = cmds.columnLayout(adj=True, p=rows)
+        s.retargets = [Retarget(c1, c2, c3, a) for a in s.missing]
+        cmds.showWindow()
