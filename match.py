@@ -156,11 +156,12 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
             yield closest_dist, closest_values
 
         # Break if we are there. Especially low number for rotations
-        # if dist < 0.001:
+        # if dist < 0.000001:
+        # if dist < -20:
+        # if not group.match_type:
         #     if debug:
         #         print("Distance below minimum.")
         #     break
-        # print(dist)
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -271,6 +272,7 @@ def test():
     cmds.xform(m1, t=rand())
     cmds.xform(m2, t=rand())
     cmds.setAttr(m2 + ".ty", 0)
+    cmds.setAttr(m1 + ".ty", 0)
     cmds.setAttr(m3 + ".scaleX", 2)
     cmds.setAttr(m3 + ".scaleZ", 6)
 

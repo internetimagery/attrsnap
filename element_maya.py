@@ -4,6 +4,7 @@
 from __future__ import print_function
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
+import math
 
 def get_node(name):
     """ Get Node """
@@ -81,16 +82,18 @@ class Marker_Set(object):
         s.node1 = Marker(node1)
         s.node2 = Marker(node2)
 
-    def get_pos_distance(s):
+    def get_pos_distance(s, log=math.log):
         """ Get positional distance """
-        return (s.node2.get_position() - s.node1.get_position()).length()
+        return log((s.node2.get_position() - s.node1.get_position()).length())
+        # return (s.node2.get_position() - s.node1.get_position()).length()
 
-    def get_rot_distance(s):
+    def get_rot_distance(s, log=math.log):
         """ Get rotational distance """
         r1 = s.node1.get_rotation()
         r2 = s.node2.get_rotation()
         diff = (r1[i]-r2[i] for i in range(len(r1)))
-        return sum(a*a for a in diff)#*10000000
+        return log(sum(a*a for a in diff))
+        # return sum(a*a for a in diff)#*10000000
         # mag2 = sum(a*a for a in diff)
         # return mag2 and (mag2 ** -0.5) * mag2
 
