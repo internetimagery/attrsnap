@@ -105,7 +105,7 @@ def form_heirarchy(grps):
                 new_sorted_grp.append(prev_grp)
     return new_sorted_grp
 
-def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, debug=False):
+def search(group, rate=0.8, beta1=0.8, beta2=0.9, tolerance=0.00001, limit=500, debug=False):
     """
     Match using gradient descent + momentum.
     rate = sample size of each step.
@@ -165,10 +165,10 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
-        # if rate < tolerance:
-        #     if debug:
-        #         print("Rate below tolerance. Done.")
-        #     break
+        if rate < tolerance:
+            if debug:
+                print("Rate below tolerance. Done.")
+            break
 
         # Check if we are sitting on a flat plateau.
         gradient = Vector(group.get_gradient())
