@@ -121,7 +121,6 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
     v = m = Vector([0]*len(group))
     root_dist = prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
-    cutoff = 0.00000001 if group.match_type == groups.ROTATION else 0.0001
 
     yield closest_dist, closest_values
 
@@ -157,17 +156,18 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.8, tolerance=0.0001, limit=500, d
             yield closest_dist, closest_values
 
         # Break if we are there. Especially low number for rotations
-        if dist < cutoff:
-            if debug:
-                print("Distance below minimum.")
-            break
+        # if dist < 0.001:
+        #     if debug:
+        #         print("Distance below minimum.")
+        #     break
+        # print(dist)
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
-        if rate < tolerance:
-            if debug:
-                print("Rate below tolerance. Done.")
-            break
+        # if rate < tolerance:
+        #     if debug:
+        #         print("Rate below tolerance. Done.")
+        #     break
 
         # Check if we are sitting on a flat plateau.
         gradient = Vector(group.get_gradient())

@@ -90,7 +90,7 @@ class Marker_Set(object):
         r1 = s.node1.get_rotation()
         r2 = s.node2.get_rotation()
         diff = (r1[i]-r2[i] for i in range(len(r1)))
-        return sum(a*a for a in diff)
+        return sum(a*a for a in diff)#*10000000
         # mag2 = sum(a*a for a in diff)
         # return mag2 and (mag2 ** -0.5) * mag2
 
