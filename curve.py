@@ -2,6 +2,47 @@
 import maya.cmds as cmds
 import math
 
+# sharpness 1 < s < 2
+#
+# class Dyn3(object):
+#     def __call__(s, x, translateX, translateY, scale, sharpness=1):
+#         # sharpness = min(max(sharpness, 1), 2)
+#         return scale * abs(translateX + x) ** sharpness + translateY
+#     def __len__(s):
+#         return 3
+
+class Basic(object):
+    def __call__(s, x, translateX, translateY, scale):
+        return (translateX + abs(x))*scale+translateY
+    def __len__(s):
+        return 3
+
+class Dyn(object):
+    def __call__(s, x, translateX, translateY, scale, sharpness=1):
+        sharpness = min(max(sharpness, 1), 2)
+        # sharpness = 1
+        return scale * abs(translateX + x) ** sharpness + translateY
+    def __len__(s):
+        return 4
+
+class Dyn2(object):
+    def __init__(s, X):
+        s.translateX = X
+    def __call__(s, x, translateX, translateY, scale, sharpness=1):
+        sharpness = min(max(sharpness, 1), 2)
+        translateX = s.translateX
+        return scale * abs(translateX + x) ** sharpness + translateY
+    def __len__(s):
+        return 4
+
+
+class Dyn1(object):
+    def __call__(s, x, translateX, translateY, scale, sharpness):
+        sharpness = 1
+        return scale * abs(translateX + x) ** sharpness + translateY
+    def __len__(s):
+        return 4
+
 class Bell(object):
     def __call__(s, x, a, b, c):
         return a ** -(x-b)**2/(2*c**2)
@@ -56,10 +97,11 @@ def gradient(vector, points, curve, precision=0.001):
     return result
 
 def least_squares(vals, points, curve):
-    return sum((curve(x, *vals)-y)**2 for x,y,z in points)
+    return math.log(sum((curve(x, *vals)-y)**2 for x,y,z in points))
+    # return sum((curve(x, *vals)-y)**2 for x,y,z in points)
 
 
-def fit(points, curve, vals=None, rate=0.0001, friction=0.8):
+def fit(points, curve, vals=None, rate=0.00001, friction=0.8):
 
     vals = [1]*len(curve) if vals is None else vals
 
@@ -74,8 +116,8 @@ def fit(points, curve, vals=None, rate=0.0001, friction=0.8):
         # Also reduce our momentum so we can turn faster.
         err = least_squares(vals, points, curve)
         grad = gradient(vals, points, curve)
-        if not i:
-            print "GRADLEN", length(grad)
+        # if not i:
+        #     print "GRADLEN", length(grad)
         if err > prev_err:
             rate *= 0.5
             velocity = [a*0.5 for a in velocity]
@@ -125,7 +167,7 @@ def test():
     loc1 = cmds.spaceLocator()[0]
 
     points = []
-    for x in range(-10, 10, 2):
+    for x in range(-10, 10, 1):
         # for z in range(-10, 10):
         z = 0
         cmds.xform(loc1, t=(x, 0, z))
@@ -134,9 +176,13 @@ def test():
         cmds.spaceLocator(p=pnt)
         points.append(pnt)
 
-    curve = Poly2()
-
+    # curve = Dyn3()
+    curve = Basic()
     vals = fit(points, curve)
+    # curve2 = Dyn2(vals[0])
+    # vals = fit(points, curve2, vals)
+    # curve = Dyn()
+    # vals = [-2.7, 6.3, 0.08, 1.8]
 
     print "Result", vals
 
