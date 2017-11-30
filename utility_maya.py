@@ -28,6 +28,10 @@ def get_attribute():
     """ Get selected attribute from channelbox """
     return set("{}.{}".format(o, cmds.attributeName("{}.{}".format(o, at), l=True)) for o in cmds.ls(sl=True) for at in cmds.channelBox("mainChannelBox", sma=True, q=True) or [] if cmds.attributeQuery(at, n=o, ex=True))
 
+def valid_object(obj):
+    """ Check object is valid and exists """
+    return cmds.objExists(obj)
+
 def valid_attribute(attr):
     """ Check attribute is valid and exists """
     try:

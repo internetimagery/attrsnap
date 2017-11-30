@@ -472,3 +472,24 @@ class Window(object):
                 for progress in match.match(valid, frame_range[0], frame_range[1]):
                     prog(progress)
         s.idle = True
+
+class Fixer(object):
+    """ Popup to assist in renaming missing objects """
+    def __init__(s, templates):
+        # Pull out all objects
+        all_objs = set()
+        s.templates = templates
+        for template in templates:
+            for marker in template.markers:
+                all_objs.add(marker)
+            for attribute in template.attributes:
+                all_objs.add(attribute[0])
+
+        # Filter for missing objects
+        s.missing = {}
+        for obj in all_objs:
+            if not utility.valid_object(obj):
+                s.missing[obj] = obj
+
+        if not s.missing:
+            return utility.warn("All objects are accounted for!")
