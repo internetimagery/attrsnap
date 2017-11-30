@@ -454,7 +454,10 @@ class Window(object):
         """ Load template file """
         path = cmds.fileDialog2(fm=1, ff="Snap file (*.snap)")
         if path:
-            Window(groups.load(path[0]))
+            templates = groups.load(path[0])
+            fix = Fixer(templates)
+            if not fix.missing:
+                Window(groups.load(path[0]))
 
     def save_template(s, *_):
         """ Save template file """
