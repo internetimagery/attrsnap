@@ -377,6 +377,9 @@ class Window(object):
         ann="Get groups from a template file.")
         cmds.menuItem(l="Save Template", c=s.save_template,
         ann="Save current groups into a template file. For later retrieval.")
+        cmds.menu(l="Utility")
+        cmds.menuItem(l="Retarget", c=s.retarget,
+        ann="Run retaget tool to assist in fixing missing objects.")
 
         try:
             s.tab_grp = cmds.tabLayout(
@@ -404,6 +407,13 @@ class Window(object):
                 s.new_group(t)
         else:
             s.new_group()
+
+    def retarget(s, *_):
+        """ Run retarget tool """
+        templates = [tab.export() for tab in s.tabs]
+        if templates:
+            return Fixer(templates)
+        utility.warn("Nothing to retarget.")
 
     def enable_all(s, status=True):
         """ Enable every group """
@@ -516,13 +526,13 @@ class Fixer(object):
         # Filter for missing objects
         s.missing = []
         for obj in all_objs:
-            if not utility.valid_object(obj):
+            if obj and not utility.valid_object(obj):
                 s.missing.append(obj)
 
         if not s.missing:
-            return utility.warn("All objects are accounted for!")
+            return utility.warn("There are no missing objects!")
 
-        win = cmds.window(rtf=True, t="Retarget")
+        s.win = cmds.window(rtf=True, t="Retarget")
         root = cmds.columnLayout(adj=True)
         cmds.popupMenu()
         cmds.menuItem(l="Reset all.", c=s.reset_all,
@@ -566,7 +576,13 @@ class Fixer(object):
 
     def apply_all(s, *_):
         """ apply everything """
-        diff = ((a, s.retargets[a].get_value()) for a in s.missing)
-        changes = [(a,b) for a, b in diff if a != b]
+        changes = {a: s.retargets[a].get_value() for a in s.missing}
 
-        print(changes)
+        # copy templates
+        for template in s.templates:
+            markers = [changes[a] if a in changes else a for a in template.markers]
+            attributes = [[changes[b] if b in changes else b for b in a] for a in template.attributes]
+            template.markers = markers
+            template.attributes = attributes
+        cmds.deleteUI(s.win)
+        Window(s.templates)
