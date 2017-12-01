@@ -1,20 +1,27 @@
 # Prepare and run gui!
 
 from __future__ import print_function, division
+import maya.utils as utils
 import maya.cmds as cmds
 import maya.mel as mel
 import collections
 import functools
+import threading
 import utility
+import os.path
 import groups
 import match
+import time
+import re
 
-# TODO: Make attributes use limits
+SEM = threading.BoundedSemaphore(1)
+WIDGET_HEIGHT = 30
 
 BLACK = (0.1,0.1,0.1)
 GREEN = (0.2, 0.5, 0.4)
 RED = (0.4, 0.3, 0.3)
 YELLOW = (0.7, 0.7, 0.1)
+GREY = (0.2,0.2,0.2)
 # L_GREEN = [a * 1.5 for a in GREEN]
 # D_GREEN = [a * 0.4 for a in GREEN]
 # D_RED = [a * 0.4 for a in RED]
@@ -55,32 +62,36 @@ class Widget(object):
 class IntBox(Widget):
     """ Int box """
     def __init__(s, parent, update, val=0):
-        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, bgc=BLACK)
+        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK, h=WIDGET_HEIGHT)
 
 class CheckBox(Widget):
     """ Int box """
     def __init__(s, parent, update, val=True):
         Widget.__init__(s, cmds.checkBox, "v", v=val, p=parent, cc=update, bgc=BLACK)
 
+class IconCheckBox(Widget):
+    """ Checkbox with image! """
+    def __init__(s, parent, update, val=False, **kwargs):
+        Widget.__init__(s, cmds.iconTextCheckBox, "v", cc=update, **kwargs)
+
 class TextBox(Widget):
     """ Text box full of boxy text! """
     def __init__(s, parent, update, text=""):
-        Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK)
+        Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK, h=WIDGET_HEIGHT)
 
 class Attribute(object):
     """ gui for single attribute """
-    def __init__(s, parent, update, delete, attribute="", min_=-9999, max_=9999):
-        s.row = cmds.rowLayout(nc=4, adj=1, p=parent)
-        s.attr = TextBox(s.row, update, attribute)
+    def __init__(s, cols, update, delete, attribute="", min_=-9999, max_=9999):
+        s.attr = TextBox(cols[0], update, attribute)
         if utility.valid_attribute(attribute):
             limit = utility.attribute_range(attribute)
             if limit[0] is not None:
                 min_ = limit[0]
             if limit[1] is not None:
                 max_ = limit[1]
-        s.min = IntBox(s.row, update, min_)
-        s.max = IntBox(s.row, update, max_)
-        cmds.iconTextButton(i="trash.png", st="iconOnly", p=s.row, c=delete)
+        s.min = IntBox(cols[1], update, min_)
+        s.max = IntBox(cols[2], update, max_)
+        s.trash = cmds.iconTextButton(p=cols[3], i="removeRenderable.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
@@ -101,25 +112,32 @@ class Attribute(object):
 
     def remove(s):
         """ Remove element """
-        cmds.deleteUI(s.row)
+        cmds.deleteUI([s.trash, s.attr.gui, s.min.gui, s.max.gui])
 
 class Attributes(object):
     """ Gui for attributes """
     def __init__(s, parent, update, attributes=None):
-        s.parent = parent
         s.update = update
-        s.attributes = [Attribute(parent, update, a) for a in attributes or []]
+        columns = ["Name", "Min", "Max", ""]
+        rows = cmds.rowLayout(nc=len(columns), adj=1, p=parent)
+        s.cols = []
+        for col in columns:
+            c = cmds.columnLayout(adj=True, p=rows)
+            cmds.text(l=col, p=c, bgc=GREY)
+            s.cols.append(c)
+        s.attributes = []
+        for attr in attributes or []:
+            name = ".".join(attr[:2])
+            args = [name] + attr[2:]
+            s.add_attribute(*args)
 
-    def add_attributes(s, *names):
+    def add_attribute(s, name, min_=-9999, max_=9999):
         """ Add a new attribute """
-        duplicates = set()
         for attr in s.attributes:
-            for name in names:
-                if name == attr.attr.value:
-                    duplicates.add(name)
-        for name in set(names) - duplicates:
-            attr = Attribute(s.parent, s.update, functools.partial(s.del_attribute, name), name)
-            s.attributes.append(attr)
+            if name == attr.attr.value:
+                return
+        attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name, min_, max_)
+        s.attributes.append(attr)
 
     def del_attribute(s, name):
         """ Remove attribute! """
@@ -144,10 +162,12 @@ class Attributes(object):
 
 class Markers(object):
     """ Gui for markers """
-    def __init__(s, parent, update, m1="", m2=""):
+    def __init__(s, parent, update, markers):
         s.parent = cmds.columnLayout(adj=True, p=parent)
         s.m1 = TextBox(s.parent, update)
         s.m2 = TextBox(s.parent, update)
+        for m, gui in zip(markers, [s.m1, s.m2]):
+            gui.value = m
         s.validate()
 
     def validate(s, *_):
@@ -166,32 +186,40 @@ class Markers(object):
 
 class Tab(object):
     """ Tab holding information! """
-    def __init__(s, tab_parent, name="Group", enabled=True):
+    def __init__(s, tab_parent, template):
         s.parent = tab_parent
         s.layout = cmds.columnLayout(adj=True, p=s.parent)
         s.ready = False
 
         # Group stuff
         cmds.rowLayout(nc=2, adj=1, p=s.layout)
-        s.GUI_enable = cmds.checkBox(l="Enable", v=enabled, cc=s.enable)
-        s.GUI_type = cmds.optionMenu()
-        for opt in options:
+        s.GUI_enable = cmds.checkBox(l="Enable", v=True, cc=s.enable,
+        ann="Disabled groups will not be evaluated. Useful if you don't want to use a group, while not wanting to delete it.")
+        s.GUI_type = cmds.optionMenu(
+        ann="Matching type. Position: Moves objects closer together. Rotation: Orients objects closer together.")
+        for i, opt in enumerate(options):
             cmds.menuItem(l=opt)
+            if template.match_type == options[opt]:
+                cmds.optionMenu(s.GUI_type, e=True, sl=i+1)
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="New markers from selection", c=lambda _: s.markers.set(*utility.get_selection(2)))
-        s.markers = Markers(markers, s.validate)
+        cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)),
+        ann="Select two objects in the scene that you wish to be moved/rotated closer together.")
+        s.markers = Markers(markers, s.validate, template.markers)
         # -----
         cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="New Attribute from Channelbox", c=lambda _: s.attributes.add_attributes(*utility.get_attribute()))
+        cmds.button(l="Add Attribute from Channelbox", c=lambda _: [s.attributes.add_attribute(a) for a in utility.get_attribute()],
+        ann="Highlight attributes in the channelbox, and click the button to add them.")
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
         # attributes = cmds.scrollLayout(cr=True, h=300, bgc=BLACK)
-        s.attributes = Attributes(attributes, s.validate)
+        s.attributes = Attributes(attributes, s.validate, template.attributes)
         # -----
 
-        s.set_title(name)
+        # Pre fill information
+        s.set_title(template.name)
         s.ready = True
         s.validate()
+        s.enable(template.enabled)
 
     def rename(s):
         """ Prompt rename """
@@ -231,10 +259,10 @@ class Tab(object):
                 if m_ok and a_ok:
                     cmds.checkBox(s.GUI_enable, e=True, bgc=GREEN)
                 else:
-                    cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
+                    cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
                     ok = False
             else:
-                cmds.checkBox(s.GUI_enable, e=True, bgc=RED)
+                cmds.checkBox(s.GUI_enable, e=True, bgc=YELLOW)
         return ok
 
     def export(s):
@@ -243,7 +271,8 @@ class Tab(object):
         match_type = s.get_type()
         markers = [s.markers.m1.value, s.markers.m2.value]
         attributes = list(s.attributes.export())
-        return groups.Group(
+        return groups.Template(
+            enabled=s.is_active(),
             name=name,
             match_type=match_type,
             markers=markers,
@@ -253,9 +282,76 @@ class Tab(object):
         """ Make class usable """
         return s.layout
 
+class Range(object):
+    """ Frame range widget """
+    def __init__(s, parent):
+        col = cmds.columnLayout(p=parent)
+        s.dynamic = IconCheckBox(col, lambda x: "", v=True, h=WIDGET_HEIGHT,
+            l="Automatic\nFrame Range:",
+            i="autoload.png",
+            st="iconAndTextHorizontal",
+            ann="RIGHT CLICK: Additional options.\nON: Auto frame range.\nOFF: Manual.")
+        cmds.popupMenu(p=col)
+        cmds.menuItem(l="Set to playback range.", c=lambda x: s.set_range(*utility.get_playback_range()))
+        s.row = cmds.rowLayout(nc=2, p=col)
+        frame = utility.get_frame()
+        s.min = IntBox(s.row, s.validate, frame)
+        s.max = IntBox(s.row, s.validate, frame)
+
+        # Detect things!
+        s.loop = True
+        threading.Thread(target=s.inner_loop).start()
+
+    def validate(s, *_):
+        """ Validate our timeline range """
+        ok = True
+        if not s.min.validate(lambda x: x <= s.max.value):
+            ok = False
+        if not s.max.validate(lambda x: x >= s.min.value):
+            ok = False
+        return ok
+
+    def set_range(s, start, end, auto=False):
+        """ Set range to values """
+        if auto and not s.dynamic.value:
+            return
+        s.dynamic.value = auto
+        s.min.value = start
+        s.max.value = end
+
+    def inner_loop(s):
+        """ Detect things on loop, with low priority """
+        while s.loop:
+            SEM.acquire()
+            utils.executeDeferred(cmds.scriptJob, ro=True, e=("idle", s.update_timeline_highlight))
+            time.sleep(0.3)
+
+    def update_timeline_highlight(s):
+        """ If the timeline is highlighted, update range values """
+        try:
+            if cmds.layout(s.row, q=True, ex=True):
+                fr = utility.get_frame_range()
+                if fr:
+                    s.set_range(*fr, auto=True)
+                else:
+                    frame = utility.get_frame()
+                    s.set_range(frame, frame, auto=True)
+            else:
+                s.loop = False
+        except Exception as err:
+            print("ERROR:", err)
+            s.loop = False
+        finally:
+            SEM.release()
+
+    def export(s):
+        """ Pump out values """
+        return s.min.value, s.max.value
+
 class Window(object):
     """ Main window! """
-    def __init__(s):
+    def __init__(s, templates=None):
+        templates = templates or []
         s.idle = True
         s.tabs = []
         s.group_index = 0
@@ -263,20 +359,66 @@ class Window(object):
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
 
-        win = cmds.window(t="Attribute Snapping!")
+        s.win = cmds.window(t="Attribute Snapping!")
         root = cmds.columnLayout(adj=True)
         cmds.menuBarLayout()
         cmds.menu(l="Groups")
-        cmds.menuItem(l="New Group", c=s.new_group)
-        cmds.menuItem(l="Remove Group", c=s.delete_tab)
-        cmds.menuItem(l="Load Template", c=s.load_template)
-        cmds.menuItem(l="Save Template", c=s.save_template)
-        cmds.button(l="-- Do it! --", h=50, bgc=GREEN, c=s.run_match)
-        s.tab_grp = cmds.tabLayout(doubleClickCommand=s.rename_tab, p=root)
-        cmds.showWindow(win)
+        cmds.menuItem(l="New Group", c=s.new_group,
+        ann="Create a new group.")
+        cmds.menuItem(l="Remove Group", c=s.delete_tab,
+        ann="Remove currently visible group.")
+        cmds.menuItem(d=True)
+        cmds.menuItem(l="Enable All", c=lambda x: s.enable_all(True),
+        ann="Enable all groups.")
+        cmds.menuItem(l="Disable All", c=lambda x: s.enable_all(False),
+        ann="Disable all groups.")
+        cmds.menuItem(d=True)
+        cmds.menuItem(l="Load Template", c=s.load_template,
+        ann="Get groups from a template file.")
+        cmds.menuItem(l="Save Template", c=s.save_template,
+        ann="Save current groups into a template file. For later retrieval.")
+        cmds.menu(l="Utility")
+        cmds.menuItem(l="Retarget", c=s.retarget,
+        ann="Run retaget tool to assist in fixing missing objects.")
+
+        try:
+            s.tab_grp = cmds.tabLayout(
+                snt=True,
+                newTabCommand=s.new_group,
+                doubleClickCommand=s.rename_tab,
+                p=root)
+        except TypeError:
+            s.tab_grp = cmds.tabLayout(
+                doubleClickCommand=s.rename_tab,
+                p=root)
+
+
+        cmds.separator(p=root)
+        row = cmds.rowLayout(nc=2, adj=2, p=root)
+        s.range = Range(row)
+        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=s.run_match,
+        ann="CLICK: Start matching, using all enabled groups.")
+        cmds.helpLine(p=root)
+        cmds.showWindow(s.win)
 
         # Initial group
-        s.new_group()
+        if templates:
+            for t in templates:
+                s.new_group(t)
+        else:
+            s.new_group()
+
+    def retarget(s, *_):
+        """ Run retarget tool """
+        templates = [tab.export() for tab in s.tabs]
+        if templates:
+            return Fixer(templates)
+        utility.warn("Nothing to retarget.")
+
+    def enable_all(s, status=True):
+        """ Enable every group """
+        for tab in s.tabs:
+            tab.enable(status)
 
     def delete_tab(s, *_):
         """ Delete active tab """
@@ -295,25 +437,34 @@ class Window(object):
         for tab in (t for t in s.tabs if selected in t.layout):
             tab.rename()
 
-    def new_group(s, *_):
+    def new_group(s, template=None):
         """ Create a new group """
-        tab_names = cmds.tabLayout(s.tab_grp, q=True, tl=True) or []
-        while True:
-            s.group_index += 1
-            name = "Group{}".format(s.group_index)
-            if name not in tab_names:
-                break
-        s.tabs.append(Tab(s.tab_grp, "Group{}".format(s.group_index)))
+        if not template:
+            tab_names = cmds.tabLayout(s.tab_grp, q=True, tl=True) or []
+            while True:
+                s.group_index += 1
+                name = "Group{}".format(s.group_index)
+                if name not in tab_names:
+                    break
+            template = groups.Template(name="Group{}".format(s.group_index))
+        s.tabs.append(Tab(s.tab_grp, template))
         cmds.tabLayout(s.tab_grp, e=True, sti=cmds.tabLayout(s.tab_grp, q=True, nch=True))
 
     def load_template(s, *_):
         """ Load template file """
-        raise NotImplementedError("Sorry... Not yet.")
+        path = cmds.fileDialog2(fm=1, ff="Snap file (*.snap)")
+        if path:
+            templates = groups.load(path[0])
+            fix = Fixer(templates)
+            if not fix.missing:
+                Window(groups.load(path[0]))
 
     def save_template(s, *_):
         """ Save template file """
-        valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
-        raise NotImplementedError("Sorry... Load doesn't work! Why would this?")
+        templates = [tab.export() for tab in s.tabs]
+        path = cmds.fileDialog2(fm=0, ff="Snap file (*.snap)")
+        if path:
+            groups.save(templates, path[0])
 
     def run_match(s, *_):
         """ Run match! Woot """
@@ -323,13 +474,118 @@ class Window(object):
             num_valid = len(valid)
             if not valid:
                 return
-            frame_range = utility.get_frame_range()
+            if not s.range.validate():
+                return
+            frame_range = s.range.export()
             frame_diff = (frame_range[1] - frame_range[0]) + 1
             frame_scale = 1 / frame_diff
             grp_scale = 1 / num_valid
 
-            # TODO: Put in proper matching!
+            # Match this!
             with utility.progress() as prog:
                 for progress in match.match(valid, frame_range[0], frame_range[1]):
                     prog(progress)
         s.idle = True
+
+class Retarget(object):
+    """ Retarget object """
+    def __init__(s, col1, col2, col3, obj):
+        s.old_obj = s.new_obj = obj
+        cmds.text(l=obj, p=col1 , h=WIDGET_HEIGHT, bgc=GREY,
+        ann="Original object name.")
+        cmds.iconTextButton(i="arrowRight.png", p=col2, h=WIDGET_HEIGHT, w=WIDGET_HEIGHT, c=s.reset,
+        ann="Click to reset back to old name.")
+        s.gui = TextBox(col3, s.validate, obj)
+        s.validate()
+
+    def set_value(s, text):
+        """ Set value """
+        s.gui.value = text
+
+    def reset(s, *_):
+        """ Reset to old name """
+        s.gui.value = s.old_obj
+
+    def validate(s, *_):
+        """ Check object exists """
+        return s.gui.validate(utility.valid_object)
+
+    def get_value(s):
+        """ Return value """
+        return s.gui.value
+
+class Fixer(object):
+    """ Popup to assist in renaming missing objects """
+    def __init__(s, templates):
+        # Pull out all objects
+        all_objs = set()
+        s.templates = templates
+        for template in templates:
+            for marker in template.markers:
+                all_objs.add(marker)
+            for attribute in template.attributes:
+                all_objs.add(attribute[0])
+
+        # Filter for missing objects
+        s.missing = []
+        for obj in all_objs:
+            if obj and not utility.valid_object(obj):
+                s.missing.append(obj)
+
+        if not s.missing:
+            return utility.warn("There are no missing objects!")
+
+        s.win = cmds.window(rtf=True, t="Retarget")
+        root = cmds.columnLayout(adj=True)
+        cmds.popupMenu()
+        cmds.menuItem(l="Reset all.", c=s.reset_all,
+            ann="Return all names back to default.")
+        cmds.text(l="Some objects cannot be found.\nPlease use the following tools to rename them.")
+        cmds.frameLayout(l="Batch Rename", cll=True, cl=True, p=root)
+        row1 = cmds.rowLayout(nc=2, adj=1)
+        row2 = cmds.rowLayout(nc=2, adj=2)
+        cmds.columnLayout(adj=True, p=row2)
+        cmds.text(l="Search:", h=WIDGET_HEIGHT)
+        cmds.text(l="Replace:", h=WIDGET_HEIGHT)
+        col = cmds.columnLayout(adj=True, p=row2)
+        s.search = TextBox(col, (lambda x: ""), os.path.commonprefix(s.missing))
+        s.replace = TextBox(col, lambda x:"")
+        cmds.button(l="Rename", bgc=GREEN, p=row1, h=WIDGET_HEIGHT*2, c=s.rename_all,
+            ann="Click to run the rename on all entries. Uses 'Regular Expression' syntax.")
+        cmds.frameLayout(l="Individual Rename", cll=True, p=root)
+        rows = cmds.rowLayout(nc=3, adj=3)
+        c1 = cmds.columnLayout(adj=True, p=rows)
+        c2 = cmds.columnLayout(adj=True, p=rows)
+        c3 = cmds.columnLayout(adj=True, p=rows)
+        s.retargets = {a: Retarget(c1, c2, c3, a) for a in s.missing}
+        cmds.button(l="Apply Rename", p=root, bgc=GREEN, h=WIDGET_HEIGHT*2, c=s.apply_all,
+            ann="Applies changes to objects.")
+        cmds.helpLine(p=root)
+        cmds.showWindow()
+
+    def reset_all(s, *_):
+        """ Reset all names """
+        for obj in s.retargets:
+            s.retargets[obj].reset()
+
+    def rename_all(s, *_):
+        """ Rename everything """
+        search = s.search.value
+        replace = s.replace.value
+
+        searcher = re.compile(search)
+        for obj in s.retargets:
+            s.retargets[obj].set_value(searcher.sub(replace, s.retargets[obj].get_value()))
+
+    def apply_all(s, *_):
+        """ apply everything """
+        changes = {a: s.retargets[a].get_value() for a in s.missing}
+
+        # copy templates
+        for template in s.templates:
+            markers = [changes[a] if a in changes else a for a in template.markers]
+            attributes = [[changes[b] if b in changes else b for b in a] for a in template.attributes]
+            template.markers = markers
+            template.attributes = attributes
+        cmds.deleteUI(s.win)
+        Window(s.templates)

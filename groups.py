@@ -42,13 +42,12 @@ class Group(object):
         s.attributes = [element.Attribute(*at) for at in template.attributes]
 
     def get_name(s):
-        """ Grabith the nameth """
+        """ Useful for debugging """
         return s.name
 
     def get_values(s):
         """ Get a list of attribute values at the current time """
         return tuple(a.get_value() for a in s.attributes)
-
     def set_values(s, vals):
         """ Set a list of values to each attribute """
         for attr, val in zip(s.attributes, vals):
@@ -68,17 +67,27 @@ class Group(object):
         for at, val in zip(s.attributes, values):
             at.key(val)
 
+    def shift(s, step=0.001):
+        """ Shift location a little. """
+        for attr in s.attributes:
+            val = attr.get_value() + step
+            if val > attr.max:
+                val -= 2 * step
+            attr.set_value(val)
+
     def get_gradient(s, precision=0.001):
         """ Get gradient at current position. """
         result = []
+        dist = s.get_distance()
         for attr in s.attributes:
-            dist = s.get_distance()
             value = attr.get_value()
             new_val = value + precision
             if new_val > attr.max:
                 new_val = value - precision
             attr.set_value(new_val)
-            result.append((s.get_distance() - dist) / precision)
+            new_dist = s.get_distance()
+            result.append((new_dist - dist) / precision)
+            dist = new_dist
         return result
 
     def __len__(s):

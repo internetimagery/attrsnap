@@ -3,6 +3,12 @@ import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
 
+def warn(message, popup=False):
+    """ Provide a warning """
+    cmds.warning(message)
+    if popup:
+        cmds.confirmDialog(t="Careful...", m=message)
+
 def get_frame():
     """ Get current frame """
     return cmds.currentTime(q=True)
@@ -22,6 +28,10 @@ def get_attribute():
     """ Get selected attribute from channelbox """
     return set("{}.{}".format(o, cmds.attributeName("{}.{}".format(o, at), l=True)) for o in cmds.ls(sl=True) for at in cmds.channelBox("mainChannelBox", sma=True, q=True) or [] if cmds.attributeQuery(at, n=o, ex=True))
 
+def valid_object(obj):
+    """ Check object is valid and exists """
+    return cmds.objExists(obj)
+
 def valid_attribute(attr):
     """ Check attribute is valid and exists """
     try:
@@ -40,11 +50,16 @@ def attribute_range(attr):
     return result
 
 def get_frame_range():
-    """ Get either a single frame, or selected region """
+    """ Get selected region """
     slider = mel.eval("$tmp = $gPlayBackSlider") # Get timeslider
     if cmds.timeControl(slider, q=True, rangeVisible=True): # Get framerange
         return cmds.timeControl(slider, q=True, rangeArray=True)
-    return [cmds.currentTime(q=True)]*2
+    return []
+    # return [cmds.currentTime(q=True)]*2
+
+def get_playback_range():
+    """ Get frame range from playback """
+    return cmds.playbackOptions(q=True, min=True), cmds.playbackOptions(q=True, max=True)
 
 def frame_walk(start, end):
     """ Move along frames """

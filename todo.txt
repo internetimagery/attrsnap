@@ -1,0 +1,6 @@
+Throw error if attribute is out of range at the beginning of matching. OR move it to the nearest range limit in one swoop.
+
+create object matching tool to assist in finding objects when their names don't entirely match. Will happen when importing.
+
+
+figure out a way to get out of gimbal lock situations...
