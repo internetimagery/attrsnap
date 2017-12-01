@@ -12,9 +12,22 @@ def test():
     p2 = cmds.polyCube()[0]
     mkr = element_maya.Marker_Set(p1, p2)
 
+    points = []
     for x in range(-180, 180, 10):
-        for z in range(-180, 180, 10):
-            # for k in range(-180, 180, 10):
-            cmds.xform(p2, ro=(0,x,z))
-            dist = mkr.get_rot_distance()
-            cmds.spaceLocator(p=(x*0.1, dist*10, z*0.1))
+        for y in range(-180, 180, 10):
+            for z in range(-180, 180, 10):
+                # for k in range(-180, 180, 10):
+                cmds.xform(p2, ro=(x,y,z))
+                dist = mkr.get_rot_distance()
+                points.append((x,y,z,dist))
+
+    g1 = cmds.group(n="XY", em=True)
+    g2 = cmds.group(n="XZ", em=True)
+    g3 = cmds.group(n="YZ", em=True)
+
+    for p in points:
+        cmds.parent(cmds.spaceLocator(p=(p[0]*0.1, p[1]*0.1, p[-1])), g1)
+        cmds.parent(cmds.spaceLocator(p=(p[0]*0.1, p[2]*0.1, p[-1])), g1)
+        cmds.parent(cmds.spaceLocator(p=(p[1]*0.1, p[2]*0.1, p[-1])), g1)
+
+    
