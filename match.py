@@ -272,7 +272,7 @@ def test():
     cmds.xform(m1, t=rand())
     cmds.xform(m2, t=rand())
     cmds.setAttr(m2 + ".ty", 0)
-    cmds.setAttr(m1 + ".ty", 0)
+    cmds.setAttr(m1 + ".ty", -3)
     cmds.setAttr(m3 + ".scaleX", 2)
     cmds.setAttr(m3 + ".scaleZ", 6)
 

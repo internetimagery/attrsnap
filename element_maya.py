@@ -86,7 +86,6 @@ class Marker_Set(object):
         """ Get positional distance """
         dist = (s.node2.get_position() - s.node1.get_position()).length()
         return dist and log(dist)
-        # return (s.node2.get_position() - s.node1.get_position()).length()
 
     def get_rot_distance(s, log=math.log):
         """ Get rotational distance """
@@ -95,9 +94,6 @@ class Marker_Set(object):
         diff = (r1[i]-r2[i] for i in range(len(r1)))
         dist = sum(a*a for a in diff)
         return dist and log(dist,1.2)
-        # return sum(a*a for a in diff)#*10000000
-        # mag2 = sum(a*a for a in diff)
-        # return mag2 and (mag2 ** -0.5) * mag2
 
     def __iter__(s):
         """ Loop over entries """
