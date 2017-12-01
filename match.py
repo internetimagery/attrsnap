@@ -15,32 +15,30 @@ except NameError:
 # https://cs231n.github.io/neural-networks-3/#gradcheck
 
 class Vector(tuple):
-    """ Abstract vector class """
+    """ Make vector operations cleaner """
     __slots__ = ()
     def __new__(cls, *pos):
         return tuple.__new__(cls, pos[0] if len(pos) == 1 else pos)
-    def dot(lhs, rhs):
-        return sum(lhs[i]*rhs[i] for i in range(len(lhs)))
+    def dot(lhs, rhs, zip=zip):
+        return sum(a*b for a,b in zip(lhs, rhs))
     def length(s):
         dot = s.dot(s)
         return dot and (dot ** -0.5) * dot
     def normalize(s):
         mag = s.length()
-        return Vector(mag and a/mag for a in s)
+        return s.__class__(mag and a/mag for a in s)
     def sqrt(s):
-        return Vector(a and (a ** -0.5)*a for a in s)
-    def __add__(lhs, rhs):
-        return lhs.__class__(lhs[i]+rhs[i] for i in range(len(lhs)))
+        return s.__class__(a and (a ** -0.5)*a for a in s)
+    def __add__(lhs, rhs, zip=zip):
+        return lhs.__class__(a+b for a,b in zip(lhs, rhs))
     def __radd__(s, lhs):
         return s.__add__(lhs)
-    def __sub__(s, rhs, rev=False):
-        lhs, rhs = (rhs, s) if rev else (s, rhs)
-        return s.__class__(lhs[i]-rhs[i] for i in range(len(s)))
+    def __sub__(s, rhs, rev=False, zip=zip):
+        return s.__class__(a-b for a,b in zip(*(rhs, s) if rev else (s, rhs)))
     def __rsub__(s, lhs):
         return s.__sub__(s, lhs, True)
-    def __div__(s, rhs, rev=False):
-        lhs, rhs = (rhs, s) if rev else (s, rhs)
-        return s.__class__(rhs[i] and lhs[i]/rhs[i] for i in range(len(s)))
+    def __div__(s, rhs, rev=False, zip=zip):
+        return s.__class__(b and a/b for a,b in zip(*(rhs, s) if rev else (s, rhs)))
     def __rdiv__(s, lhs):
         return s.__sub__(s, lhs, True)
     def __truediv__(s, rhs):
