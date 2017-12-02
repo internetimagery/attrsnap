@@ -167,8 +167,9 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
         velocity = velocity*friction + gradient.square()*(1-friction)
         curr_values += momentum*-rate / velocity.sqrt()
         momentum = Vector(group.bounds(momentum))
-        velocity = Vector(group.bounds(velocity))
+        # velocity = Vector(group.bounds(velocity))
         curr_values = Vector(group.bounds(curr_values))
+
 
     if debug:
         print("Finished after {} steps".format(i))
