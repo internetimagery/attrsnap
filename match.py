@@ -105,47 +105,39 @@ def form_heirarchy(grps):
                 new_sorted_grp.append(prev_grp)
     return new_sorted_grp
 
-def search(group, rate=0.8, beta1=0.8, beta2=0.9, tolerance=0.00001, limit=500, debug=False):
+def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, limit=500, debug=False):
     """
     Match using gradient descent + momentum.
     rate = sample size of each step.
     friction = how much dampening do we get.
     limit = how many steps do we take before giving up?
     """
-    # Validate parameters
+    # Validate some parameters
     limit = abs(int(limit))
-
+    if resistance >= 1 or friction >= 1 or rate <= 0:
+        raise RuntimeError("Variables are out of range.")
 
 
     # Initialize variables
-    v = m = Vector([0]*len(group))
-    root_dist = prev_dist = closest_dist = group.get_distance()
+    velocity = momentum = Vector([0]*len(group))
+    prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
 
     yield closest_dist, closest_values
-
-    if debug:
-        curve1 = element.Curve(group.markers.node1.get_position())
-        curve2 = element.Curve(group.markers.node2.get_position())
 
     # GO!
     for i in xrange(limit):
         group.set_values(curr_values)
 
-        if debug:
-            curve1.add(group.markers.node1.get_position())
-            curve2.add(group.markers.node2.get_position())
-
         # Check if we have overshot our target.
-        # If so, reduce our sample rate because we are close.
-        # Also reduce our momentum so we can turn faster.
+        # If so, reduce our sample rate and our momentum, so we can turn faster.
         dist = group.get_distance()
         if dist > prev_dist:
             rate *= 0.5
-            beta1 *= 0.5
-            beta2 *= 0.5
-            v *= 0.5
-            m *= 0.5
+            resistance *= 0.5
+            friction *= 0.5
+            velocity *= 0.5
+            momentum *= 0.5
         prev_dist = dist
 
         # Check if we are closer than ever before.
@@ -154,14 +146,6 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.9, tolerance=0.00001, limit=500, 
             closest_dist = dist
             closest_values = curr_values
             yield closest_dist, closest_values
-
-        # Break if we are there. Especially low number for rotations
-        # if dist < 0.000001:
-        # if dist < -20:
-        # if not group.match_type:
-        #     if debug:
-        #         print("Distance below minimum.")
-        #     break
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -179,12 +163,11 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.9, tolerance=0.00001, limit=500, 
         prev_gradient = gradient
 
         # Calculate our path
-        m = m*beta1 + gradient*(1-beta1)
-        v = v*beta2 + gradient.square()*(1-beta2)
-        # v = v*beta2 + Vector(a*a for a in gradient)*(1-beta2)
-        curr_values += m*-rate / v.sqrt()
-        m = Vector(group.bounds(m))
-        v = Vector(group.bounds(v))
+        momentum = momentum*resistance + gradient*(1-resistance)
+        velocity = velocity*friction + gradient.square()*(1-friction)
+        curr_values += momentum*-rate / velocity.sqrt()
+        momentum = Vector(group.bounds(momentum))
+        velocity = Vector(group.bounds(velocity))
         curr_values = Vector(group.bounds(curr_values))
 
     if debug:
@@ -283,11 +266,16 @@ def test():
         markers=[m1, m2],
         attributes=[(m2, "tx", 0), (m2, "tz", 0)]
     )
-    for prog in match([template], debug=True):
-        pass
+    grp = groups.Group(template)
 
+    curve1 = element.Curve(grp.markers.node1.get_position())
+    curve2 = element.Curve(grp.markers.node2.get_position())
 
-    # grp.set_values(values)
+    for dist, values in search(grp, debug=True):
+        curve1.add(grp.markers.node1.get_position())
+        curve2.add(grp.markers.node2.get_position())
+
+    grp.set_values(values)
 
     x1, _, z1 = cmds.xform(m1, q=True, ws=True, t=True)
     x2, _, z2 = cmds.xform(m2, q=True, ws=True, t=True)
