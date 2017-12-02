@@ -20,7 +20,6 @@ class Basic(object):
 class Dyn(object):
     def __call__(s, x, translateX, translateY, scale, sharpness=1):
         sharpness = min(max(sharpness, 1), 2)
-        # sharpness = 1
         return scale * abs(translateX + x) ** sharpness + translateY
     def __len__(s):
         return 4
@@ -97,11 +96,12 @@ def gradient(vector, points, curve, precision=0.001):
     return result
 
 def least_squares(vals, points, curve):
-    return math.log(sum((curve(x, *vals)-y)**2 for x,y,z in points))
+    dist = sum((curve(x, *vals)-y)**2 for x,y,z in points)
+    return dist# and math.log(dist,10)
     # return sum((curve(x, *vals)-y)**2 for x,y,z in points)
 
 
-def fit(points, curve, vals=None, rate=0.00001, friction=0.8):
+def fit(points, curve, vals=None, rate=0.00000001, friction=0.8):
 
     vals = [1]*len(curve) if vals is None else vals
 
