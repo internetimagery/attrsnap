@@ -265,16 +265,19 @@ def test():
 
     template = groups.Template(
         markers=[m1, m2],
-        attributes=[(m2, "tx", 0), (m2, "tz", 0)]
+        attributes=[(m2, "tx"), (m2, "tz")]
     )
     grp = groups.Group(template)
 
-    curve1 = element.Curve(grp.markers.node1.get_position())
-    curve2 = element.Curve(grp.markers.node2.get_position())
+    # curve1 = element.Curve(grp.markers.node1.get_position())
+    n1 = grp.markers.node1.get_position()
+    n2 = grp.markers.node2.get_position()
+    curve = element.Curve([n2[0], (n2-n1).length() ,n2[2]])
 
     for dist, values in search(grp, debug=True):
-        curve1.add(grp.markers.node1.get_position())
-        curve2.add(grp.markers.node2.get_position())
+        n1 = grp.markers.node1.get_position()
+        n2 = grp.markers.node2.get_position()
+        curve.add([n2[0], (n2-n1).length() ,n2[2]])
 
     grp.set_values(values)
 
