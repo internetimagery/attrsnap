@@ -21,6 +21,8 @@ class Vector(tuple):
         return tuple.__new__(cls, pos[0] if len(pos) == 1 else pos)
     def dot(lhs, rhs, zip=zip):
         return sum(a*b for a,b in zip(lhs, rhs))
+    def square(s):
+        return s.__class__(a*a for a in s)
     def length(s):
         dot = s.dot(s)
         return dot and (dot ** -0.5) * dot
@@ -28,7 +30,7 @@ class Vector(tuple):
         mag = s.length()
         return s.__class__(mag and a/mag for a in s)
     def sqrt(s):
-        return s.__class__(a and (a ** -0.5)*a for a in s)
+        return s.__class__(a if a <=0 else (a ** -0.5)*a for a in s)
     def __add__(lhs, rhs, zip=zip):
         return lhs.__class__(a+b for a,b in zip(lhs, rhs))
     def __radd__(s, lhs):
@@ -178,9 +180,12 @@ def search(group, rate=0.8, beta1=0.8, beta2=0.9, tolerance=0.00001, limit=500, 
 
         # Calculate our path
         m = m*beta1 + gradient*(1-beta1)
-        v = v*beta2 + Vector(a*a for a in gradient)*(1-beta2)
+        v = v*beta2 + gradient.square()*(1-beta2)
+        # v = v*beta2 + Vector(a*a for a in gradient)*(1-beta2)
         curr_values += m*-rate / v.sqrt()
-        curr_values = Vector(at.min if curr_values[i] < at.min else at.max if curr_values[i] > at.max else curr_values[i] for i, at in enumerate(group))
+        m = Vector(group.bounds(m))
+        v = Vector(group.bounds(v))
+        curr_values = Vector(group.bounds(curr_values))
 
     if debug:
         print("Finished after {} steps".format(i))
@@ -276,7 +281,7 @@ def test():
 
     template = groups.Template(
         markers=[m1, m2],
-        attributes=[(m2, "tx"), (m2, "tz")]
+        attributes=[(m2, "tx", 0), (m2, "tz", 0)]
     )
     for prog in match([template], debug=True):
         pass

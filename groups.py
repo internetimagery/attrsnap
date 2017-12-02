@@ -90,6 +90,10 @@ class Group(object):
             dist = new_dist
         return result
 
+    def bounds(s, vals):
+        """ Fit values into range limitation """
+        return (at.min if v < at.min else at.max if v > at.max else v for v, at in zip(vals, s.attributes))
+
     def __len__(s):
         return len(s.attributes)
 
