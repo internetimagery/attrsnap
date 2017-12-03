@@ -2,6 +2,11 @@
 import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
+import difflib
+
+def get_suggestion(word):
+    """ Get suggested object names """
+    return difflib.get_close_matches(word, cmds.ls())
 
 def warn(message, popup=False):
     """ Provide a warning """

@@ -9,7 +9,6 @@ import functools
 import threading
 import utility
 import os.path
-import difflib
 import groups
 import match
 import time
@@ -33,10 +32,6 @@ CANCEL = "Cancel"
 options = collections.OrderedDict()
 options["Position"] = groups.POSITION
 options["Rotation"] = groups.ROTATION
-
-def get_suggestion(word):
-    """ Get suggested object names """
-    return difflib.get_close_matches(word, cmds.ls())
 
 class Widget(object):
     """ Simple widget """
@@ -504,7 +499,7 @@ class Retarget(object):
         cmds.popupMenu(pmc=s.get_suggestions)
         s.validate()
 
-    def set_value(s, text):
+    def set_value(s, text, *_):
         """ Set value """
         s.gui.value = text
 
@@ -522,12 +517,11 @@ class Retarget(object):
 
     def get_suggestions(s, popup, *_):
         """ Find similarly named items """
-        children = cmds.popupMenu(popup, q=True, ca=True)
+        children = cmds.popupMenu(popup, q=True, ia=True)
         if children:
             cmds.deleteUI(children)
-        suggestions = get_suggestion(s.gui.value)
-        for suggestion in suggestions:
-            cmds.menuItem(l=suggestion, p=popup, c=lambda:"")
+        for suggestion in utility.get_suggestion(s.gui.value):
+            cmds.menuItem(l=suggestion, p=popup, c=functools.partial(s.set_value, suggestion))
 
 
 class Fixer(object):
