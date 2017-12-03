@@ -26,6 +26,7 @@ class Attribute(object):
     """ An Attribute """
     # threshold = 0.001 # Negate tiny adjustments
     def __init__(s, obj, attr, min_=-999999, max_=999999):
+        s.name = "{}.{}".format(obj, attr)
         query = lambda **kwargs: cmds.attributeQuery(attr, n=obj, **kwargs) # REUSE!
         if not query(ex=True):
             raise RuntimeError("\"{}\" does not exist.".format(attr))
@@ -41,7 +42,8 @@ class Attribute(object):
 
     def __repr__(s):
         """ Represent object in a usable state for cmds """
-        return s._attr.name()
+        return s.name
+        # return s._attr.name()
 
     def set_value(s, val):
         """ Set attribute value """
@@ -49,16 +51,22 @@ class Attribute(object):
             val = s.min
         elif val > s.max:
             val = s.max
-        if s._is_angle:
-            return s._attr.setMAngle(om.MAngle(val, om.MAngle.kDegrees))
-        s._attr.setDouble(val)
+        try:
+            if s._is_angle:
+                return s._attr.setMAngle(om.MAngle(val, om.MAngle.kDegrees))
+            s._attr.setDouble(val)
+        except RuntimeError:
+            cmds.setAttr(s.name, val)
         return val
 
     def get_value(s):
         """ Get current value """
-        if s._is_angle:
-            return s._attr.asMAngle().asDegrees()
-        return s._attr.asDouble()
+        try:
+            if s._is_angle:
+                return s._attr.asMAngle().asDegrees()
+            return s._attr.asDouble()
+        except RuntimeError:
+            return cmds.getAttr(s.name)
 
     def key(s, value):
         """ Keyframe value at current time """
@@ -72,7 +80,8 @@ class Marker(object):
         node = get_node(name)
         s.node = om.MFnTransform(om.MDagPath.getAPathTo(node))
     def __repr__(s):
-        return s.node.name()
+        return s.name
+        # return s.node.name()
     def get_position(s):
         """ Get position of object """
         try:
