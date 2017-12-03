@@ -268,7 +268,7 @@ class Tab(object):
         """ Export information into a clean group from gui """
         name = s.name
         match_type = s.get_type()
-        markers = [s.markers.m1.value, s.markers.m2.value]
+        markers = [[s.markers.m1.value, s.markers.m2.value]]
         attributes = list(s.attributes.export())
         return groups.Template(
             enabled=s.is_active(),

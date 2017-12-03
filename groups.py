@@ -38,8 +38,8 @@ class Group(object):
     def __init__(s, template):
         s.name = template.name
         s.match_type = template.match_type
-        s.markers = element.Marker_Set(*template.markers)
-        s.attributes = [element.Attribute(*at) for at in template.attributes]
+        s.markers = [element.Marker_Set(*a) for a in template.markers]
+        s.attributes = [element.Attribute(*a) for a in template.attributes]
 
     def get_name(s):
         """ Useful for debugging """
@@ -56,9 +56,9 @@ class Group(object):
     def get_distance(s):
         """ Calculate a distance value from our markers """
         if s.match_type == POSITION:
-            return s.markers.get_pos_distance()
+            return sum(a.get_pos_distance() for a in s.markers)
         elif s.match_type == ROTATION:
-            return s.markers.get_rot_distance()
+            return sum(a.get_rot_distance() for a in s.markers)
         else:
             raise RuntimeError("Distance type not supported.")
 
