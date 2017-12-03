@@ -46,7 +46,7 @@ def valid_attribute(attr):
 
 def attribute_range(attr):
     """ Return attribute range. None = infinite """
-    obj, at = attr.split(".")
+    obj, at = attr.rsplit(".", 1)
     result = [None, None]
     if cmds.attributeQuery(at, n=obj, mne=True):
         result[0] = cmds.attributeQuery(at, n=obj, min=True)[0]

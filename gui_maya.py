@@ -157,7 +157,7 @@ class Attributes(object):
         """ Send out attributes """
         for at in s.attributes:
             attr, min_, max_ = at.export()
-            yield attr.split(".") + [min_, max_]
+            yield attr.rsplit(".", 1) + [min_, max_]
 
 class Markers(object):
     """ Gui for markers """
