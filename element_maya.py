@@ -81,15 +81,20 @@ class Marker(object):
         try:
             return s.node.rotation(om.MSpace.kWorld, True)
         except RuntimeError:
-            raise
-            matrix = cmds.xform(s.name, q=True, ws=True, m=True)
+            m = cmds.xform(s.name, q=True, ws=True, m=True)
             w = (1 + m[0] + m[5] + m[10])
             qw = (w and (w ** -0.5)*w) / 2
-            qx = qw and (m[9] - m[6])/( 4 * qw)
-            qy = qw and (m[2] - m[8])/( 4 * qw)
-            qz = qw and (m[4] - m[1])/( 4 * qw)
-
-            raise
+            qx = m[6] - m[9]
+            qy = m[8] - m[2]
+            qz = m[1] - m[4]
+            total = 4 * qw
+            if not total:
+                dot = sum(a*a for a in (qx,qy,qz))
+                total = dot and (dot ** -0.5)*dot
+            qx /= total
+            qy /= total
+            qz /= total
+            return qx, qy, qz, qw
 
 class Marker_Set(object):
     """ Collection of two markers """
