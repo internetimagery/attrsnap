@@ -9,6 +9,7 @@ import functools
 import threading
 import utility
 import os.path
+import difflib
 import groups
 import match
 import time
@@ -33,6 +34,9 @@ options = collections.OrderedDict()
 options["Position"] = groups.POSITION
 options["Rotation"] = groups.ROTATION
 
+def get_suggestion(word):
+    """ Get suggested object names """
+    return difflib.get_close_matches(word, cmds.ls())
 
 class Widget(object):
     """ Simple widget """
@@ -61,13 +65,13 @@ class Widget(object):
 
 class IntBox(Widget):
     """ Int box """
-    def __init__(s, parent, update, val=0):
-        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK, h=WIDGET_HEIGHT)
+    def __init__(s, parent, update, val=0, **kwargs):
+        Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK, h=WIDGET_HEIGHT, **kwargs)
 
 class CheckBox(Widget):
     """ Int box """
-    def __init__(s, parent, update, val=True):
-        Widget.__init__(s, cmds.checkBox, "v", v=val, p=parent, cc=update, bgc=BLACK)
+    def __init__(s, parent, update, val=True, **kwargs):
+        Widget.__init__(s, cmds.checkBox, "v", v=val, p=parent, cc=update, bgc=BLACK, **kwargs)
 
 class IconCheckBox(Widget):
     """ Checkbox with image! """
@@ -76,8 +80,8 @@ class IconCheckBox(Widget):
 
 class TextBox(Widget):
     """ Text box full of boxy text! """
-    def __init__(s, parent, update, text=""):
-        Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK, h=WIDGET_HEIGHT)
+    def __init__(s, parent, update, text="", **kwargs):
+        Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK, h=WIDGET_HEIGHT, **kwargs)
 
 class Attribute(object):
     """ gui for single attribute """
@@ -492,10 +496,12 @@ class Retarget(object):
     def __init__(s, col1, col2, col3, obj):
         s.old_obj = s.new_obj = obj
         cmds.text(l=obj, p=col1 , h=WIDGET_HEIGHT, bgc=GREY,
-        ann="Original object name.")
+            ann="Original object name.")
         cmds.iconTextButton(i="arrowRight.png", p=col2, h=WIDGET_HEIGHT, w=WIDGET_HEIGHT, c=s.reset,
-        ann="Click to reset back to old name.")
-        s.gui = TextBox(col3, s.validate, obj)
+            ann="Click to reset back to old name.")
+        s.gui = TextBox(col3, s.validate, obj,
+            ann="Right click for suggestions.")
+        cmds.popupMenu(pmc=s.get_suggestions)
         s.validate()
 
     def set_value(s, text):
@@ -513,6 +519,16 @@ class Retarget(object):
     def get_value(s):
         """ Return value """
         return s.gui.value
+
+    def get_suggestions(s, popup, *_):
+        """ Find similarly named items """
+        children = cmds.popupMenu(popup, q=True, ca=True)
+        if children:
+            cmds.deleteUI(children)
+        suggestions = get_suggestion(s.gui.value)
+        for suggestion in suggestions:
+            cmds.menuItem(l=suggestion, p=popup, c=lambda:"")
+
 
 class Fixer(object):
     """ Popup to assist in renaming missing objects """
