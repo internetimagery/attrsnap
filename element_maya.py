@@ -19,6 +19,9 @@ def get_plug(obj, attr):
     attr = func.attribute(attr)
     return om.MPlug(node, attr)
 
+def sqrt(val):
+    return val and (val ** -0.5)*val
+
 class Attribute(object):
     """ An Attribute """
     # threshold = 0.001 # Negate tiny adjustments
@@ -82,18 +85,10 @@ class Marker(object):
             return s.node.rotation(om.MSpace.kWorld, True)
         except RuntimeError:
             m = cmds.xform(s.name, q=True, ws=True, m=True)
-            w = (1 + m[0] + m[5] + m[10])
-            qw = (w and (w ** -0.5)*w) / 2
-            qx = m[6] - m[9]
-            qy = m[8] - m[2]
-            qz = m[1] - m[4]
-            total = 4 * qw
-            if not total:
-                dot = sum(a*a for a in (qx,qy,qz))
-                total = dot and (dot ** -0.5)*dot
-            qx /= total
-            qy /= total
-            qz /= total
+            qw = (sqrt(max(0, 1 + m[0] + m[5] + m[10])) / 2)
+            qx = (sqrt(max(0, 1 + m[0] - m[5] - m[10])) / 2) * (1 if m[6] - m[9] > 0 else -1)
+            qy = (sqrt(max(0, 1 - m[0] + m[5] - m[10])) / 2) * (1 if m[8] - m[2] > 0 else -1)
+            qz = (sqrt(max(0, 1 - m[0] - m[5] + m[10])) / 2) * (1 if m[1] - m[4] > 0 else -1)
             return qx, qy, qz, qw
 
 class Marker_Set(object):
