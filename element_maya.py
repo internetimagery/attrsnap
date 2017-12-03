@@ -78,7 +78,10 @@ class Marker(object):
         try:
             return s.node.translation(om.MSpace.kWorld)
         except RuntimeError:
-            return om.MVector(cmds.xform(s.name, q=True, t=True, ws=True))
+            pos = list(zip(*[iter(cmds.xform(s.name, q=True, t=True, ws=True))]*3))
+            pos_num = len(pos)
+            total = reduce(lambda x, y: (a+b for a,b in zip(x, y)) ,pos)
+            return om.MVector([a/pos_num for a in total])
     def get_rotation(s):
         """ Get rotation of object """
         try:
