@@ -1,7 +1,7 @@
 # Maya elements
 
 # Match positions / rotations.
-from __future__ import print_function
+from __future__ import print_function, division
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 import math
@@ -65,16 +65,31 @@ class Attribute(object):
 class Marker(object):
     """ A maya object """
     def __init__(s, name):
+        s.name = name
         node = get_node(name)
         s.node = om.MFnTransform(om.MDagPath.getAPathTo(node))
     def __repr__(s):
         return s.node.name()
     def get_position(s):
         """ Get position of object """
-        return s.node.translation(om.MSpace.kWorld)
+        try:
+            return s.node.translation(om.MSpace.kWorld)
+        except RuntimeError:
+            return om.MVector(cmds.xform(s.name, q=True, t=True, ws=True))
     def get_rotation(s):
         """ Get rotation of object """
-        return s.node.rotation(om.MSpace.kWorld, True)
+        try:
+            return s.node.rotation(om.MSpace.kWorld, True)
+        except RuntimeError:
+            raise
+            matrix = cmds.xform(s.name, q=True, ws=True, m=True)
+            w = (1 + m[0] + m[5] + m[10])
+            qw = (w and (w ** -0.5)*w) / 2
+            qx = qw and (m[9] - m[6])/( 4 * qw)
+            qy = qw and (m[2] - m[8])/( 4 * qw)
+            qz = qw and (m[4] - m[1])/( 4 * qw)
+
+            raise
 
 class Marker_Set(object):
     """ Collection of two markers """
