@@ -377,7 +377,7 @@ class Window(object):
         cmds.menuItem(l="Save Template", c=s.save_template,
         ann="Save current groups into a template file. For later retrieval.")
         cmds.menu(l="Utility")
-        cmds.menuItem(l="Retarget", c=s.retarget,
+        cmds.menuItem(l="Fix Missing", c=s.retarget,
         ann="Run retaget tool to assist in fixing missing objects.")
 
         try:
@@ -390,7 +390,6 @@ class Window(object):
             s.tab_grp = cmds.tabLayout(
                 doubleClickCommand=s.rename_tab,
                 p=root)
-
 
         cmds.separator(p=root)
         row = cmds.rowLayout(nc=2, adj=2, p=root)
