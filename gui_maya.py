@@ -161,12 +161,15 @@ class Attributes(object):
 
 class Markers(object):
     """ Gui for markers """
-    def __init__(s, parent, update, markers):
-        s.parent = cmds.columnLayout(adj=True, p=parent)
-        s.m1 = TextBox(s.parent, update)
-        s.m2 = TextBox(s.parent, update)
+    def __init__(s, parent, update, delete, index, markers):
+        s.root = cmds.rowLayout(nc=3, adj=2, p=parent)
+        cmds.text(l=index, p=s.root, h=WIDGET_HEIGHT*2)
+        col = cmds.columnLayout(adj=True, p=s.root)
+        s.m1 = TextBox(col, update)
+        s.m2 = TextBox(col, update)
         for m, gui in zip(markers, [s.m1, s.m2]):
             gui.value = m
+        cmds.iconTextButton(p=s.root, i="removeRenderable.png", st="iconOnly", c=lambda: delete(s), h=WIDGET_HEIGHT*2, bgc=GREY)
         s.validate()
 
     def validate(s, *_):
@@ -178,10 +181,44 @@ class Markers(object):
             ok = False
         return ok
 
-    def set(s, mark1, mark2):
-        """ Set markers in bulk """
-        s.m1.value = mark1
-        s.m2.value = mark2
+    def remove(s):
+        """ DESTROY MYSELF! """
+        cmds.deleteUI(s.root)
+
+    def export(s):
+        """ Return information """
+        return s.m1.value, s.m2.value
+
+class Marker_List(object):
+    """ Listing all marker groups """
+    def __init__(s, parent, update, markers=None):
+        s.root = cmds.columnLayout(adj=True, p=parent)
+        s.update = update
+        s.markers = [Markers(s.root, update, s.remove, i+1, a) for i, a in enumerate(markers or [])]
+        s.index = len(s.markers)
+
+    def add(s, mark1, mark2):
+        """ Add markers! """
+        s.index += 1
+        s.markers.append(Markers(s.root, s.update, s.remove, s.index, [mark1, mark2]))
+
+    def validate(s):
+        """ Check all groups are ok """
+        ok = True
+        for marker in s.markers:
+            if not marker.validate():
+                ok = False
+        return ok
+
+    def remove(s, element):
+        """ Remove element! """
+        element.remove()
+        s.markers.remove(element)
+        s.update()
+
+    def export(s):
+        """ Return information """
+        return (a.export() for a in s.markers)
 
 class Tab(object):
     """ Tab holding information! """
@@ -202,15 +239,14 @@ class Tab(object):
                 cmds.optionMenu(s.GUI_type, e=True, sl=i+1)
         pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
-        cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)),
-        ann="Select two objects in the scene that you wish to be moved/rotated closer together.")
-        s.markers = Markers(markers, s.validate, template.markers[0] if len(template.markers) else [])
+        cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.add(*utility.get_selection(2)),
+        ann="Select two objects in the scene that you wish to be moved/rotated closer together.\nIt is recommended to only use one group.")
+        s.markers = Marker_List(markers, s.validate, template.markers)
         # -----
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Add Attribute from Channelbox", c=lambda _: [s.attributes.add_attribute(a) for a in utility.get_attribute()],
         ann="Highlight attributes in the channelbox, and click the button to add them.")
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
-        # attributes = cmds.scrollLayout(cr=True, h=300, bgc=BLACK)
         s.attributes = Attributes(attributes, s.validate, template.attributes)
         # -----
 
@@ -268,7 +304,7 @@ class Tab(object):
         """ Export information into a clean group from gui """
         name = s.name
         match_type = s.get_type()
-        markers = [[s.markers.m1.value, s.markers.m2.value]]
+        markers = list(s.markers.export())
         attributes = list(s.attributes.export())
         return groups.Template(
             enabled=s.is_active(),
