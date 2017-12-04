@@ -204,7 +204,7 @@ class Tab(object):
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)),
         ann="Select two objects in the scene that you wish to be moved/rotated closer together.")
-        s.markers = Markers(markers, s.validate, template.markers)
+        s.markers = Markers(markers, s.validate, template.markers[0] if len(template.markers else []))
         # -----
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Add Attribute from Channelbox", c=lambda _: [s.attributes.add_attribute(a) for a in utility.get_attribute()],
@@ -530,8 +530,9 @@ class Fixer(object):
         all_objs = set()
         s.templates = templates
         for template in templates:
-            for marker in template.markers:
-                all_objs.add(marker)
+            for marker_set in template.markers:
+                for marker in marker_set:
+                    all_objs.add(marker)
             for attribute in template.attributes:
                 all_objs.add(attribute[0])
 
@@ -592,7 +593,7 @@ class Fixer(object):
 
         # copy templates
         for template in s.templates:
-            markers = [changes[a] if a in changes else a for a in template.markers]
+            markers = [[changes[b] if b in changes else b for b in a] for a in template.markers]
             attributes = [[changes[b] if b in changes else b for b in a] for a in template.attributes]
             template.markers = markers
             template.attributes = attributes
