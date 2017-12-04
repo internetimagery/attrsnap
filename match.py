@@ -211,6 +211,32 @@ def testfile(file_path):
         for _ in match(templates, debug=True):
             pass
 
+def test3():
+    import maya.cmds as cmds
+    cmds.file(new=True, force=True)
+
+    p1, _ = cmds.polyCube()
+    p2, _ = cmds.polyCube()
+    p3, _ = cmds.polyCube()
+    p4, _ = cmds.polyCube()
+    p5, _ = cmds.polyCube()
+
+    cmds.xform(p1, t=(0,5,0))
+    cmds.xform(p2, t=(3,0,0))
+    cmds.xform(p3, t=(0,10,3))
+    cmds.xform(p4, t=(5,3,3))
+    cmds.xform(p5, t=(7,15,3))
+
+    cmds.parent(p2,p3,p1)
+
+    template = groups.Template(
+        markers=[(p2,p4),(p3,p5)],
+        attributes=[(p1, a) for a in ["rx","ry","rz","tx","ty","tz"]]
+        )
+    grp = groups.Group(template)
+    for dist, values in search(grp):
+        pass
+
 def test2():
     import maya.cmds as cmds
     import random

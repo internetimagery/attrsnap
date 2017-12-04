@@ -2,6 +2,7 @@
 from __future__ import print_function, division
 import element
 import json
+import math
 
 POSITION = 0
 ROTATION = 1
@@ -53,12 +54,15 @@ class Group(object):
         for attr, val in zip(s.attributes, vals):
             attr.set_value(val)
 
-    def get_distance(s):
+    def get_distance(s, log=math.log):
         """ Calculate a distance value from our markers """
+        import math
         if s.match_type == POSITION:
-            return sum(a.get_pos_distance() for a in s.markers)
+            dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
+            return dist and log(dist)
         elif s.match_type == ROTATION:
-            return sum(a.get_rot_distance() for a in s.markers)
+            dist = sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
+            return dist and log(dist, 1.2)
         else:
             raise RuntimeError("Distance type not supported.")
 

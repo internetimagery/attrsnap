@@ -4,7 +4,6 @@
 from __future__ import print_function, division
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
-import math
 
 def get_node(name):
     """ Get Node """
@@ -109,18 +108,16 @@ class Marker_Set(object):
         s.node1 = Marker(node1)
         s.node2 = Marker(node2)
 
-    def get_pos_distance(s, log=math.log):
+    def get_pos_distance(s):
         """ Get positional distance """
-        dist = (s.node2.get_position() - s.node1.get_position()).length()
-        return dist and log(dist)
+        return (s.node2.get_position() - s.node1.get_position()).length()
 
-    def get_rot_distance(s, log=math.log, sum=sum, zip=zip):
+    def get_rot_distance(s, sum=sum, zip=zip):
         """ Get rotational distance """
         r1 = s.node1.get_rotation()
         r2 = s.node2.get_rotation()
         diff = (a-b for a,b in zip(r1, r2))
-        dist = sum(a*a for a in diff)
-        return dist and log(dist,1.2)
+        return sum(a*a for a in diff)
 
     def __iter__(s):
         """ Loop over entries """
