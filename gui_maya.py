@@ -204,7 +204,7 @@ class Tab(object):
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.set(*utility.get_selection(2)),
         ann="Select two objects in the scene that you wish to be moved/rotated closer together.")
-        s.markers = Markers(markers, s.validate, template.markers[0] if len(template.markers else []))
+        s.markers = Markers(markers, s.validate, template.markers[0] if len(template.markers) else []))
         # -----
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Add Attribute from Channelbox", c=lambda _: [s.attributes.add_attribute(a) for a in utility.get_attribute()],
