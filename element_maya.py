@@ -37,7 +37,7 @@ def sqrt(val):
 class Attribute(object):
     """ An Attribute """
     # threshold = 0.001 # Negate tiny adjustments
-    def __init__(s, obj, attr, min_=-999999, max_=999999):
+    def __init__(s, obj, attr, min_=-999999.9, max_=999999.9):
         s.name = "{}.{}".format(obj, attr)
         query = lambda **kwargs: cmds.attributeQuery(attr, n=obj, **kwargs) # REUSE!
         if not query(ex=True):
@@ -48,9 +48,9 @@ class Attribute(object):
 
         s.min, s.max = min_, max_ # Initialize max / min range
         if query(mne=True):
-            s.min = max(query(min=True), s.min)
+            s.min = float(max(query(min=True), s.min))
         if query(mxe=True):
-            s.max = min(query(max=True), s.max)
+            s.max = float(min(query(max=True), s.max))
 
     def __repr__(s):
         """ Represent object in a usable state for cmds """
@@ -59,10 +59,8 @@ class Attribute(object):
 
     def set_value(s, val):
         """ Set attribute value """
-        if val < s.min:
-            val = s.min
-        elif val > s.max:
-            val = s.max
+        if val < s.min or val > s.max:
+            raise RuntimeError("Value {} for {} out of bounds.".format(val, s.name))
         try:
             if s._is_angle:
                 return s._attr.setMAngle(om.MAngle(val, om.MAngle.kDegrees))
@@ -78,7 +76,7 @@ class Attribute(object):
                 return s._attr.asMAngle().asDegrees()
             return s._attr.asDouble()
         except RuntimeError:
-            return cmds.getAttr(s.name)
+            return float(cmds.getAttr(s.name))
 
     def key(s, value):
         """ Keyframe value at current time """
