@@ -1,4 +1,17 @@
-# Match two objects as close together as possible using as few steps as possible (still brute force!)
+# Match objects together using provided attributes
+# Created By Jason Dixon. http://internetimagery.com
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is a labor of love, and therefore is distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+
 from __future__ import print_function, division
 import collections
 import itertools
@@ -204,112 +217,3 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
                 yield progress * group_step + j * group_step
             grp.keyframe(values)
     yield 1
-
-def testfile(file_path):
-    templates = groups.load(file_path)
-    if templates:
-        for _ in match(templates, debug=True):
-            pass
-
-def test3():
-    import maya.cmds as cmds
-    cmds.file(new=True, force=True)
-
-    p1, _ = cmds.polyCube()
-    p2, _ = cmds.polyCube()
-    p3, _ = cmds.polyCube()
-    p4, _ = cmds.polyCube()
-    p5, _ = cmds.polyCube()
-
-    cmds.xform(p1, t=(0,5,0))
-    cmds.xform(p2, t=(3,0,0))
-    cmds.xform(p3, t=(0,10,3))
-    cmds.xform(p4, t=(5,3,3))
-    cmds.xform(p5, t=(7,15,3))
-
-    cmds.parent(p2,p3,p1)
-
-    template = groups.Template(
-        markers=[(p2,p4),(p3,p5)],
-        attributes=[(p1, a) for a in ["rx","ry","rz","tx","ty","tz"]]
-        )
-    grp = groups.Group(template)
-    for dist, values in search(grp):
-        pass
-
-def test2():
-    import maya.cmds as cmds
-    import random
-    cmds.file(new=True, force=True)
-
-    # Create two test chains
-    chain1 = [cmds.joint(p=a) for a in [(1,2,3),(2,1,3),(3,2,1),(4,4,4),(2,1,3),(6,4,2)]]
-    cmds.select(clear=True)
-    chain2 = [cmds.joint(p=a) for a in [(2,3,4),(4,4,5),(4,5,2),(2,3,1),(4,3,1),(3,2,3)]]
-    mrk = cmds.spaceLocator()[0]
-
-    # Create some outliers
-    temp = groups.Template(
-        match_type=groups.POSITION,
-        markers=(chain1[3], mrk),
-        attributes=[(chain1[3], "tx")])
-
-    axis = ["rx", "ry", "rz"]
-
-    templates = [temp]
-    for i in range(len(chain1)):
-        if i:
-            templates.append(groups.Template(
-                match_type=groups.POSITION,
-                markers=(chain1[i], chain2[i]),
-                attributes=[(chain1[i-1], a) for a in axis]
-                ))
-    grps = [groups.Group(a) for a in templates]
-    random.shuffle(grps) # Randomize order
-    sorted_grps = form_heirarchy(grps)
-    for s in sorted_grps:
-        print(list(s), list(s.markers))
-
-def test():
-    import maya.cmds as cmds
-    import random
-
-    rand = lambda: tuple(random.randrange(-10,10) for _ in range(3))
-
-    cmds.file(new=True, force=True)
-
-    m1, _ = cmds.polySphere()
-    m2 = cmds.group(em=True)
-    m3 = cmds.group(m2)
-
-    cmds.xform(m1, t=rand())
-    cmds.xform(m2, t=rand())
-    cmds.setAttr(m2 + ".ty", 0)
-    cmds.setAttr(m1 + ".ty", -3)
-    cmds.setAttr(m3 + ".scaleX", 2)
-    cmds.setAttr(m3 + ".scaleZ", 6)
-
-    template = groups.Template(
-        markers=[m1, m2],
-        attributes=[(m2, "tx"), (m2, "tz")]
-    )
-    grp = groups.Group(template)
-
-    # curve1 = element.Curve(grp.markers.node1.get_position())
-    n1 = grp.markers.node1.get_position()
-    n2 = grp.markers.node2.get_position()
-    curve = element.Curve([n2[0], (n2-n1).length() ,n2[2]])
-
-    for dist, values in search(grp, debug=True):
-        n1 = grp.markers.node1.get_position()
-        n2 = grp.markers.node2.get_position()
-        curve.add([n2[0], (n2-n1).length() ,n2[2]])
-
-    grp.set_values(values)
-
-    x1, _, z1 = cmds.xform(m1, q=True, ws=True, t=True)
-    x2, _, z2 = cmds.xform(m2, q=True, ws=True, t=True)
-    # print(x1, z1)
-    # print(x2, z2)
-    assert abs(x1-x2) < 0.01
-    assert abs(z1-z2) < 0.01

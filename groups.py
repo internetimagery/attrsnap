@@ -1,4 +1,17 @@
-# Match positions / rotations.
+# Grouping match candidates with attributes
+# Created By Jason Dixon. http://internetimagery.com
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is a labor of love, and therefore is distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+
 from __future__ import print_function, division
 import element
 import json
@@ -104,37 +117,3 @@ class Group(object):
     def __iter__(s):
         for at in s.attributes:
             yield at
-
-if __name__ == '__main__':
-    import random
-    cmds.autoKeyframe(state=False)
-    for i in range(1,4): # Run 3 Tests
-        print("Running test %s." % i)
-        objs = ["obj%s" % a for a in range(3)]
-        for o in objs: # Set up some objects in random placements
-            if cmds.objExists(o):
-                cmds.delete(o)
-            cmds.polyCube(n=o)
-            random_pos = [random.random() * 20 - 10 for a in range(3)]
-            cmds.xform(o, t=random_pos)
-        cmds.parent(objs[1], objs[0]) # Create lever action
-        cmds.refresh()
-        print("Starting a new test in...")
-        for t in range(3,0,-1):
-            time.sleep(1)
-            print(t)
-        time.sleep(1)
-
-        objA, objB, objC = objs
-        objs = [objB, objC]
-        attrs = (
-            (objA, "translateX"),
-            (objA, "translateY"),
-            (objA, "rotateX"),
-            (objA, "rotateY"),
-            (objA, "rotateZ"),
-        )
-        group = Group("pos", objs, attrs)
-        match.match([group])
-        time.sleep(3)
-    print("Tests complete!")

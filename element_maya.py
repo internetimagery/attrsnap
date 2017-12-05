@@ -1,4 +1,17 @@
-# Maya elements
+# Abstracted Maya Elements
+# Created By Jason Dixon. http://internetimagery.com
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is a labor of love, and therefore is distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+
 
 # Match positions / rotations.
 from __future__ import print_function, division
@@ -132,10 +145,3 @@ class Curve(object):
         s.curve = curve(p=point)
     def add(s, point):
         s.func(s.curve, a=True, p=point)
-
-if __name__ == '__main__':
-    cmds.file(new=True, force=True)
-    obj, _ = cmds.polySphere()
-    o = Transform(obj)
-    at = Attribute(obj, "tx")
-    print(o, at)
