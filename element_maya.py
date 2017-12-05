@@ -48,9 +48,9 @@ class Attribute(object):
 
         s.min, s.max = min_, max_ # Initialize max / min range
         if query(mne=True):
-            s.min = float(max(query(min=True), s.min))
+            s.min = max(query(min=True)[0], s.min)
         if query(mxe=True):
-            s.max = float(min(query(max=True), s.max))
+            s.max = min(query(max=True)[0], s.max)
 
     def __repr__(s):
         """ Represent object in a usable state for cmds """
@@ -76,7 +76,7 @@ class Attribute(object):
                 return s._attr.asMAngle().asDegrees()
             return s._attr.asDouble()
         except RuntimeError:
-            return float(cmds.getAttr(s.name))
+            return cmds.getAttr(s.name)
 
     def key(s, value):
         """ Keyframe value at current time """
