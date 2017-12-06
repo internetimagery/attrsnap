@@ -158,7 +158,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
         if dist < closest_dist:
             closest_dist = dist
             closest_values = curr_values
-            yield closest_dist, closest_values
+            yield rate, closest_values
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -188,7 +188,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
         print("Finished after {} steps".format(i))
     yield closest_dist, closest_values
 
-def match(templates, start_frame=None, end_frame=None, **kwargs):
+def match(templates, start_frame=None, end_frame=None, rate=0.8, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
@@ -202,18 +202,16 @@ def match(templates, start_frame=None, end_frame=None, **kwargs):
     print("Matching Groups Now!")
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
+    rate_step = 1 / rate
 
     yield 0 # Kick us off
     for i, frame in enumerate(range(start_frame, end_frame)):
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
-            total_dist = None
-            for dist, values in search(grp, **kwargs):
-                if total_dist is None:
-                    total_dist = dist
-                if not dist: # Break early if we're there
+            for r, values in search(grp, rate=rate, **kwargs):
+                if not r: # Break early if we're there
                     break
-                progress = 1-dist/total_dist
+                progress = 1 - r * rate_step
                 yield progress * group_step + j * group_step
             grp.keyframe(values)
     yield 1

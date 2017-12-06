@@ -107,10 +107,10 @@ class Marker(object):
             return s.node.rotation(om.MSpace.kWorld, True)
         except RuntimeError:
             m = cmds.xform(s.name, q=True, ws=True, m=True)
-            qw = (sqrt(max(0, 1 + m[0] + m[5] + m[10])) / 2)
-            qx = (sqrt(max(0, 1 + m[0] - m[5] - m[10])) / 2) * (1 if m[6] - m[9] > 0 else -1)
-            qy = (sqrt(max(0, 1 - m[0] + m[5] - m[10])) / 2) * (1 if m[8] - m[2] > 0 else -1)
-            qz = (sqrt(max(0, 1 - m[0] - m[5] + m[10])) / 2) * (1 if m[1] - m[4] > 0 else -1)
+            qw = (sqrt(max(0, 1 + m[0] + m[5] + m[10])) * 0.5)
+            qx = (sqrt(max(0, 1 + m[0] - m[5] - m[10])) * 0.5) * (1 if m[6] - m[9] > 0 else -1)
+            qy = (sqrt(max(0, 1 - m[0] + m[5] - m[10])) * 0.5) * (1 if m[8] - m[2] > 0 else -1)
+            qz = (sqrt(max(0, 1 - m[0] - m[5] + m[10])) * 0.5) * (1 if m[1] - m[4] > 0 else -1)
             return qx, qy, qz, qw
 
 class Marker_Set(object):
