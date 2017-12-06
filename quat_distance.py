@@ -27,15 +27,17 @@ def main():
 
     points = {}
     root = m1.get_rotation()
-    for x in range(-180, 180, 20):
-        for y in range(-180, 180, 20):
-            for z in range(-180, 180, 20):
+    for x in range(-360, 360, 30):
+        for y in range(-360, 360, 30):
+            for z in range(-360, 360, 30):
                 cmds.xform(p2, ro=(x,y,z))
                 quat = m2.get_rotation()
-                dist = aprox_angle(root, quat) + linear(root, quat)
+                dist = linear(root, quat)
                 points[x,y,z] = dist
 
-    locs = []
+    locs = {(x,y): cmds.spaceLocator()[0] for x in range(-360, 360, 30) for y in range(-360, 360, 30)}
     for (x, y, z), dist in points.items():
-        locs.append(cmds.spaceLocator(p=(x*0.1,dist*5,z*0.1))[0])
-    cmds.group(locs)
+        cmds.setKeyframe(locs[x,y] + ".tx", t=z, v=x*0.1)
+        cmds.setKeyframe(locs[x,y] + ".ty", t=z, v=dist*2)
+        cmds.setKeyframe(locs[x,y] + ".tz", t=z, v=y*0.1)
+    cmds.group([locs[a] for a in locs])
