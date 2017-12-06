@@ -127,8 +127,12 @@ class Marker_Set(object):
         """ Get rotational distance """
         r1 = s.node1.get_rotation()
         r2 = s.node2.get_rotation()
-        diff = (a-b for a,b in zip(r1, r2))
-        return sum(a*a for a in diff)
+
+        dot = sum(a*b for a,b in zip(r1,r2))
+        return 1 - dot * dot
+
+        # diff = (a-b for a,b in zip(r1, r2))
+        # return sum(a*a for a in diff)
 
     def __iter__(s):
         """ Loop over entries """
