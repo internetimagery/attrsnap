@@ -2,6 +2,7 @@ import maya.cmds as cmds
 
 import element
 import math
+import sys
 
 def custom(q1 ,q2):
     diff = (a-b for a,b in zip(q1, q2))
@@ -12,7 +13,7 @@ def custom(q1 ,q2):
 def aprox_angle(q1, q2):
     dot = sum(a*b for a,b in zip(q1,q2))
     res = 1 - dot * dot
-    return 10 * res and math.log(res, 1.1)
+    return math.log(res if res > 0 else sys.float_info.min, 1.2)
 
 def angle(q1, q2):
     dot = sum(a*b for a,b in zip(q1,q2))
@@ -40,7 +41,7 @@ def main():
             for z in range(-360, 360, 30):
                 cmds.xform(p2, ro=(x,y,z))
                 quat = m2.get_rotation()
-                dist = linear(root, quat)
+                dist = aprox_angle(root, quat)
                 points[x,y,z] = dist
 
     locs = {(x,z): cmds.spaceLocator()[0] for x in range(-360, 360, 30) for z in range(-360, 360, 30)}

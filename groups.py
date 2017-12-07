@@ -16,6 +16,7 @@ from __future__ import print_function, division
 import element
 import json
 import math
+import sys
 
 POSITION = 0
 ROTATION = 1
@@ -72,10 +73,10 @@ class Group(object):
         import math
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
-            return dist and log(dist)
+            return log(dist if dist > 0 else sys.float_info.min)
         elif s.match_type == ROTATION:
             dist = sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
-            return dist and log(dist, 1.2)
+            return log(dist if dist > 0 else sys.float_info.min, 1.1)
         else:
             raise RuntimeError("Distance type not supported.")
 

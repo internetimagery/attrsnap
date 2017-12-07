@@ -129,11 +129,7 @@ class Marker_Set(object):
         r2 = s.node2.get_rotation()
 
         dot = sum(a*b for a,b in zip(r1,r2))
-        angle = 1 - dot * dot
-        return 0 if angle <= 0 else angle # Rounding issues
-
-        # diff = (a-b for a,b in zip(r1, r2))
-        # return sum(a*a for a in diff)
+        return 1 - dot * dot
 
     def __iter__(s):
         """ Loop over entries """
