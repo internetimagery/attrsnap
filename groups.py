@@ -70,13 +70,12 @@ class Group(object):
 
     def get_distance(s, log=math.log):
         """ Calculate a distance value from our markers """
-        import math
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
             return log(dist if dist > 0 else sys.float_info.min)
         elif s.match_type == ROTATION:
             dist = sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
-            return log(dist if dist > 0 else sys.float_info.min, 1.1)
+            return log(dist if dist > 0 else sys.float_info.min, 1.2)
         else:
             raise RuntimeError("Distance type not supported.")
 
