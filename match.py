@@ -136,7 +136,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
     prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
 
-    yield closest_dist, closest_values
+    yield rate, closest_values
 
     # GO!
     for i in xrange(limit):
@@ -186,7 +186,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
 
     if debug:
         print("Finished after {} steps".format(i))
-    yield closest_dist, closest_values
+    yield rate, closest_values
 
 def match(templates, start_frame=None, end_frame=None, rate=0.8, **kwargs):
     """
