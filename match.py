@@ -168,7 +168,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
             break
 
         # Check if we are sitting on a flat plateau.
-        gradient = Vector(group.get_gradient())
+        gradient = Vector(group.get_gradient(rate*0.1))
         if i and (gradient - prev_gradient).length() < 0.0000001:
             if debug:
                 print("Gradient flat. Done.")
