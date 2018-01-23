@@ -13,8 +13,6 @@ keeping original key times intact. may need to force weighted tangents, and brok
 make a special case graphical error if attribute exists, but is unkeyable. OR just not allow unkeyable / locked attributes
 but causing the same error for missing attributes as locked ones could be confusing.
 
-add duplicate group option
-
 consider a special case regex to run on attributes, that tries settings translates/rotates/scales
 to the markers corresponding translate/rotate/scales. This does break the tools scope and introduces
 a bit of feature creep however.

@@ -440,6 +440,8 @@ class Window(object):
         ann="Create a new group.")
         cmds.menuItem(l="Remove Group", c=s.delete_tab,
         ann="Remove currently visible group.")
+        cmds.menuItem(l="Duplicate Group", c=s.duplicate_tab,
+        ann="Duplicate current group.")
         cmds.menuItem(d=True)
         cmds.menuItem(l="Enable All", c=lambda x: s.enable_all(True),
         ann="Enable all groups.")
@@ -508,6 +510,16 @@ class Window(object):
         selected = cmds.tabLayout(s.tab_grp, q=True, st=True, fpn=True)
         for tab in (t for t in s.tabs if selected in t.layout):
             tab.rename()
+
+    def duplicate_tab(s, *_):
+        """ Make a new group the same """
+        selected = cmds.tabLayout(s.tab_grp, q=True, fpn=True, st=True)
+        for i, tab in enumerate(s.tabs):
+            if selected in tab.layout:
+                template = tab.export()
+                template.enabled = False
+                s.new_group(template)
+                return
 
     def new_group(s, template=None):
         """ Create a new group """
