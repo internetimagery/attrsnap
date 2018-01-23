@@ -352,10 +352,10 @@ class Range(object):
         cmds.menuItem(l="Set to playback range.", c=lambda x: s.set_range(*utility.get_playback_range()))
         s.row = cmds.rowLayout(nc=4, p=col)
         frame = utility.get_frame()
-        s.min = IntBox(s.row, s.validate, frame)
-        s.max = IntBox(s.row, s.validate, frame)
+        s.min = IntBox(s.row, s.validate, frame, ann="Start Frame")
+        s.max = IntBox(s.row, s.validate, frame, ann="End Frame")
         cmds.text(l="x", p=s.row)
-        s.sub = FloatBox(s.row, s.validate, 1.0)
+        s.sub = FloatBox(s.row, s.validate, 1.0, ann="Subframes")
 
         # Detect things!
         s.loop = True
@@ -368,6 +368,8 @@ class Range(object):
         if not s.min.validate(lambda x: x <= s.max.value):
             ok = False
         if not s.max.validate(lambda x: x >= s.min.value):
+            ok = False
+        if not s.sub.validate(lambda x: x > 0):
             ok = False
         return ok
 
