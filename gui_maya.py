@@ -61,6 +61,10 @@ class Widget(object):
         s.widget(s.gui, e=True, bgc=colour)
         return colour == BLACK
 
+    def enable(s, state=True):
+        """ Enable / Disable widget """
+        s.widget(s.gui, e=True, en=state)
+
     def value():
         doc = "The value property."
         def fget(s):
@@ -74,6 +78,11 @@ class IntBox(Widget):
     """ Int box """
     def __init__(s, parent, update, val=0, **kwargs):
         Widget.__init__(s, cmds.intField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK, h=WIDGET_HEIGHT, **kwargs)
+
+class FloatBox(Widget):
+    """ Float box """
+    def __init__(s, parent, update, val=0, **kwargs):
+        Widget.__init__(s, cmds.floatField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK, h=WIDGET_HEIGHT, **kwargs)
 
 class CheckBox(Widget):
     """ Int box """
@@ -332,22 +341,26 @@ class Tab(object):
 class Range(object):
     """ Frame range widget """
     def __init__(s, parent):
-        col = cmds.columnLayout(p=parent)
-        s.dynamic = IconCheckBox(col, lambda x: "", v=True, h=WIDGET_HEIGHT,
+        col = cmds.columnLayout(adj=True, p=parent)
+        s.auto_state = True
+        s.dynamic = IconCheckBox(col, s.set_auto, v=s.auto_state, h=WIDGET_HEIGHT,
             l="Automatic\nFrame Range:",
             i="autoload.png",
             st="iconAndTextHorizontal",
             ann="RIGHT CLICK: Additional options.\nON: Auto frame range.\nOFF: Manual.")
         cmds.popupMenu(p=col)
         cmds.menuItem(l="Set to playback range.", c=lambda x: s.set_range(*utility.get_playback_range()))
-        s.row = cmds.rowLayout(nc=2, p=col)
+        s.row = cmds.rowLayout(nc=4, p=col)
         frame = utility.get_frame()
         s.min = IntBox(s.row, s.validate, frame)
         s.max = IntBox(s.row, s.validate, frame)
+        cmds.text(l="x", p=s.row)
+        s.sub = FloatBox(s.row, s.validate, 1.0)
 
         # Detect things!
         s.loop = True
         threading.Thread(target=s.inner_loop).start()
+        s.set_auto(s.auto_state)
 
     def validate(s, *_):
         """ Validate our timeline range """
@@ -358,13 +371,23 @@ class Range(object):
             ok = False
         return ok
 
+    def set_auto(s, state):
+        """ Adjust auto frame range state """
+        s.auto_state = state
+        flip = False if state else True
+        s.min.enable(flip)
+        s.max.enable(flip)
+        s.sub.enable(flip)
+
     def set_range(s, start, end, auto=False):
         """ Set range to values """
-        if auto and not s.dynamic.value:
+        if auto and not s.auto_state:# s.dynamic.value:
             return
         s.dynamic.value = auto
+        s.set_auto(auto)
         s.min.value = start
         s.max.value = end
+        s.sub.value = 1.0
 
     def inner_loop(s):
         """ Detect things on loop, with low priority """
@@ -377,12 +400,13 @@ class Range(object):
         """ If the timeline is highlighted, update range values """
         try:
             if cmds.layout(s.row, q=True, ex=True):
-                fr = utility.get_frame_range()
-                if fr:
-                    s.set_range(*fr, auto=True)
-                else:
-                    frame = utility.get_frame()
-                    s.set_range(frame, frame, auto=True)
+                if s.auto_state:
+                    fr = utility.get_frame_range()
+                    if fr:
+                        s.set_range(*fr, auto=True)
+                    else:
+                        frame = utility.get_frame()
+                        s.set_range(frame, frame, auto=True)
             else:
                 s.loop = False
         except Exception as err:

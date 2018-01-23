@@ -14,7 +14,18 @@ add option to keep existing keyframes and only modify anim-curve.
 ie: bake out keys and run procedure that simplifies curve pushing and pulling tangents,
 keeping original key times intact. may need to force weighted tangents, and broken tangents.
 
-make a special case error if attribute exists, but is unkeyable. OR just not allow unkeyable / locked attributes
+make a special case graphical error if attribute exists, but is unkeyable. OR just not allow unkeyable / locked attributes
 but causing the same error for missing attributes as locked ones could be confusing.
 
 add duplicate group option
+
+consider a special case regex to run on attributes, that tries settings translates/rotates/scales
+to the markers corresponding translate/rotate/scales. This does break the tools scope and introduces
+a bit of feature creep however.
+
+consider making special case marker syntax such as | to include more than one item.
+the central point of all items would be used as the marker point. Useful for things like
+an edgeloop of verts, matching to the center of the mesh.
+
+consider adding offsets. Right now it's not nessisary as locators can be parented etc
+but some situations are more difficult, such as offsets applied to vertex markers etc.
