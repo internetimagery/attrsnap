@@ -417,7 +417,7 @@ class Range(object):
 
     def export(s):
         """ Pump out values """
-        return s.min.value, s.max.value
+        return s.min.value, s.max.value, s.sub.value
 
 class Window(object):
     """ Main window! """
@@ -546,14 +546,14 @@ class Window(object):
                 return
             if not s.range.validate():
                 return
-            frame_range = s.range.export()
-            frame_diff = (frame_range[1] - frame_range[0]) + 1
+            frame_min, frame_max, frame_sub = s.range.export()
+            frame_diff = (frame_max - frame_min) + 1
             frame_scale = 1 / frame_diff
             grp_scale = 1 / num_valid
 
             # Match this!
             with utility.progress() as prog:
-                for progress in match.match(valid, frame_range[0], frame_range[1]):
+                for progress in match.match(valid, frame_min, frame_max, frame_sub):
                     prog(progress)
         s.idle = True
 

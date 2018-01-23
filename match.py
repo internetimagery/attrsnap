@@ -188,24 +188,26 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
         print("Finished after {} steps".format(i))
     yield rate, closest_values
 
-def match(templates, start_frame=None, end_frame=None, rate=0.8, **kwargs):
+def match(templates, start_frame=None, end_frame=None, sub_frame=None, rate=0.8, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
     start_frame (optional). Current frame if not given.
     end_frame (optional). Single frame if not provided else the full range.
     """
-    start_frame = int(utility.get_frame()) if start_frame is None else int(start_frame)
-    end_frame = start_frame if end_frame is None else int(end_frame)
-    end_frame += 1
+    start_frame = float(utility.get_frame()) if start_frame is None else float(start_frame)
+    end_frame = start_frame if end_frame is None else float(end_frame)
+    sub_frame = 1.0 if sub_frame is None else float(sub_frame)
     grps = form_heirarchy([groups.Group(t) for t in templates if t.enabled])
     print("Matching Groups Now!")
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
     rate_step = 1 / rate
 
+
     yield 0 # Kick us off
-    for i, frame in enumerate(range(start_frame, end_frame)):
+    for i in range(int((end_frame - start_frame) / sub_frame)+1):
+        frame = i * sub_frame + start_frame
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
             for r, values in search(grp, rate=rate, **kwargs):
