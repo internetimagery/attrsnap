@@ -158,6 +158,7 @@ class Attributes(object):
                 return
         attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name, min_, max_)
         s.attributes.append(attr)
+        s.update()
 
     def del_attribute(s, name):
         """ Remove attribute! """
@@ -165,10 +166,11 @@ class Attributes(object):
         for i, attr in to_remove:
             del s.attributes[i]
             attr.remove()
+        s.update()
 
     def validate(s):
         """ Validate attributes """
-        ok = True
+        ok = True if s.attributes else False
         for at in s.attributes:
             if not at.validate():
                 ok = False
@@ -222,10 +224,11 @@ class Marker_List(object):
         """ Add markers! """
         s.index += 1
         s.markers.append(Markers(s.root, s.update, s.remove, s.index, [mark1, mark2]))
+        s.update()
 
     def validate(s):
         """ Check all groups are ok """
-        ok = True
+        ok = True if s.markers else False
         for marker in s.markers:
             if not marker.validate():
                 ok = False
