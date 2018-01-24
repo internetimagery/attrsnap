@@ -245,11 +245,12 @@ class Tab(object):
     """ Tab holding information! """
     def __init__(s, tab_parent, template):
         s.parent = tab_parent
-        s.layout = cmds.columnLayout(adj=True, p=s.parent)
+        s.layout = cmds.formLayout(p=tab_parent)
+        # s.layout = cmds.columnLayout(adj=True, p=s.parent, bgc=(1,0,0))
         s.ready = False
 
         # Group stuff
-        cmds.rowLayout(nc=2, adj=1, p=s.layout)
+        row = cmds.rowLayout(nc=2, adj=1, p=s.layout)
         s.GUI_enable = cmds.checkBox(l="Enable", v=True, cc=s.enable,
         ann="Disabled groups will not be evaluated. Useful if you don't want to use a group, while not wanting to delete it.")
         s.GUI_type = cmds.optionMenu(
@@ -258,10 +259,14 @@ class Tab(object):
             cmds.menuItem(l=opt)
             if template.match_type == options[opt]:
                 cmds.optionMenu(s.GUI_type, e=True, sl=i+1)
-        pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
+        scroll = cmds.scrollLayout(cr=True, p=s.layout)
+        pane = cmds.paneLayout(configuration="vertical2", p=scroll)
+        # pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.add(*utility.get_selection(2)),
         ann="Select two objects in the scene that you wish to be moved/rotated closer together.\nIt is recommended to only use one group.")
+        # scr = cmds.scrollLayout(cr=True)
+        # s.markers = Marker_List(scr, s.validate, template.markers)
         s.markers = Marker_List(markers, s.validate, template.markers)
         # -----
         cmds.columnLayout(adj=True, p=pane)
@@ -270,6 +275,16 @@ class Tab(object):
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
         s.attributes = Attributes(attributes, s.validate, template.attributes)
         # -----
+        cmds.formLayout(s.layout, e=True, af=[
+            (row, "top", 0),
+            (row, "left", 0),
+            (row, "right", 0),
+            (scroll, "left", 0),
+            (scroll, "right", 0),
+            (scroll, "bottom", 0)
+            ], ac=[
+                (scroll, "top", 0, row)
+            ])
 
         # Pre fill information
         s.set_title(template.name)
@@ -432,8 +447,9 @@ class Window(object):
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
 
-        s.win = cmds.window(t="Attribute Snapping!")
-        root = cmds.columnLayout(adj=True)
+        s.win = cmds.window(t="Attribute Snapping!", w=700, h=400)
+        form = cmds.formLayout()
+        root = cmds.columnLayout(adj=True, p=form)
         cmds.menuBarLayout()
         cmds.menu(l="Groups")
         cmds.menuItem(l="New Group", c=s.new_group,
@@ -461,18 +477,34 @@ class Window(object):
                 snt=True,
                 newTabCommand=s.new_group,
                 doubleClickCommand=s.rename_tab,
-                p=root)
+                p=form)
         except TypeError:
             s.tab_grp = cmds.tabLayout(
                 doubleClickCommand=s.rename_tab,
-                p=root)
+                p=form)
 
-        cmds.separator(p=root)
-        row = cmds.rowLayout(nc=2, adj=2, p=root)
+        root2 = cmds.columnLayout(adj=True, p=form)
+        cmds.separator(p=root2)
+        row = cmds.rowLayout(nc=2, adj=2, p=root2)
         s.range = Range(row)
         cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=s.run_match,
         ann="CLICK: Start matching, using all enabled groups.")
-        cmds.helpLine(p=root)
+        cmds.helpLine(p=root2)
+
+        cmds.formLayout(form, e=True, af=[
+            (root, "top", 0),
+            (root, "left", 0),
+            (root, "right", 0),
+            (s.tab_grp, "left", 0),
+            (s.tab_grp, "right", 0),
+            (root2, "left", 0),
+            (root2, "right", 0),
+            (root2, "bottom", 0)],
+            ac=[
+                # (root, "bottom", 0, root2)
+                (s.tab_grp, "top", 0, root),
+                (s.tab_grp, "bottom", 0, root2)
+            ])
         cmds.showWindow(s.win)
 
         # Initial group

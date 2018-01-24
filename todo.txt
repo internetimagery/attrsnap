@@ -3,8 +3,7 @@ Throw error if attribute is out of range at the beginning of matching. OR move i
 add button to mute individual attributes. Would require an additional piece of info in snap files.
 
 investigate if pulling some match code into go speeds things up.
-
-add scroll window for very long attribute lists in main window and renaming window.
+(Update: Looks as expected like maya calls are the hard hitters)
 
 add option to keep existing keyframes and only modify anim-curve.
 ie: bake out keys and run procedure that simplifies curve pushing and pulling tangents,
