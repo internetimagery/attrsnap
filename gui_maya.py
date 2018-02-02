@@ -667,12 +667,14 @@ class Fixer(object):
             return utility.warn("There are no missing objects!")
 
         s.win = cmds.window(rtf=True, t="Retarget")
-        root = cmds.columnLayout(adj=True)
+        # root = cmds.formLayout()
         cmds.popupMenu()
         cmds.menuItem(l="Reset all.", c=s.reset_all,
             ann="Return all names back to default.")
+        base = cmds.formLayout()
+        root = cmds.scrollLayout(cr=True, p=base)
         cmds.text(l="Some objects cannot be found.\nPlease use the following tools to rename them.")
-        cmds.frameLayout(l="Batch Rename", cll=True, cl=True, p=root)
+        fr1 = cmds.frameLayout(l="Batch Rename", p=root)
         row1 = cmds.rowLayout(nc=2, adj=1)
         row2 = cmds.rowLayout(nc=2, adj=2)
         cmds.columnLayout(adj=True, p=row2)
@@ -683,15 +685,27 @@ class Fixer(object):
         s.replace = TextBox(col, lambda x:"")
         cmds.button(l="Rename", bgc=GREEN, p=row1, h=WIDGET_HEIGHT*2, c=s.rename_all,
             ann="Click to run the rename on all entries. Uses 'Regular Expression' syntax.")
-        cmds.frameLayout(l="Individual Rename", cll=True, p=root)
+        fr2 = cmds.frameLayout(l="Individual Rename", p=root)
         rows = cmds.rowLayout(nc=3, adj=3)
         c1 = cmds.columnLayout(adj=True, p=rows)
         c2 = cmds.columnLayout(adj=True, p=rows)
         c3 = cmds.columnLayout(adj=True, p=rows)
         s.retargets = {a: Retarget(c1, c2, c3, a) for a in s.missing}
-        cmds.button(l="Apply Rename", p=root, bgc=GREEN, h=WIDGET_HEIGHT*2, c=s.apply_all,
+        root2 = cmds.columnLayout(adj=True, p=base)
+        fr3 = cmds.button(l="Apply Rename", p=root2, bgc=GREEN, h=WIDGET_HEIGHT*2, c=s.apply_all,
             ann="Applies changes to objects.")
-        cmds.helpLine(p=root)
+        fr4 = cmds.helpLine(p=root2)
+
+        cmds.formLayout(base, e=True, af=[
+            (root, "top", 0),
+            (root, "left", 0),
+            (root, "right", 0),
+            (root2, "bottom", 0),
+            (root2, "left", 0),
+            (root2, "right", 0)
+        ], ac=[
+            (root, "bottom", 0, root2),
+         ])
         cmds.showWindow()
 
     def reset_all(s, *_):

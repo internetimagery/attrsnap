@@ -19,6 +19,7 @@ a bit of feature creep however.
 consider making special case marker syntax such as | to include more than one item.
 the central point of all items would be used as the marker point. Useful for things like
 an edgeloop of verts, matching to the center of the mesh.
+(turns out object.v[123:456] takes the transform in the middle of the chunk)
 
 consider adding offsets. Right now it's not nessisary as locators can be parented etc
 but some situations are more difficult, such as offsets applied to vertex markers etc.
