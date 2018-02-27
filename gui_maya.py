@@ -109,8 +109,8 @@ class Attribute(object):
                 min_ = limit[0]
             if limit[1] is not None:
                 max_ = limit[1]
-        s.min = IntBox(cols[1], update, min_)
-        s.max = IntBox(cols[2], update, max_)
+        s.min = FloatBox(cols[1], update, min_)
+        s.max = FloatBox(cols[2], update, max_)
         s.trash = cmds.iconTextButton(p=cols[3], i="removeRenderable.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
 
     def validate(s):
