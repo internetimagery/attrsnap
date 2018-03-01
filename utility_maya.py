@@ -44,7 +44,10 @@ def get_selection(num=0):
 
 def get_attribute():
     """ Get selected attribute from channelbox """
-    return set(c+"."+cmds.attributeName(c+"."+b, l=True) for a in "msho" for b in cmds.channelBox("mainChannelBox", q=True, **{"s%sa"%a:True}) or [] for c in cmds.channelBox("mainChannelBox", q=True, **{"%sol"%a:True}))
+    return set(c+"."+cmds.attributeName(c+"."+b, l=True)
+        for a in "msho"
+        for b in cmds.channelBox("mainChannelBox", q=True, **{"s%sa"%a:True}) or []
+        for c in cmds.channelBox("mainChannelBox", q=True, **{"%sol"%a:True}))
 
 def valid_object(obj):
     """ Check object is valid and exists """
