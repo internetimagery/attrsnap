@@ -575,12 +575,12 @@ class Window(object):
         if templates:
             fix = Fixer(templates, type(s))
             if not fix.missing:
-                Window(groups.load(path[0]))
+                Window(templates)
 
     def save_template(s, *_):
         """ Save template file """
         templates = [tab.export() for tab in s.tabs]
-        utility.save_prompt()
+        utility.save_prompt(templates)
 
     def run_match(s, *_):
         """ Run match! Woot """
@@ -592,14 +592,10 @@ class Window(object):
                 return
             if not s.range.validate():
                 return
-            frame_min, frame_max, frame_sub = s.range.export()
-            frame_diff = (frame_max - frame_min) + 1
-            frame_scale = 1 / frame_diff
-            grp_scale = 1 / num_valid
 
             # Match this!
             with utility.progress() as prog:
-                for progress in match.match(valid, frame_min, frame_max, frame_sub):
+                for progress in match.match(valid, *s.range.export()):
                     prog(progress)
         s.idle = True
 
@@ -742,19 +738,14 @@ class MiniWindow(object):
         row = cmds.rowLayout(nc=2, adj=2)
         s.range = Range(row)
         cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=s.run_match,
+        ann="CLICK: Start matching, using all enabled groups.")
         cmds.showWindow()
 
     def run_match(s, *_):
         """ Match things! """
         if s.idle:
             s.idle = False
-            frame_min, frame_max, frame_sub = s.range.export()
-            frame_diff = (frame_max - frame_min) + 1
-            frame_scale = 1 / frame_diff
-            grp_scale = 1 / num_valid
-
-            # Match this!
             with utility.progress() as prog:
-                for progress in match.match(valid, frame_min, frame_max, frame_sub):
+                for progress in match.match(s.templates, *s.range.export()):
                     prog(progress)
             s.idle = True
