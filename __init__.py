@@ -13,6 +13,12 @@
 # See the GNU General Public License for more details.
 
 import gui
+import utility
 
 def main():
+    """ Main window """
     gui.Window()
+
+def mini(templates):
+    """ Shotcut mini window prefilled """
+    gui.Fixer(templates, gui.MiniWindow)

@@ -16,6 +16,18 @@ import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
 import difflib
+import groups
+
+def load_prompt():
+    """ Prompt for load path """
+    path = cmds.fileDialog2(fm=1, ff="Snap file (*.snap)")
+    return groups.load(path[0]) if path else []
+
+def save_prompt(templates):
+    """ Prompt for load path """
+    path = cmds.fileDialog2(fm=0, ff="Snap file (*.snap)")
+    if path:
+        groups.save(templates, path[0])
 
 def get_suggestion(word):
     """ Get suggested object names """

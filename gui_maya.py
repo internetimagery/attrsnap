@@ -441,7 +441,7 @@ class Range(object):
 
 class Window(object):
     """ Main window! """
-    def __init__(s, templates=None):
+    def __init__(s, templates=None, title=""):
         templates = templates or []
         s.idle = True
         s.tabs = []
@@ -450,7 +450,7 @@ class Window(object):
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
 
-        s.win = cmds.window(t="Attribute Snapping!", w=700, h=400)
+        s.win = cmds.window(t=title or "Attribute Snapping!", w=700, h=400)
         form = cmds.formLayout()
         root = cmds.columnLayout(adj=True, p=form)
         cmds.menuBarLayout()
@@ -521,7 +521,7 @@ class Window(object):
         """ Run retarget tool """
         templates = [tab.export() for tab in s.tabs]
         if templates:
-            return Fixer(templates)
+            return Fixer(templates, type(s))
         utility.warn("Nothing to retarget.")
 
     def enable_all(s, status=True):
@@ -571,19 +571,16 @@ class Window(object):
 
     def load_template(s, *_):
         """ Load template file """
-        path = cmds.fileDialog2(fm=1, ff="Snap file (*.snap)")
-        if path:
-            templates = groups.load(path[0])
-            fix = Fixer(templates)
+        templates = utility.load_prompt()
+        if templates:
+            fix = Fixer(templates, type(s))
             if not fix.missing:
                 Window(groups.load(path[0]))
 
     def save_template(s, *_):
         """ Save template file """
         templates = [tab.export() for tab in s.tabs]
-        path = cmds.fileDialog2(fm=0, ff="Snap file (*.snap)")
-        if path:
-            groups.save(templates, path[0])
+        utility.save_prompt()
 
     def run_match(s, *_):
         """ Run match! Woot """
@@ -646,10 +643,11 @@ class Retarget(object):
 
 class Fixer(object):
     """ Popup to assist in renaming missing objects """
-    def __init__(s, templates):
+    def __init__(s, templates, windowtype):
         # Pull out all objects
         all_objs = set()
         s.templates = templates
+        s.windowtype = windowtype
         for template in templates:
             for marker_set in template.markers:
                 for marker in marker_set:
@@ -733,4 +731,30 @@ class Fixer(object):
             template.markers = markers
             template.attributes = attributes
         cmds.deleteUI(s.win)
-        Window(s.templates)
+        s.windowtype(s.templates)
+
+class MiniWindow(object):
+    def __init__(s, templates, title=""):
+        """ Mini version of window """
+        s.templates = templates
+        s.idle = True
+        cmds.window(t=title or "Attribute Snap!", rtf=True)
+        row = cmds.rowLayout(nc=2, adj=2)
+        s.range = Range(row)
+        cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=s.run_match,
+        cmds.showWindow()
+
+    def run_match(s, *_):
+        """ Match things! """
+        if s.idle:
+            s.idle = False
+            frame_min, frame_max, frame_sub = s.range.export()
+            frame_diff = (frame_max - frame_min) + 1
+            frame_scale = 1 / frame_diff
+            grp_scale = 1 / num_valid
+
+            # Match this!
+            with utility.progress() as prog:
+                for progress in match.match(valid, frame_min, frame_max, frame_sub):
+                    prog(progress)
+            s.idle = True
