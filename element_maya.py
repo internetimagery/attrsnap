@@ -38,7 +38,12 @@ def sqrt(val):
 class Attribute(base.Attribute):
     """ An Attribute """
     # threshold = 0.001 # Negate tiny adjustments
-    def __init__(s, obj, attr, min_=-999999.9, max_=999999.9):
+    def __init__(s, **data):
+        obj = data.get("obj", "")
+        attr = data.get("attr", "")
+        min_ = data.get("min", -999999.9)
+        max_ = data.get("max", 999999.9)
+        s.bias = data.get("bias", 1.0)
         s.name = "{}.{}".format(obj, attr)
         query = lambda **kwargs: cmds.attributeQuery(attr, n=obj, **kwargs) # REUSE!
         if not query(ex=True):
@@ -78,6 +83,10 @@ class Attribute(base.Attribute):
             return s._attr.asDouble()
         except RuntimeError:
             return cmds.getAttr(s.name)
+
+    def get_bias(s):
+        """ Get bias value """
+        return s.bias
 
     def key(s, value):
         """ Keyframe value at current time """

@@ -54,7 +54,7 @@ class Group(object):
         s.name = template.name
         s.match_type = template.match_type
         s.markers = [element.Marker_Set(*a) for a in template.markers]
-        s.attributes = [element.Attribute(*a) for a in template.attributes]
+        s.attributes = [element.Attribute(**a) for a in template.attributes]
 
     def get_name(s):
         """ Useful for debugging """
@@ -63,10 +63,18 @@ class Group(object):
     def get_values(s):
         """ Get a list of attribute values at the current time """
         return tuple(a.get_value() for a in s.attributes)
+
     def set_values(s, vals):
         """ Set a list of values to each attribute """
         for attr, val in zip(s.attributes, vals):
             attr.set_value(val)
+
+    def get_bias(s):
+        """ Get Bias vector """
+        raw_bias = [a.get_bias() for a in s.attributes]
+        max_bias = max(raw_bias)
+        scale = max_bias and 1 / max_bias
+        return tuple(a*scale for a in raw_bias)
 
     def get_distance(s, log=math.log):
         """ Calculate a distance value from our markers """
