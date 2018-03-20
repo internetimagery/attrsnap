@@ -476,8 +476,10 @@ class Window(object):
         cmds.menuItem(l="Save Template", c=s.save_template,
         ann="Save current groups into a template file. For later retrieval.")
         cmds.menu(l="Utility")
-        cmds.menuItem(l="Fix Missing", c=s.retarget,
-        ann="Run retaget tool to assist in fixing missing objects.")
+        cmds.menuItem(l="Fix Missing", c=s.fix,
+        ann="Run retaget tool filtering only missing objects.")
+        cmds.menuItem(l="Retarget", c=s.retarget,
+        ann="Run retaget tool.")
 
         try:
             s.tab_grp = cmds.tabLayout(
@@ -521,12 +523,18 @@ class Window(object):
         else:
             s.new_group()
 
-    def retarget(s, *_):
-        """ Run retarget tool """
+    def fix(s, *_):
+        """ Retarget with only missing objects """
         templates = [tab.export() for tab in s.tabs]
         if templates:
             return Fixer(templates, type(s))
         utility.warn("Nothing to retarget.")
+
+    def retarget(s, *_):
+        """ Run retarget tool """
+        templates = [tab.export() for tab in s.tabs]
+        if templates:
+            return Fixer(templates, type(s), include_present=True)
 
     def enable_all(s, status=True):
         """ Enable every group """
@@ -643,7 +651,7 @@ class Retarget(object):
 
 class Fixer(object):
     """ Popup to assist in renaming missing objects """
-    def __init__(s, templates, windowtype):
+    def __init__(s, templates, windowtype, include_present=False):
         # Pull out all objects
         all_objs = set()
         s.templates = templates
@@ -657,9 +665,12 @@ class Fixer(object):
 
         # Filter for missing objects
         s.missing = []
-        for obj in all_objs:
-            if obj and not utility.valid_object(obj):
-                s.missing.append(obj)
+        if include_present: # Just renaming? Add all object as "missing"
+            s.missing = [a for a in all_objs]
+        else:
+            for obj in all_objs:
+                if obj and not utility.valid_object(obj):
+                    s.missing.append(obj)
 
         if not s.missing:
             return utility.warn("There are no missing objects!")
