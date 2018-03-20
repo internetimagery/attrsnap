@@ -454,7 +454,7 @@ class Window(object):
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
 
-        s.win = cmds.window(t=title or "Attribute Snapping!", w=700, h=400)
+        s.win = cmds.window(t=title or "Attribute Snapping!", w=800, h=400)
         form = cmds.formLayout()
         root = cmds.columnLayout(adj=True, p=form)
         cmds.menuBarLayout()

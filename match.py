@@ -32,6 +32,8 @@ class Vector(tuple):
     __slots__ = ()
     def __new__(cls, *pos):
         return tuple.__new__(cls, pos[0] if len(pos) == 1 else pos)
+    def mul(lhs, rhs):
+        return lhs.__class__(a*b for a,b in zip(lhs, rhs))
     def dot(lhs, rhs, zip=zip):
         return sum(a*b for a,b in zip(lhs, rhs))
     def square(s):
@@ -46,28 +48,28 @@ class Vector(tuple):
         return s.__class__(a if a <=0 else (a ** -0.5)*a for a in s)
     def __add__(lhs, rhs, zip=zip):
         return lhs.__class__(a+b for a,b in zip(lhs, rhs))
-    def __radd__(s, lhs):
-        return s.__add__(lhs)
-    def __sub__(s, rhs, rev=False, zip=zip):
-        return s.__class__(a-b for a,b in zip(*(rhs, s) if rev else (s, rhs)))
-    def __rsub__(s, lhs):
-        return s.__sub__(s, lhs, True)
-    def __div__(s, rhs, rev=False, zip=zip):
-        return s.__class__(b and a/b for a,b in zip(*(rhs, s) if rev else (s, rhs)))
-    def __rdiv__(s, lhs):
-        return s.__sub__(s, lhs, True)
-    def __truediv__(s, rhs):
-        return s.__div__(rhs)
-    def __rtruediv__(s, lhs):
-        return s.__div__(lhs, True)
-    def __mul__(s, rhs, rev=False):
-        lhs, rhs = (rhs, s) if rev else (s, rhs)
+    def __radd__(rhs, lhs):
+        return rhs.__add__(lhs)
+    def __sub__(lhs, rhs, rev=False, zip=zip):
+        return lhs.__class__(a-b for a,b in zip(*(rhs, lhs) if rev else (lhs, rhs)))
+    def __rsub__(rhs, lhs):
+        return rhs.__sub__(rhs, lhs, True)
+    def __div__(lhs, rhs, rev=False, zip=zip):
+        return lhs.__class__(b and a/b for a,b in zip(*(rhs, lhs) if rev else (lhs, rhs)))
+    def __rdiv__(rhs, lhs):
+        return rhs.__sub__(rhs, lhs, True)
+    def __truediv__(lhs, rhs):
+        return lhs.__div__(rhs)
+    def __rtruediv__(rhs, lhs):
+        return rhs.__div__(lhs, True)
+    def __mul__(lhs, rhs, rev=False):
+        lhs, rhs = (rhs, lhs) if rev else (lhs, rhs)
         try: # Scalar
-            return s.__class__(a*rhs for a in lhs)
+            return lhs.__class__(a*rhs for a in lhs)
         except TypeError: # Dot product
-            return s.dot(rhs)
-    def __rmul__(s, lhs):
-        return s.__mul__(lhs, True)
+            return lhs.dot(rhs)
+    def __rmul__(rhs, lhs):
+        return rhs.__mul__(lhs, True)
 
 def form_heirarchy(grps):
     """ Sort groups into an efficient heirarchy """
@@ -132,6 +134,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
 
 
     # Initialize variables
+    bias = Vector(group.get_bias())
     velocity = momentum = Vector([0]*len(group))
     prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
@@ -176,7 +179,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
         prev_gradient = gradient
 
         # Calculate our path
-        momentum = momentum*resistance + gradient*(1-resistance)
+        momentum = momentum*resistance + gradient.mul(bias)*(1-resistance)
         velocity = velocity*friction + gradient.square()*(1-friction)
         curr_values += momentum*-rate / velocity.sqrt()
         momentum = Vector(group.bounds(momentum))
