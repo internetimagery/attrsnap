@@ -15,6 +15,7 @@
 
 # Match positions / rotations.
 from __future__ import print_function, division
+import element_base as base
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
@@ -34,7 +35,7 @@ def get_plug(obj, attr):
 def sqrt(val):
     return val and (val ** -0.5)*val
 
-class Attribute(object):
+class Attribute(base.Attribute):
     """ An Attribute """
     # threshold = 0.001 # Negate tiny adjustments
     def __init__(s, obj, attr, min_=-999999.9, max_=999999.9):
@@ -113,7 +114,7 @@ class Marker(object):
             qz = (sqrt(max(0, 1 - m[0] - m[5] + m[10])) * 0.5) * (1 if m[1] - m[4] > 0 else -1)
             return qx, qy, qz, qw
 
-class Marker_Set(object):
+class Marker_Set(base.Marker_Set):
     """ Collection of two markers """
     def __init__(s, node1, node2):
         s.node1 = Marker(node1)
