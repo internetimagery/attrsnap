@@ -59,7 +59,8 @@ def get_attribute():
     return set(c+"."+cmds.attributeName(c+"."+b, l=True)
         for a in "msho"
         for b in cmds.channelBox("mainChannelBox", q=True, **{"s%sa"%a:True}) or []
-        for c in cmds.channelBox("mainChannelBox", q=True, **{"%sol"%a:True}))
+        for c in cmds.channelBox("mainChannelBox", q=True, **{"%sol"%a:True})
+        if cmds.attributeQuery(b, n=c, ex=True))
 
 def valid_object(obj):
     """ Check object is valid and exists """
