@@ -648,7 +648,6 @@ class Retarget(object):
         for suggestion in utility.get_suggestion(s.gui.value):
             cmds.menuItem(l=suggestion, p=popup, c=functools.partial(s.set_value, suggestion))
 
-
 class Fixer(object):
     """ Popup to assist in renaming missing objects """
     def __init__(s, templates, windowtype, include_present=False):
@@ -738,7 +737,7 @@ class Fixer(object):
         # copy templates
         for template in s.templates:
             markers = [[changes[b] if b in changes else b for b in a] for a in template.markers]
-            attributes = [{b: changes[b] if b == "obj" and b in changes else c for b, c in a.items()} for a in template.attributes]
+            attributes = [{b: changes[c] if b == "obj" and c in changes else c for b, c in a.items()} for a in template.attributes]
             template.markers = markers
             template.attributes = attributes
         cmds.deleteUI(s.win)
