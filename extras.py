@@ -18,9 +18,13 @@ def FROM_TO_Namespace():
         ns_select.append(parts[0]+":" if len(parts) == 2 else "")
 
     for template in templates:
-        template.markers = [a.replace("FROM:", ns_select[0]).replace("TO:", ns_select[1]) for a in template.markers]
+        template.markers = [[b.replace("FROM:", ns_select[0]).replace("TO:", ns_select[1]) for b in a] for a in template.markers]
         template.attributes = [{a: b.replace("FROM:", ns_select[0]).replace("TO:", ns_select[1]) if a == "obj" else b for a,b in a.items()} for a in template.attributes]
 
-    fix = Fixer(templates, gui.MiniWindow)
+    def winFactory(*args, **kwargs):
+        kwargs["title"] = "Match %s -> %s" % (ns_select[0], ns_select[1])
+        return gui.MiniWindow(*args, **kwargs)
+
+    fix = gui.Fixer(templates, winFactory)
     if not fix.missing:
-        gui.MiniWindow(templates)
+        winFactory(templates)

@@ -748,7 +748,7 @@ class MiniWindow(object):
         """ Mini version of window """
         s.templates = templates
         s.idle = True
-        cmds.window(t=title or "Attribute Snap!", rtf=True)
+        cmds.window(t=title or "Attribute Snap!", rtf=True, w=600)
         row = cmds.rowLayout(nc=2, adj=2)
         s.range = Range(row)
         cmds.button(l="-- Do it! --", h=WIDGET_HEIGHT*2, bgc=GREEN, p=row, c=s.run_match,
