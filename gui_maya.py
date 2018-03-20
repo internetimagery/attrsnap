@@ -82,7 +82,7 @@ class IntBox(Widget):
 class FloatBox(Widget):
     """ Float box """
     def __init__(s, parent, update, val=0, **kwargs):
-        Widget.__init__(s, cmds.floatField, "v", v=val, p=parent, cc=update, w=50, bgc=BLACK, h=WIDGET_HEIGHT, **kwargs)
+        Widget.__init__(s, cmds.floatField, "v", v=val, p=parent, cc=update, w=50, pre=2, bgc=BLACK, h=WIDGET_HEIGHT, **kwargs)
 
 class CheckBox(Widget):
     """ Int box """
@@ -101,7 +101,7 @@ class TextBox(Widget):
 
 class Attribute(object):
     """ gui for single attribute """
-    def __init__(s, cols, update, delete, attribute="", min_=-9999, max_=9999):
+    def __init__(s, cols, update, delete, attribute="", min_=-9999, max_=9999, bias=1.0):
         s.attr = TextBox(cols[0], update, attribute)
         if utility.valid_attribute(attribute):
             limit = utility.attribute_range(attribute)
@@ -111,7 +111,8 @@ class Attribute(object):
                 max_ = limit[1]
         s.min = FloatBox(cols[1], update, min_)
         s.max = FloatBox(cols[2], update, max_)
-        s.trash = cmds.iconTextButton(p=cols[3], i="removeRenderable.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
+        s.bias = FloatBox(cols[3], update, bias)
+        s.trash = cmds.iconTextButton(p=cols[4], i="removeRenderable.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
@@ -122,13 +123,15 @@ class Attribute(object):
                 ok = False
             if max_ is not None and not s.max.validate(lambda x: max_ >= x and x > s.min.value):
                 ok = False
+            if not s.bias.validate(lambda x: x >= 0):
+                ok = False
         else:
             ok = False
         return ok
 
     def export(s):
         """ Return representation of data """
-        return s.attr.value, s.min.value, s.max.value
+        return s.attr.value, s.min.value, s.max.value, s.bias.value
 
     def remove(s):
         """ Remove element """
@@ -138,7 +141,7 @@ class Attributes(object):
     """ Gui for attributes """
     def __init__(s, parent, update, attributes=None):
         s.update = update
-        columns = ["Name", "Min", "Max", ""]
+        columns = ["Name", "Min", "Max", "Bias", ""]
         rows = cmds.rowLayout(nc=len(columns), adj=1, p=parent)
         s.cols = []
         for col in columns:
@@ -147,16 +150,16 @@ class Attributes(object):
             s.cols.append(c)
         s.attributes = []
         for attr in attributes or []:
-            name = ".".join(attr[:2])
-            args = [name] + attr[2:]
+            name = ".".join((attr["obj"], attr["attr"]))
+            args = [name, attr["min"], attr["max"], attr["bias"]]
             s.add_attribute(*args)
 
-    def add_attribute(s, name, min_=-9999, max_=9999):
+    def add_attribute(s, name, min_=-9999, max_=9999, bias=1.0):
         """ Add a new attribute """
         for attr in s.attributes:
             if name == attr.attr.value:
                 return
-        attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name, min_, max_)
+        attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name, min_, max_, bias)
         s.attributes.append(attr)
         s.update()
 
@@ -179,8 +182,9 @@ class Attributes(object):
     def export(s):
         """ Send out attributes """
         for at in s.attributes:
-            attr, min_, max_ = at.export()
-            yield attr.rsplit(".", 1) + [min_, max_]
+            attr, min_, max_, bias = at.export()
+            obj, at = attr.rsplit(".", 1)
+            yield {"obj":obj, "attr":at, "min":min_, "max":max_, "bias":bias}
 
 class Markers(object):
     """ Gui for markers """
@@ -649,7 +653,7 @@ class Fixer(object):
                 for marker in marker_set:
                     all_objs.add(marker)
             for attribute in template.attributes:
-                all_objs.add(attribute[0])
+                all_objs.add(attribute["obj"])
 
         # Filter for missing objects
         s.missing = []
@@ -723,7 +727,7 @@ class Fixer(object):
         # copy templates
         for template in s.templates:
             markers = [[changes[b] if b in changes else b for b in a] for a in template.markers]
-            attributes = [[changes[b] if b in changes else b for b in a] for a in template.attributes]
+            attributes = [{b: changes[b] if b == "obj" and b in changes else c for b, c in a.items()} for a in template.attributes]
             template.markers = markers
             template.attributes = attributes
         cmds.deleteUI(s.win)
