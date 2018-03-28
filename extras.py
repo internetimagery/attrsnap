@@ -1,16 +1,20 @@
 # Extra functionality for niche situations
 
 
-def FROM_TO_Namespace():
+def FROM_TO_Namespace(path=None):
     """ Load match file. Replace "FROM:" and "TO:"
         with selected objects namespaces. Open mini window.
         Maya specific.
     """
     import gui_maya as gui
     import utility_maya as utility
+    import groups
 
     selection = utility.get_selection(2)
-    templates = utility.load_prompt()
+    if path:
+        templates = groups.load(path)
+    else:
+        templates = utility.load_prompt()
 
     ns_select = []
     for select in selection:
