@@ -66,13 +66,15 @@ class Attribute(base.Attribute):
     def set_value(s, val):
         """ Set attribute value """
         if val < s.min or val > s.max:
-            raise RuntimeError("Value {} for {} out of bounds.".format(val, s.name))
+            raise RuntimeError("Attribute {} is out of bounds (value {}). Please adjust it, or consider changing the min/max for the attribute, and try match again.".format(s.name, val))
         try:
             if s._is_angle:
                 return s._attr.setMAngle(om.MAngle(val, om.MAngle.kDegrees))
             s._attr.setDouble(val)
         except RuntimeError:
             cmds.setAttr(s.name, val)
+        except RuntimeError:
+            raise RuntimError("Cannot set {} to {}. Is the attribute within the correct range? Is it settable?".format(s.name, val))
         return val
 
     def get_value(s):
