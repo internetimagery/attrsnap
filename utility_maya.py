@@ -81,10 +81,10 @@ def attribute_range(attr):
         result[0] = cmds.attributeQuery(at, n=obj, min=True)[0]
     if cmds.attributeQuery(at, n=obj, mxe=True): # Hard Max
         result[1] = cmds.attributeQuery(at, n=obj, max=True)[0]
-    if cmds.attributeQuery(at, n=obj, sme=True): # Soft Min
-        result[0] = cmds.attributeQuery(at, n=obj, smn=True)[0]
-    if cmds.attributeQuery(at, n=obj, sxe=True): # Soft Max
-        result[1] = cmds.attributeQuery(at, n=obj, smx=True)[0]
+    # if cmds.attributeQuery(at, n=obj, sme=True): # Soft Min
+    #     result[0] = cmds.attributeQuery(at, n=obj, smn=True)[0]
+    # if cmds.attributeQuery(at, n=obj, sxe=True): # Soft Max
+    #     result[1] = cmds.attributeQuery(at, n=obj, smx=True)[0]
     return result
 
 def get_frame_range():
