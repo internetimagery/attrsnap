@@ -135,7 +135,7 @@ class Attribute(object):
 
     def remove(s):
         """ Remove element """
-        cmds.deleteUI([s.trash, s.attr.gui, s.min.gui, s.max.gui])
+        cmds.deleteUI([s.trash, s.attr.gui, s.min.gui, s.max.gui, s.bias.gui])
 
 class Attributes(object):
     """ Gui for attributes """
