@@ -69,7 +69,7 @@ def valid_object(obj):
 def valid_attribute(attr):
     """ Check attribute is valid and exists """
     try:
-        return cmds.getAttr(attr, k=True) and not cmds.getAttr(attr, l=True)
+        return cmds.getAttr(attr, se=True)
     except ValueError:
         return False
 
