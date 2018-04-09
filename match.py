@@ -18,6 +18,7 @@ import itertools
 import element
 import utility
 import groups
+import time
 
 try:
     xrange
@@ -128,8 +129,6 @@ def form_heirarchy(grps):
 def optim_nelder_mead(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
     """ Search using Nelder Mead Optimization """
 
-    Snapshot = collections.namedtuple("Snapshot", ["dist", "vals"]) # Single value construct
-
     # Initial values
     no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
     record = [Snapshot(dist=prev_best, vals=start_vals)]
@@ -152,6 +151,7 @@ def optim_nelder_mead(group, step=0.1, limit=200, threshold=10e-6, no_improv_bre
         if best < prev_best - threshold:
             no_improv = 0
             prev_best = best
+            yield record[0]
         else:
             no_improv += 1
         # Check if we haven't improved in a while...
@@ -284,12 +284,13 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
     end_frame (optional). Single frame if not provided else the full range.
     sub_frame (optional). Steps to take. 1.0 default.
     """
+    start_time = time.time()
     start_frame = float(utility.get_frame()) if start_frame is None else float(start_frame)
     end_frame = start_frame if end_frame is None else float(end_frame)
     grps = form_heirarchy([groups.Group(t) for t in templates if t.enabled])
     if not grps: raise RuntimeError("No templates provided.")
 
-    print("Matching Groups Now!")
+    print("Matching Groups Now! Using \"%s\"." % matcher.__name__)
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
     total_calls = 0 # track total distance calls for reference
@@ -305,5 +306,6 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
                 progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step
             grp.keyframe(snapshot.vals)
+    print("Match complete. Took,", time.time() - start_time)
     print("Used %s calls." % sum(a.num_calls for a in grps))
     yield 1.0

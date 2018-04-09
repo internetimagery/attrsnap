@@ -67,7 +67,7 @@ class Group(object):
 
     def set_values(s, vals):
         """ Set a list of values to each attribute """
-        for attr, val in zip(s.attributes, vals):
+        for attr, val in zip(s.attributes, s.bounds(vals)):
             attr.set_value(val)
 
     def get_bias(s):

@@ -450,6 +450,7 @@ class Window(object):
         s.idle = True
         s.tabs = []
         s.group_index = 0
+        s.matcher = match.optim_nelder_mead
         name = "attrsnap"
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
@@ -460,26 +461,31 @@ class Window(object):
         cmds.menuBarLayout()
         cmds.menu(l="Groups")
         cmds.menuItem(l="New Group", c=s.new_group,
-        ann="Create a new group.")
+            ann="Create a new group.")
         cmds.menuItem(l="Remove Group", c=s.delete_tab,
-        ann="Remove currently visible group.")
+            ann="Remove currently visible group.")
         cmds.menuItem(l="Duplicate Group", c=s.duplicate_tab,
-        ann="Duplicate current group.")
+            ann="Duplicate current group.")
         cmds.menuItem(d=True)
         cmds.menuItem(l="Enable All", c=lambda x: s.enable_all(True),
-        ann="Enable all groups.")
+            ann="Enable all groups.")
         cmds.menuItem(l="Disable All", c=lambda x: s.enable_all(False),
-        ann="Disable all groups.")
+            ann="Disable all groups.")
         cmds.menuItem(d=True)
         cmds.menuItem(l="Load Template", c=s.load_template,
-        ann="Get groups from a template file.")
+            ann="Get groups from a template file.")
         cmds.menuItem(l="Save Template", c=s.save_template,
-        ann="Save current groups into a template file. For later retrieval.")
+            ann="Save current groups into a template file. For later retrieval.")
         cmds.menu(l="Utility")
         cmds.menuItem(l="Fix Missing", c=s.fix,
-        ann="Run retaget tool filtering only missing objects.")
+            ann="Run retaget tool filtering only missing objects.")
         cmds.menuItem(l="Retarget", c=s.retarget,
-        ann="Run retaget tool.")
+            ann="Run retaget tool.")
+        cmds.menu(l="Matcher",
+            ann="Choose a matching algorithm.")
+        cmds.radioMenuItemCollection()
+        cmds.menuItem(l="Nelder Mead", rb=True, functools.partial(s.set_matcher, match.optim_nelder_mead)
+        cmds.menuItem(l="Adam", rb=False, functools.partial(s.set_matcher, match.optim_adam)
 
         try:
             s.tab_grp = cmds.tabLayout(
@@ -522,6 +528,10 @@ class Window(object):
                 s.new_group(t)
         else:
             s.new_group()
+
+    def set_matcher(s, matcher, *_):
+        """ Update matcher to selected """
+        s.matcher = matcher
 
     def fix(s, *_):
         """ Retarget with only missing objects """
@@ -607,7 +617,7 @@ class Window(object):
 
             # Match this!
             with utility.progress() as prog:
-                for progress in match.match(valid, *s.range.export()):
+                for progress in match.match(valid, *s.range.export(), matcher=s.matcher):
                     prog(progress)
         s.idle = True
 

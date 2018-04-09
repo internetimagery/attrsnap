@@ -5,7 +5,6 @@ import random
 import match
 
 def main():
-    import time
 
     for i in range(2):
         rand = lambda: tuple(random.randrange(-10,10) for _ in range(3))
@@ -34,10 +33,9 @@ def main():
         curve = element.Curve([n2[0], (n2-n1).length() ,n2[2]])
 
         matcher = match.optim_adam if i else match.optim_nelder_mead
-        print "Running", matcher
-        start = time.time()
+        print "Running", matcher.__name__
         cmds.autoKeyframe(state=False)
-        for prog in match.match([template], end_frame=50, matcher=matcher):
+        for prog in match.match([template], end_frame=120, matcher=matcher):
             pass
         # if i:
         #     match.search2(grp)
@@ -48,7 +46,6 @@ def main():
         #         # curve.add([n2[0], (n2-n1).length() ,n2[2]])
         #         pass
         #     grp.set_values(snapshot.vals)
-        print "Took", time.time() - start
 
         x1, _, z1 = cmds.xform(m1, q=True, ws=True, t=True)
         x2, _, z2 = cmds.xform(m2, q=True, ws=True, t=True)
