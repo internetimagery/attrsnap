@@ -104,10 +104,11 @@ def nelder_mead(f, x_start,
             continue
 
         # reduction
+        print("REDUCING")
         x1 = res[0][0]
         nres = []
         for tup in res:
-            redx = [x1 * sigma * (a - x1) for a in tup[0]]
+            redx = [x1 + sigma * (a - x1) for a in tup[0]]
             # redx = x1 + sigma*(tup[0] - x1)
             score = f(redx)
             nres.append([redx, score])

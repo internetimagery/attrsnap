@@ -21,8 +21,10 @@ import groups
 
 try:
     xrange
+    from itertools import izip
 except NameError:
     xrange = range
+    izip = zip
 
 # Reference:
 # https://cs231n.github.io/neural-networks-3/#gradcheck
@@ -33,8 +35,8 @@ class Vector(tuple):
     def __new__(cls, *pos):
         return tuple.__new__(cls, pos[0] if len(pos) == 1 else pos)
     def mul(lhs, rhs):
-        return lhs.__class__(a*b for a,b in zip(lhs, rhs))
-    def dot(lhs, rhs, zip=zip):
+        return lhs.__class__(a*b for a,b in izip(lhs, rhs))
+    def dot(lhs, rhs, zip=izip):
         return sum(a*b for a,b in zip(lhs, rhs))
     def square(s):
         return s.__class__(a*a for a in s)
@@ -46,15 +48,15 @@ class Vector(tuple):
         return s.__class__(mag and a/mag for a in s)
     def sqrt(s):
         return s.__class__(a if a <=0 else (a ** -0.5)*a for a in s)
-    def __add__(lhs, rhs, zip=zip):
+    def __add__(lhs, rhs, zip=izip):
         return lhs.__class__(a+b for a,b in zip(lhs, rhs))
     def __radd__(rhs, lhs):
         return rhs.__add__(lhs)
-    def __sub__(lhs, rhs, rev=False, zip=zip):
+    def __sub__(lhs, rhs, rev=False, zip=izip):
         return lhs.__class__(a-b for a,b in zip(*(rhs, lhs) if rev else (lhs, rhs)))
     def __rsub__(rhs, lhs):
         return rhs.__sub__(rhs, lhs, True)
-    def __div__(lhs, rhs, rev=False, zip=zip):
+    def __div__(lhs, rhs, rev=False, zip=izip):
         return lhs.__class__(b and a/b for a,b in zip(*(rhs, lhs) if rev else (lhs, rhs)))
     def __rdiv__(rhs, lhs):
         return rhs.__sub__(rhs, lhs, True)
@@ -119,6 +121,87 @@ def form_heirarchy(grps):
             if grp in cycles and prev_grp in cycles[grp]:
                 new_sorted_grp.append(prev_grp)
     return new_sorted_grp
+
+
+def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
+    """ Search using Nelder Mead Optimization """
+
+    Value = collections.namedtuple("Value", ["dist", "vals"]) # Single value construct
+
+    # Initial values
+    num_attrs, start_vals, prev_dist = len(group), group.get_value(), group.get_distance()
+    record = [Value(dist=prev_dist, vals=start_vals)]
+    for i in xrange(num_attrs):
+        vals = start_vals[:]
+        vals[i] += step
+        group.set_value(vals)
+        record.append(Value(dist=group.get_distance(), vals=vals))
+
+    # Start walking!
+    for _ in xrange(limit):
+
+        # Sort recorded values. Keep track of best.
+        record.sort(key=lambda x: x.dist)
+        best = record[0].dist
+
+        # Check if we're better off.
+        if best < prev_best - threshold:
+            no_improv = 0
+            prev_best = best
+        else:
+            no_improv += 1
+        # Check if we haven't improved in a while...
+        # TODO: Investigate reducing the step size here to refine search quality.
+        if no_improv >= no_improv_break:
+            break
+
+        # Center of the search area!
+        center = [0.0] * num_attrs
+        for val in record[:-1]: # Ignoring one point
+            for i, cen in enumerate(val.vals):
+                center[i] += cen / (len(record)-1)
+
+        # Reflection
+        val_refl = [a + alpha * (a - b) for a, b in izip(center, record[-1].vals)]
+        group.set_value(val_refl)
+        dist_refl = group.get_distance()
+        if record[0].dist <= dist_refl < record[-2].dist:
+            del record[-1]
+            record.append(Value(dist=dist_refl, vals=val_refl))
+            continue
+
+        # Expansion
+        if dist_refl < record[0].dist:
+            val_exp [a + gamma * (a - b) for a, b in izip(center, record[-1].vals)]
+            group.set_value(val_exp)
+            dist_exp = group.get_distance()
+            del record[-1]
+            record.append(Value(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Value(dist=dist_refl, vals=val_refl))
+            continue
+
+        # Contraction
+        val_cont = [a + rho * (a - b) for a, b in izip(center, record[-1].vals)]
+        group.set_value(val_cont)
+        dist_cont = group.get_distance()
+        if dist_cont < record[-1].dist:
+            del record[-1]
+            record.append(Value(dist=dist_cont, vals=val_cont))
+            continue
+
+        # Reduction
+        best = record[0].vals
+        new_record = []
+        for vals in record:
+            vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, best)]
+            group.set_value(vals_redux)
+            dist_redux = group.get_distance()
+            new_record.append(Value(dist=dist_redux, vals=vals_redux))
+        record = new_record
+
+    # Done!
+    return record[0]
+
+
 
 def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, limit=500, debug=False):
     """
