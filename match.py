@@ -133,11 +133,13 @@ def optim_nelder_mead(group, step=0.1, limit=200, threshold=10e-6, no_improv_bre
     # Initial values
     no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
     record = [Snapshot(dist=prev_best, vals=start_vals)]
+    yield record[0]
     for i in xrange(num_attrs):
         vals = list(start_vals[:])
         vals[i] += step
         group.set_values(vals)
         record.append(Snapshot(dist=group.get_distance(), vals=vals))
+
 
     # Start walking!
     for _ in xrange(limit):
@@ -200,7 +202,7 @@ def optim_nelder_mead(group, step=0.1, limit=200, threshold=10e-6, no_improv_bre
         record = new_record
 
     # Done!
-    return record[0]
+    yield record[0]
 
 
 
@@ -280,11 +282,12 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
     update. function run updating matching progress.
     start_frame (optional). Current frame if not given.
     end_frame (optional). Single frame if not provided else the full range.
+    sub_frame (optional). Steps to take. 1.0 default.
     """
     start_frame = float(utility.get_frame()) if start_frame is None else float(start_frame)
     end_frame = start_frame if end_frame is None else float(end_frame)
     grps = form_heirarchy([groups.Group(t) for t in templates if t.enabled])
-    if not grps: raise RuntimeError("No groups provided.")
+    if not grps: raise RuntimeError("No templates provided.")
 
     print("Matching Groups Now!")
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
@@ -298,9 +301,9 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
         for j, grp in enumerate(grps):
             total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist
-            for snapshot in search(grp, **kwargs):
+            for snapshot in matcher(grp, **kwargs):
                 progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step
-            grp.keyframe(values)
+            grp.keyframe(snapshot.vals)
     print("Used %s calls." % sum(a.num_calls for a in grps))
     yield 1.0
