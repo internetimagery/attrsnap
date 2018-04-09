@@ -126,16 +126,16 @@ def form_heirarchy(grps):
 def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
     """ Search using Nelder Mead Optimization """
 
-    Value = collections.namedtuple("Value", ["dist", "vals"]) # Single value construct
+    Snapshot = collections.namedtuple("Snapshot", ["dist", "vals"]) # Single value construct
 
     # Initial values
     num_attrs, start_vals, prev_dist = len(group), group.get_value(), group.get_distance()
-    record = [Value(dist=prev_dist, vals=start_vals)]
+    record = [Snapshot(dist=prev_dist, vals=start_vals)]
     for i in xrange(num_attrs):
         vals = start_vals[:]
         vals[i] += step
         group.set_value(vals)
-        record.append(Value(dist=group.get_distance(), vals=vals))
+        record.append(Snapshot(dist=group.get_distance(), vals=vals))
 
     # Start walking!
     for _ in xrange(limit):
@@ -167,7 +167,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
         dist_refl = group.get_distance()
         if record[0].dist <= dist_refl < record[-2].dist:
             del record[-1]
-            record.append(Value(dist=dist_refl, vals=val_refl))
+            record.append(Snapshot(dist=dist_refl, vals=val_refl))
             continue
 
         # Expansion
@@ -176,7 +176,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
             group.set_value(val_exp)
             dist_exp = group.get_distance()
             del record[-1]
-            record.append(Value(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Value(dist=dist_refl, vals=val_refl))
+            record.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
             continue
 
         # Contraction
@@ -185,7 +185,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
         dist_cont = group.get_distance()
         if dist_cont < record[-1].dist:
             del record[-1]
-            record.append(Value(dist=dist_cont, vals=val_cont))
+            record.append(Snapshot(dist=dist_cont, vals=val_cont))
             continue
 
         # Reduction
@@ -195,7 +195,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
             vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, best)]
             group.set_value(vals_redux)
             dist_redux = group.get_distance()
-            new_record.append(Value(dist=dist_redux, vals=vals_redux))
+            new_record.append(Snapshot(dist=dist_redux, vals=vals_redux))
         record = new_record
 
     # Done!
