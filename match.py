@@ -127,18 +127,19 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
     """ Search using Nelder Mead Optimization """
 
     Snapshot = collections.namedtuple("Snapshot", ["dist", "vals"]) # Single value construct
+    totals = 0
 
     # Initial values
-    num_attrs, start_vals, prev_dist = len(group), group.get_value(), group.get_distance()
-    record = [Snapshot(dist=prev_dist, vals=start_vals)]
+    no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
+    record = [Snapshot(dist=prev_best, vals=start_vals)]
     for i in xrange(num_attrs):
-        vals = start_vals[:]
+        vals = list(start_vals[:])
         vals[i] += step
-        group.set_value(vals)
+        group.set_values(vals); totals += 1
         record.append(Snapshot(dist=group.get_distance(), vals=vals))
 
     # Start walking!
-    for _ in xrange(limit):
+    for ss in xrange(limit):
 
         # Sort recorded values. Keep track of best.
         record.sort(key=lambda x: x.dist)
@@ -163,7 +164,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
 
         # Reflection
         val_refl = [a + alpha * (a - b) for a, b in izip(center, record[-1].vals)]
-        group.set_value(val_refl)
+        group.set_values(val_refl); totals += 1
         dist_refl = group.get_distance()
         if record[0].dist <= dist_refl < record[-2].dist:
             del record[-1]
@@ -172,8 +173,8 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
 
         # Expansion
         if dist_refl < record[0].dist:
-            val_exp [a + gamma * (a - b) for a, b in izip(center, record[-1].vals)]
-            group.set_value(val_exp)
+            val_exp = [a + gamma * (a - b) for a, b in izip(center, record[-1].vals)]
+            group.set_values(val_exp); totals += 1
             dist_exp = group.get_distance()
             del record[-1]
             record.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
@@ -181,7 +182,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
 
         # Contraction
         val_cont = [a + rho * (a - b) for a, b in izip(center, record[-1].vals)]
-        group.set_value(val_cont)
+        group.set_values(val_cont); totals += 1
         dist_cont = group.get_distance()
         if dist_cont < record[-1].dist:
             del record[-1]
@@ -193,12 +194,13 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
         new_record = []
         for vals in record:
             vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, best)]
-            group.set_value(vals_redux)
+            group.set_values(vals_redux); totals += 1
             dist_redux = group.get_distance()
             new_record.append(Snapshot(dist=dist_redux, vals=vals_redux))
         record = new_record
 
     # Done!
+    print("totals", totals, "steps", ss)
     return record[0]
 
 
