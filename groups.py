@@ -51,6 +51,7 @@ class Template(object):
 class Group(object):
     """ A group of objects and attributes for matching """
     def __init__(s, template):
+        s.num_calls = 0 # Track number of calls to "get_distance"
         s.name = template.name
         s.match_type = template.match_type
         s.markers = [element.Marker_Set(*a) for a in template.markers]
@@ -78,6 +79,7 @@ class Group(object):
 
     def get_distance(s, log=math.log):
         """ Calculate a distance value from our markers """
+        s.num_calls += 1
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
             return log(dist if dist > 0 else sys.float_info.min)

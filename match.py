@@ -29,6 +29,8 @@ except NameError:
 # Reference:
 # https://cs231n.github.io/neural-networks-3/#gradcheck
 
+Snapshot = collections.namedtuple("Snapshot", ["dist", "vals"]) # Single value construct
+
 class Vector(tuple):
     """ Make vector operations cleaner """
     __slots__ = ()
@@ -123,11 +125,10 @@ def form_heirarchy(grps):
     return new_sorted_grp
 
 
-def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
+def optim_nelder_mead(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
     """ Search using Nelder Mead Optimization """
 
     Snapshot = collections.namedtuple("Snapshot", ["dist", "vals"]) # Single value construct
-    totals = 0
 
     # Initial values
     no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
@@ -135,11 +136,11 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
     for i in xrange(num_attrs):
         vals = list(start_vals[:])
         vals[i] += step
-        group.set_values(vals); totals += 1
+        group.set_values(vals)
         record.append(Snapshot(dist=group.get_distance(), vals=vals))
 
     # Start walking!
-    for ss in xrange(limit):
+    for _ in xrange(limit):
 
         # Sort recorded values. Keep track of best.
         record.sort(key=lambda x: x.dist)
@@ -152,7 +153,6 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
         else:
             no_improv += 1
         # Check if we haven't improved in a while...
-        # TODO: Investigate reducing the step size here to refine search quality.
         if no_improv >= no_improv_break:
             break
 
@@ -164,7 +164,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
 
         # Reflection
         val_refl = [a + alpha * (a - b) for a, b in izip(center, record[-1].vals)]
-        group.set_values(val_refl); totals += 1
+        group.set_values(val_refl)
         dist_refl = group.get_distance()
         if record[0].dist <= dist_refl < record[-2].dist:
             del record[-1]
@@ -174,7 +174,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
         # Expansion
         if dist_refl < record[0].dist:
             val_exp = [a + gamma * (a - b) for a, b in izip(center, record[-1].vals)]
-            group.set_values(val_exp); totals += 1
+            group.set_values(val_exp)
             dist_exp = group.get_distance()
             del record[-1]
             record.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
@@ -182,7 +182,7 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
 
         # Contraction
         val_cont = [a + rho * (a - b) for a, b in izip(center, record[-1].vals)]
-        group.set_values(val_cont); totals += 1
+        group.set_values(val_cont)
         dist_cont = group.get_distance()
         if dist_cont < record[-1].dist:
             del record[-1]
@@ -194,18 +194,17 @@ def search2(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alp
         new_record = []
         for vals in record:
             vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, best)]
-            group.set_values(vals_redux); totals += 1
+            group.set_values(vals_redux)
             dist_redux = group.get_distance()
             new_record.append(Snapshot(dist=dist_redux, vals=vals_redux))
         record = new_record
 
     # Done!
-    print("totals", totals, "steps", ss)
     return record[0]
 
 
 
-def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, limit=500, debug=False):
+def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, limit=500, debug=False):
     """
     Match using gradient descent + momentum.
     rate = sample size of each step.
@@ -224,7 +223,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
     prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = Vector(group.get_values())
 
-    yield rate, closest_values
+    yield Snapshot(dist=closest_dist, vals=closest_values)
 
     # GO!
     for i in xrange(limit):
@@ -246,7 +245,7 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
         if dist < closest_dist:
             closest_dist = dist
             closest_values = curr_values
-            yield rate, closest_values
+            yield Snapshot(dist=closest_dist, vals=closest_values)
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -271,12 +270,11 @@ def search(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=0.00001, lim
         # velocity = Vector(group.bounds(velocity))
         curr_values = Vector(group.bounds(curr_values))
 
-
     if debug:
         print("Finished after {} steps".format(i))
-    yield rate, closest_values
+    yield Snapshot(dist=closest_dist, vals=closest_values)
 
-def match(templates, start_frame=None, end_frame=None, sub_frame=None, rate=0.8, **kwargs):
+def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
@@ -285,23 +283,24 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=None, rate=0.8,
     """
     start_frame = float(utility.get_frame()) if start_frame is None else float(start_frame)
     end_frame = start_frame if end_frame is None else float(end_frame)
-    sub_frame = 1.0 if sub_frame is None else float(sub_frame)
     grps = form_heirarchy([groups.Group(t) for t in templates if t.enabled])
+    if not grps: raise RuntimeError("No groups provided.")
+
     print("Matching Groups Now!")
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
-    rate_step = 1 / rate
+    total_calls = 0 # track total distance calls for reference
 
-
-    yield 0 # Kick us off
+    yield 0.0 # Kick us off
     for i in range(int((end_frame - start_frame) / sub_frame)+1):
         frame = i * sub_frame + start_frame
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
-            for r, values in search(grp, rate=rate, **kwargs):
-                if not r: # Break early if we're there
-                    break
-                progress = 1 - r * rate_step
+            total_dist = grp.get_distance() # Set initial scale for progress updates
+            total_scale = total_dist or 1.0 / total_dist
+            for snapshot in search(grp, **kwargs):
+                progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step
             grp.keyframe(values)
-    yield 1
+    print("Used %s calls." % sum(a.num_calls for a in grps))
+    yield 1.0
