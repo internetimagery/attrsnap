@@ -6,10 +6,10 @@ import match
 
 def main():
 
+    cmds.file(new=True, force=True)
     for i in range(3):
         rand = lambda: tuple(random.randrange(-10,10) for _ in range(3))
 
-        cmds.file(new=True, force=True)
 
         m1, _ = cmds.polySphere()
         m2 = cmds.group(em=True)
@@ -22,6 +22,7 @@ def main():
         cmds.setAttr(m3 + ".scaleX", 2)
         cmds.setAttr(m3 + ".scaleZ", 6)
 
+        matcher = [match.optim_adam, match.optim_nelder_mead, match.optim_random][i]
         template = groups.Template(
             markers=[(m1, m2)],
             attributes=[{"obj": m1, "attr": "tx"}, {"obj": m2, "attr": "tz"}])
@@ -32,24 +33,19 @@ def main():
         n2 = grp.markers[0].node2.get_position()
         curve = element.Curve([n2[0], (n2-n1).length() ,n2[2]])
 
-        matcher = [match.optim_adam, match.optim_nelder_mead, match.optim_random][i]
-        print "Running", matcher.__name__
         cmds.autoKeyframe(state=False)
+        print "="*20
+        print "Running", matcher.__name__
         for prog in match.match([template], matcher=matcher, end_frame=120):
-            pass
-        # if i:
-        #     match.search2(grp)
-        # else:
-        #     for snapshot in match.search(grp):#, debug=True):
-        #         # n1 = grp.markers[0].node1.get_position()
-        #         # n2 = grp.markers[0].node2.get_position()
-        #         # curve.add([n2[0], (n2-n1).length() ,n2[2]])
-        #         pass
-        #     grp.set_values(snapshot.vals)
+            n1 = grp.markers[0].node1.get_position()
+            n2 = grp.markers[0].node2.get_position()
+            curve.add([n2[0], (n2-n1).length() ,n2[2]])
 
         x1, _, z1 = cmds.xform(m1, q=True, ws=True, t=True)
         x2, _, z2 = cmds.xform(m2, q=True, ws=True, t=True)
         # print(x1, z1)
         # print(x2, z2)
-        assert abs(x1-x2) < 0.01
-        assert abs(z1-z2) < 0.01
+        print "Accuracy", (x1 - x2) + (z1 - z2)
+        assert abs(x1-x2) < 1e-3
+        assert abs(z1-z2) < 1e-3
+        cmds.group([curve.curve, m1, m2, m3], n="Grp_%s" % matcher.__name__)

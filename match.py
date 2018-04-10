@@ -331,5 +331,5 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
             grp.keyframe(snapshot.vals)
     calls = sum(a.get_calls() for a in grps)
     print("Match complete. Took,", time.time() - start_time)
-    print("Used %s calls. %s calls per frame." % (calls, calls and frames / calls))
+    print("Used %s calls. %s calls per frame." % (calls, frames and calls / frames))
     yield 1.0
