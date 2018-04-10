@@ -315,7 +315,6 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
     print("Matching Groups Now! Using \"%s\"." % matcher.__name__)
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
-    total_calls = 0 # track total distance calls for reference
 
     yield 0.0 # Kick us off
     frames = int((end_frame - start_frame) / sub_frame) + 1
