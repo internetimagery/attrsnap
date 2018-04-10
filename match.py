@@ -125,7 +125,7 @@ def form_heirarchy(grps):
                 new_sorted_grp.append(prev_grp)
     return new_sorted_grp
 
-
+# https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
 def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
     """ Search using Nelder Mead Optimization """
 
@@ -268,9 +268,9 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
         momentum = momentum*resistance + gradient.mul(bias)*(1-resistance)
         velocity = velocity*friction + gradient.square()*(1-friction)
         curr_values += momentum*-rate / velocity.sqrt()
-        # momentum = Vector(group.bounds(momentum))
-        # velocity = Vector(group.bounds(velocity))
-        # curr_values = Vector(group.bounds(curr_values))
+        # TODO: Make this not nessisary...
+        momentum = Vector(group.bounds(momentum))
+        curr_values = Vector(group.bounds(curr_values))
 
     if debug:
         print("Finished after {} steps".format(i))

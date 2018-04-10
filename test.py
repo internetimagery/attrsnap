@@ -35,7 +35,7 @@ def main():
         matcher = match.optim_adam if i else match.optim_nelder_mead
         print "Running", matcher.__name__
         cmds.autoKeyframe(state=False)
-        for prog in match.match([template], matcher=matcher):
+        for prog in match.match([template], matcher=matcher, end_frame=120):
             pass
         # if i:
         #     match.search2(grp)

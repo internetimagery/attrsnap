@@ -41,8 +41,8 @@ class Attribute(base.Attribute):
     def __init__(s, **data):
         obj = data.get("obj", "")
         attr = data.get("attr", "")
-        min_ = data.get("min", -999999.9)
-        max_ = data.get("max", 999999.9)
+        min_ = data.get("min", -float("Inf"))
+        max_ = data.get("max", float("Inf"))
         s.bias = data.get("bias", 1.0)
         s.name = "{}.{}".format(obj, attr)
         query = lambda **kwargs: cmds.attributeQuery(attr, n=obj, **kwargs) # REUSE!
