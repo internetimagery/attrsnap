@@ -65,6 +65,7 @@ class WrapAttr(element.Attribute):
         return s._num_calls
 
 class WrapMarkerSet(element.Marker_Set):
+    """ Marker wrapper tracking calls to host """
     def __init__(s, *args, **kwargs):
         s._num_calls = 0
         super(WrapMarkerSet, s).__init__(*args, **kwargs)
