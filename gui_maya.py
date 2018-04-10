@@ -480,12 +480,12 @@ class Window(object):
             ann="Run retaget tool filtering only missing objects.")
         cmds.menuItem(l="Retarget", c=s.retarget,
             ann="Run retaget tool.")
-        cmds.menu(l="Optimizer")
+        cmds.menu(l="Matching Algorithm")
         cmds.radioMenuItemCollection()
         cmds.menuItem(l="Adam", rb=True, c=functools.partial(s.set_matcher, match.optim_adam),
             ann="Use Adam Optimizer.")
         cmds.menuItem(l="Nelder Mead", rb=False, c=functools.partial(s.set_matcher, match.optim_nelder_mead),
-            ann="Use Nelder Mead Optimizer. (Experimental)")
+            ann="Use Nelder Mead Optimizer.")
         s.set_matcher(match.optim_adam) # Set default matcher
 
         try:
