@@ -126,7 +126,7 @@ def form_heirarchy(grps):
                 new_sorted_grp.append(prev_grp)
     return new_sorted_grp
 
-def optim_random(group, step=0.01, epoch=10, limit=100, threshold=1e-8):
+def optim_random(group, step=0.01, epoch=10, limit=200, threshold=1e-8):
     """ Optimize using random samples. """
     best = Snapshot(dist=group.get_distance(), vals=group.get_values())
     num_attrs = len(group)
@@ -144,8 +144,6 @@ def optim_random(group, step=0.01, epoch=10, limit=100, threshold=1e-8):
                 break
             if step < threshold:
                 break
-        else:
-            break
         if prev_best == best:
             break
     yield best

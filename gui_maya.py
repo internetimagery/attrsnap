@@ -486,6 +486,8 @@ class Window(object):
             ann="Use Nelder Mead Optimizer.")
         cmds.menuItem(l="Adam", rb=False, c=functools.partial(s.set_matcher, match.optim_adam),
             ann="Use Adam Optimizer.")
+        cmds.menuItem(l="Random", rb=False, c=functools.partial(s.set_matcher, match.optim_random),
+            ann="Use Random Optimizer.")
         s.set_matcher(match.optim_nelder_mead) # Set default matcher
 
         try:
