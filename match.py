@@ -18,6 +18,7 @@ import itertools
 import element
 import utility
 import groups
+import random
 import time
 
 try:
@@ -124,6 +125,154 @@ def form_heirarchy(grps):
             if grp in cycles and prev_grp in cycles[grp]:
                 new_sorted_grp.append(prev_grp)
     return new_sorted_grp
+
+def optim_random(group, step=0.01, epoch=10, limit=100, threshold=1e-8):
+    """ Optimize using random samples. """
+    best = Snapshot(dist=group.get_distance(), vals=group.get_values())
+    num_attrs = len(group)
+    epoch_count = num_attrs * epoch
+    yield best
+    for _ in xrange(limit):
+        prev_best = best
+        for _ in xrange(epoch_count):
+            candidate = [a + step * random.uniform(-1.0, 1.0) for a in best.vals]
+            group.set_values(candidate)
+            dist = group.get_distance()
+            if dist < best.dist:
+                best = Snapshot(dist=dist, vals=candidate)
+                yield best
+                break
+            if step < threshold:
+                break
+        else:
+            break
+        if prev_best == best:
+            break
+    yield best
+
+# def optim_simulated_annealing(group, limit=200):
+#
+#     # Initialize state
+#     temp = 0 # What to set temperature?
+#     prev_state = best_state = Snapshot(dist=group.get_distance(), val=group.get_values())
+#     trials = accepts = improves = 0
+#
+#     # Move around!
+#     for _ in xrange(limit):
+
+#     def anneal(self):
+#         """Minimizes the energy of a system by simulated annealing.
+#         Parameters
+#         state : an initial arrangement of the system
+#         Returns
+#         (state, energy): the best state and energy found.
+#         """
+#         step = 0
+#         self.start = time.time()
+#
+#         # Precompute factor for exponential cooling from Tmax to Tmin
+#         if self.Tmin <= 0.0:
+#             raise Exception('Exponential cooling requires a minimum "\
+#                 "temperature greater than zero.')
+#         Tfactor = -math.log(self.Tmax / self.Tmin)
+#
+#         # Note initial state
+#         T = self.Tmax
+#         E = self.energy()
+#         prevState = self.copy_state(self.state)
+#         prevEnergy = E
+#         self.best_state = self.copy_state(self.state)
+#         self.best_energy = E
+#         trials, accepts, improves = 0, 0, 0
+#         if self.updates > 0:
+#             updateWavelength = self.steps / self.updates
+#             self.update(step, T, E, None, None)
+#
+#         # Attempt moves to new states
+#         while step < self.steps and not self.user_exit:
+#             step += 1
+#             T = self.Tmax * math.exp(Tfactor * step / self.steps)
+#             self.move()
+#             E = self.energy()
+#             dE = E - prevEnergy
+#             trials += 1
+#             if dE > 0.0 and math.exp(-dE / T) < random.random():
+#                 # Restore previous state
+#                 self.state = self.copy_state(prevState)
+#                 E = prevEnergy
+#             else:
+#                 # Accept new state and compare to best state
+#                 accepts += 1
+#                 if dE < 0.0:
+#                     improves += 1
+#                 prevState = self.copy_state(self.state)
+#                 prevEnergy = E
+#                 if E < self.best_energy:
+#                     self.best_state = self.copy_state(self.state)
+#                     self.best_energy = E
+#             if self.updates > 1:
+#                 if (step // updateWavelength) > ((step - 1) // updateWavelength):
+#                     self.update(
+#                         step, T, E, accepts / trials, improves / trials)
+#                     trials, accepts, improves = 0, 0, 0
+#
+#
+#         # Return best state and energy
+# return self.best_state, self.best_energy
+
+
+
+
+
+    # curr_dist =
+    #
+    #     // Initialize intial solution
+    #     Tour currentSolution = new Tour();
+    #     currentSolution.generateIndividual();
+    #
+    #     System.out.println("Initial solution distance: " + currentSolution.getDistance());
+    #
+    #     // Set as current best
+    #     Tour best = new Tour(currentSolution.getTour());
+    #
+    #     // Loop until system has cooled
+    #     while (temp > 1) {
+    #         // Create new neighbour tour
+    #         Tour newSolution = new Tour(currentSolution.getTour());
+    #
+    #         // Get a random positions in the tour
+    #         int tourPos1 = (int) (newSolution.tourSize() * Math.random());
+    #         int tourPos2 = (int) (newSolution.tourSize() * Math.random());
+    #
+    #         // Get the cities at selected positions in the tour
+    #         City citySwap1 = newSolution.getCity(tourPos1);
+    #         City citySwap2 = newSolution.getCity(tourPos2);
+    #
+    #         // Swap them
+    #         newSolution.setCity(tourPos2, citySwap1);
+    #         newSolution.setCity(tourPos1, citySwap2);
+    #
+    #         // Get energy of solutions
+    #         int currentEnergy = currentSolution.getDistance();
+    #         int neighbourEnergy = newSolution.getDistance();
+    #
+    #         // Decide if we should accept the neighbour
+    #         if (acceptanceProbability(currentEnergy, neighbourEnergy, temp) > Math.random()) {
+    #             currentSolution = new Tour(newSolution.getTour());
+    #         }
+    #
+    #         // Keep track of the best solution found
+    #         if (currentSolution.getDistance() < best.getDistance()) {
+    #             best = new Tour(currentSolution.getTour());
+    #         }
+    #
+    #         // Cool system
+    #         temp *= 1-coolingRate;
+    #     }
+    #
+
+################
+
 
 # https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
 def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):

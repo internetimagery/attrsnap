@@ -6,7 +6,7 @@ import match
 
 def main():
 
-    for i in range(2):
+    for i in range(3):
         rand = lambda: tuple(random.randrange(-10,10) for _ in range(3))
 
         cmds.file(new=True, force=True)
@@ -32,7 +32,7 @@ def main():
         n2 = grp.markers[0].node2.get_position()
         curve = element.Curve([n2[0], (n2-n1).length() ,n2[2]])
 
-        matcher = match.optim_adam if i else match.optim_nelder_mead
+        matcher = [match.optim_adam, match.optim_nelder_mead, match.optim_random][i]
         print "Running", matcher.__name__
         cmds.autoKeyframe(state=False)
         for prog in match.match([template], matcher=matcher, end_frame=120):
