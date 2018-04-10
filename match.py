@@ -135,7 +135,7 @@ def optim_random(group, step=0.01, epoch=10, limit=200, threshold=1e-8):
     for _ in xrange(limit):
         prev_best = best
         for _ in xrange(epoch_count):
-            candidate = [a + step * random.uniform(-1.0, 1.0) for a in best.vals]
+            candidate = [a + step * random.uniform(-2.0, 2.0) for a in best.vals]
             group.set_values(candidate)
             dist = group.get_distance()
             if dist < best.dist:
