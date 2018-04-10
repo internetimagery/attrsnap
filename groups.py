@@ -18,6 +18,11 @@ import json
 import math
 import sys
 
+try:
+    from itertools import izip
+except NameError:
+    izip = zip
+
 POSITION = 0
 ROTATION = 1
 
@@ -39,6 +44,26 @@ def load(file_path):
     with open(file_path, "r") as f:
         return [Template(**d) for d in json.load(f)]
 
+class CacheAttr(element.Attribute):
+    """ Attribute wrapper with caching and metrics """
+    def __init__(s, *args, **kwargs):
+        s._cache = None
+        s._num_calls = 0
+        super(CacheAttr, s).__init__(*args, **kwargs)
+    def clear_cache(s):
+        s._cache = None
+    def get_value(s):
+        if s._cache is None:
+            s._num_calls += 1
+            s._cache = super(CacheAttr, s).get_value()
+        return s._cache
+    def set_value(s, val):
+        super(CacheAttr, s).set_value(val)
+        s._num_calls += 1
+        s._cache = val
+    def get_calls(s):
+        return s._num_calls
+
 class Template(object):
     """ Hold information, for transfer """
     def __init__(s, name="Group", enabled=True, match_type=POSITION, markers=None, attributes=None):
@@ -55,7 +80,16 @@ class Group(object):
         s.name = template.name
         s.match_type = template.match_type
         s.markers = [element.Marker_Set(*a) for a in template.markers]
-        s.attributes = [element.Attribute(**a) for a in template.attributes]
+        s.attributes = [CacheAttr(**a) for a in template.attributes]
+
+    def clear_cache(s):
+        """ Clear up cached data """
+        for attr in s.attributes:
+            attr.clear_cache()
+
+    def get_calls(s):
+        """ Return number of calls to host system """
+        return sum(a.get_calls() for a in s.attributes)
 
     def get_name(s):
         """ Useful for debugging """
@@ -67,8 +101,8 @@ class Group(object):
 
     def set_values(s, vals):
         """ Set a list of values to each attribute """
-        for attr, val in zip(s.attributes, s.bounds(vals)):
-            attr.set_value(val)
+        for attr, new_val in izip(s.attributes, vals):
+            attr.set_value(new_val)
 
     def get_bias(s):
         """ Get Bias vector """
@@ -79,7 +113,7 @@ class Group(object):
 
     def get_distance(s, log=math.log):
         """ Calculate a distance value from our markers """
-        s.num_calls += 1
+        # TODO: Investigate... could add distance for values out of bounds.
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
             return log(dist if dist > 0 else sys.float_info.min)
@@ -91,7 +125,7 @@ class Group(object):
 
     def keyframe(s, values):
         """ Set a bunch of keyframes for each attribute """
-        for at, val in zip(s.attributes, s.bounds(values)):
+        for at, val in izip(s.attributes, s.bounds(values)):
             at.key(val)
 
     def shift(s, step=0.001):
@@ -119,7 +153,7 @@ class Group(object):
 
     def bounds(s, vals):
         """ Fit values into range limitation """
-        return (at.min if v < at.min else at.max if v > at.max else v for v, at in zip(vals, s.attributes))
+        return (at.min if v < at.min else at.max if v > at.max else v for v, at in izip(vals, s.attributes))
 
     def __len__(s):
         return len(s.attributes)
