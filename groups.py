@@ -117,7 +117,7 @@ class Group(object):
 
     def set_values(s, vals):
         """ Set a list of values to each attribute """
-        for attr, new_val in izip(s.attributes, vals):
+        for attr, new_val in izip(s.attributes, s.bounds(vals)):
             attr.set_value(new_val)
 
     def get_bias(s):
@@ -129,15 +129,20 @@ class Group(object):
 
     def get_distance(s, log=math.log):
         """ Calculate a distance value from our markers """
-        # TODO: Investigate... could add distance for values out of bounds.
+        # Increase distance cost if out of bounds.
+        # cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
+        #     for b, c in izip((a.get_value() for a in s.attributes), s.attributes))
+        cost = 0
+
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
-            return log(dist if dist > 0 else sys.float_info.min)
+            cost += log(dist if dist > 0 else sys.float_info.min)
         elif s.match_type == ROTATION:
             dist = sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
-            return log(dist if dist > 0 else sys.float_info.min, 1.2)
+            cost += log(dist if dist > 0 else sys.float_info.min, 1.2)
         else:
             raise RuntimeError("Distance type not supported.")
+        return cost
 
     def keyframe(s, values):
         """ Set a bunch of keyframes for each attribute """
