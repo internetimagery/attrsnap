@@ -483,9 +483,9 @@ class Window(object):
         cmds.menu(l="Matching Algorithm")
         cmds.radioMenuItemCollection()
         cmds.menuItem(l="Adam", rb=True, c=functools.partial(s.set_matcher, match.optim_adam),
-            ann="Use Adam Optimizer.")
+            ann="Use Adam Optimizer. Typically more accurate. Feel free to experiment with all algorithms.")
         cmds.menuItem(l="Nelder Mead", rb=False, c=functools.partial(s.set_matcher, match.optim_nelder_mead),
-            ann="Use Nelder Mead Optimizer.")
+            ann="Use Nelder Mead Optimizer. Typically faster. Feel free to experiment with all algorithms.")
         s.set_matcher(match.optim_adam) # Set default matcher
 
         try:
