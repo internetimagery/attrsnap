@@ -44,25 +44,36 @@ def load(file_path):
     with open(file_path, "r") as f:
         return [Template(**d) for d in json.load(f)]
 
-class CacheAttr(element.Attribute):
+class WrapAttr(element.Attribute):
     """ Attribute wrapper with caching and metrics """
     def __init__(s, *args, **kwargs):
         s._cache = None
         s._num_calls = 0
-        super(CacheAttr, s).__init__(*args, **kwargs)
+        super(WrapAttr, s).__init__(*args, **kwargs)
     def clear_cache(s):
         s._cache = None
     def get_value(s):
         if s._cache is None:
             s._num_calls += 1
-            s._cache = super(CacheAttr, s).get_value()
+            s._cache = super(WrapAttr, s).get_value()
         return s._cache
     def set_value(s, val):
-        super(CacheAttr, s).set_value(val)
+        super(WrapAttr, s).set_value(val)
         s._num_calls += 1
         s._cache = val
     def get_calls(s):
         return s._num_calls
+
+class WrapMarkerSet(element.Marker_Set):
+    def __init__(s, *args, **kwargs):
+        s._num_calls = 0
+        super(WrapMarkerSet, s).__init__(*args, **kwargs)
+    def get_pos_distance(s, *args, **kwargs):
+        s._num_calls += 1
+        return super(WrapMarkerSet, s).get_pos_distance(*args, **kwargs)
+    def get_rot_distance(s, *args, **kwargs):
+        s._num_calls += 1
+        return super(WrapMarkerSet, s).get_rot_distance(*args, **kwargs)
 
 class Template(object):
     """ Hold information, for transfer """
@@ -79,8 +90,8 @@ class Group(object):
         s.num_calls = 0 # Track number of calls to "get_distance"
         s.name = template.name
         s.match_type = template.match_type
-        s.markers = [element.Marker_Set(*a) for a in template.markers]
-        s.attributes = [CacheAttr(**a) for a in template.attributes]
+        s.markers = [WrapMarkerSet(*a) for a in template.markers]
+        s.attributes = [WrapAttr(**a) for a in template.attributes]
 
     def clear_cache(s):
         """ Clear up cached data """
