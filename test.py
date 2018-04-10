@@ -49,3 +49,4 @@ def main():
         assert abs(x1-x2) < 1e-3
         assert abs(z1-z2) < 1e-3
         cmds.group([curve.curve, m1, m2, m3], n="Grp_%s" % matcher.__name__)
+    print "="*20
