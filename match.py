@@ -318,7 +318,8 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
     total_calls = 0 # track total distance calls for reference
 
     yield 0.0 # Kick us off
-    for i in range(int((end_frame - start_frame) / sub_frame)+1):
+    frames = int((end_frame - start_frame) / sub_frame) + 1
+    for i in range(frames):
         frame = i * sub_frame + start_frame
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
@@ -329,6 +330,7 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
                 progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step
             grp.keyframe(snapshot.vals)
+    calls = sum(a.get_calls() for a in grps)
     print("Match complete. Took,", time.time() - start_time)
-    print("Used %s calls." % sum(a.get_calls() for a in grps))
+    print("Used %s calls. %s calls per frame." % (calls, calls and frames / calls))
     yield 1.0
