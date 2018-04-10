@@ -45,7 +45,7 @@ def load(file_path):
         return [Template(**d) for d in json.load(f)]
 
 class WrapAttr(element.Attribute):
-    """ Attribute wrapper with caching and metrics """
+    """ Attribute wrapper with caching, metrics and allowing out of bounds."""
     def __init__(s, *args, **kwargs):
         s._cache = None
         s._num_calls = 0
@@ -58,9 +58,9 @@ class WrapAttr(element.Attribute):
             s._cache = super(WrapAttr, s).get_value()
         return s._cache
     def set_value(s, val):
-        super(WrapAttr, s).set_value(val)
         s._num_calls += 1
         s._cache = val
+        super(WrapAttr, s).set_value(s.min if val < s.min else s.max if val > s.max else val)
     def get_calls(s):
         return s._num_calls
 
@@ -117,7 +117,7 @@ class Group(object):
 
     def set_values(s, vals):
         """ Set a list of values to each attribute """
-        for attr, new_val in izip(s.attributes, s.bounds(vals)):
+        for attr, new_val in izip(s.attributes, vals):
             attr.set_value(new_val)
 
     def get_bias(s):
@@ -130,9 +130,8 @@ class Group(object):
     def get_distance(s, log=math.log):
         """ Calculate a distance value from our markers """
         # Increase distance cost if out of bounds.
-        # cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
-        #     for b, c in izip((a.get_value() for a in s.attributes), s.attributes))
-        cost = 0
+        cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
+            for b, c in izip((a.get_value() for a in s.attributes), s.attributes))
 
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
