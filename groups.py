@@ -75,6 +75,8 @@ class WrapMarkerSet(element.Marker_Set):
     def get_rot_distance(s, *args, **kwargs):
         s._num_calls += 1
         return super(WrapMarkerSet, s).get_rot_distance(*args, **kwargs)
+    def get_calls(s):
+        return s._num_calls
 
 class Template(object):
     """ Hold information, for transfer """
@@ -101,7 +103,9 @@ class Group(object):
 
     def get_calls(s):
         """ Return number of calls to host system """
-        return sum(a.get_calls() for a in s.attributes)
+        calls = sum(a.get_calls() for a in s.attributes)
+        calls += sum(a.get_calls() for a in s.markers)
+        return calls
 
     def get_name(s):
         """ Useful for debugging """
