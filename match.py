@@ -268,9 +268,6 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
         momentum = momentum*resistance + gradient.mul(bias)*(1-resistance)
         velocity = velocity*friction + gradient.square()*(1-friction)
         curr_values += momentum*-rate / velocity.sqrt()
-        # TODO: Make this not nessisary...
-        momentum = Vector(group.bounds(momentum))
-        curr_values = Vector(group.bounds(curr_values))
 
     if debug:
         print("Finished after {} steps".format(i))
