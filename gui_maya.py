@@ -450,7 +450,6 @@ class Window(object):
         s.idle = True
         s.tabs = []
         s.group_index = 0
-        s.matcher = match.optim_nelder_mead
         name = "attrsnap"
         if cmds.window(name, q=True, ex=True):
             cmds.deleteUI(name)
@@ -481,11 +480,13 @@ class Window(object):
             ann="Run retaget tool filtering only missing objects.")
         cmds.menuItem(l="Retarget", c=s.retarget,
             ann="Run retaget tool.")
-        cmds.menu(l="Matcher",
-            ann="Choose a matching algorithm.")
+        cmds.menu(l="Optimizer")
         cmds.radioMenuItemCollection()
-        cmds.menuItem(l="Nelder Mead", rb=True, functools.partial(s.set_matcher, match.optim_nelder_mead)
-        cmds.menuItem(l="Adam", rb=False, functools.partial(s.set_matcher, match.optim_adam)
+        cmds.menuItem(l="Adam", rb=True, c=functools.partial(s.set_matcher, match.optim_adam),
+            ann="Use Adam Optimizer.")
+        cmds.menuItem(l="Nelder Mead", rb=False, c=functools.partial(s.set_matcher, match.optim_nelder_mead),
+            ann="Use Nelder Mead Optimizer. (Experimental)")
+        s.set_matcher(match.optim_adam) # Set default matcher
 
         try:
             s.tab_grp = cmds.tabLayout(
@@ -531,6 +532,7 @@ class Window(object):
 
     def set_matcher(s, matcher, *_):
         """ Update matcher to selected """
+        print("Matcher set to \"%s\"." % matcher.__name__)
         s.matcher = matcher
 
     def fix(s, *_):

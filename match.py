@@ -126,7 +126,7 @@ def form_heirarchy(grps):
     return new_sorted_grp
 
 
-def optim_nelder_mead(group, step=0.1, limit=200, threshold=10e-6, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
+def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
     """ Search using Nelder Mead Optimization """
 
     # Initial values

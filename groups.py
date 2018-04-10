@@ -91,7 +91,7 @@ class Group(object):
 
     def keyframe(s, values):
         """ Set a bunch of keyframes for each attribute """
-        for at, val in zip(s.attributes, values):
+        for at, val in zip(s.attributes, s.bounds(values)):
             at.key(val)
 
     def shift(s, step=0.001):
