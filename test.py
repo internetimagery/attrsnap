@@ -36,7 +36,7 @@ def main():
         cmds.autoKeyframe(state=False)
         print "="*20
         print "Running", matcher.__name__
-        for prog in match.match([template], matcher=matcher, end_frame=120):
+        for prog in match.match([template], matcher=matcher, start_frame=1, end_frame=120):
             n1 = grp.markers[0].node1.get_position()
             n2 = grp.markers[0].node2.get_position()
             curve.add([n2[0], (n2-n1).length() ,n2[2]])
