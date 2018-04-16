@@ -46,7 +46,7 @@ def main():
         # print(x1, z1)
         # print(x2, z2)
         print "Accuracy", (x1 - x2) + (z1 - z2)
-        assert abs(x1-x2) < 1e-3
-        assert abs(z1-z2) < 1e-3
+        assert abs(x1-x2) < 1e-3, "Expected %s. Was %s" % (x1, x2)
+        assert abs(z1-z2) < 1e-3, "Expected %s. Was %s" % (z1, z2)
         cmds.group([curve.curve, m1, m2, m3], n="Grp_%s" % matcher.__name__)
     print "="*20

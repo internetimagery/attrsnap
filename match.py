@@ -173,6 +173,7 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
 
         # Check if we're better off.
         if best < prev_best - threshold:
+            print("IMPROVED")
             no_improv = 0
             prev_best = best
             yield simplex[0]
@@ -180,6 +181,7 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
             no_improv += 1
         # Check if we haven't improved in a while...
         if no_improv >= no_improv_break:
+            print("NO IMPROVE")
             break
 
         # Center of the search area!
@@ -216,14 +218,13 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
             continue
 
         # Reduction
-        worst = simplex[0].vals
-        new_record = []
+        best = simplex[0].vals
+        new_simplex = []
         for vals in simplex:
-            vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, worst)]
+            vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, best)]
             group.set_values(vals_redux)
-            dist_redux = group.get_distance()
-            new_record.append(Snapshot(dist=dist_redux, vals=vals_redux))
-        simplex = new_record
+            new_simplex.append(Snapshot(dist=group.get_distance(), vals=vals_redux))
+        simplex = new_simplex
 
     # Done!
     yield simplex[0]
