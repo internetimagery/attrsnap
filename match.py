@@ -155,27 +155,27 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
 
     # Initial values
     no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
-    record = [Snapshot(dist=prev_best, vals=start_vals)]
-    yield record[0]
+    simplex = [Snapshot(dist=prev_best, vals=start_vals)]
+    yield simplex[0]
     for i in xrange(num_attrs):
         vals = list(start_vals[:])
         vals[i] += step
         group.set_values(vals)
-        record.append(Snapshot(dist=group.get_distance(), vals=vals))
+        simplex.append(Snapshot(dist=group.get_distance(), vals=vals))
 
 
     # Start walking!
     for _ in xrange(limit):
 
         # Sort recorded values. Keep track of best.
-        record.sort(key=lambda x: x.dist)
-        best = record[0].dist
+        simplex.sort(key=lambda x: x.dist)
+        best = simplex[0].dist
 
         # Check if we're better off.
         if best < prev_best - threshold:
             no_improv = 0
             prev_best = best
-            yield record[0]
+            yield simplex[0]
         else:
             no_improv += 1
         # Check if we haven't improved in a while...
@@ -184,49 +184,49 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
 
         # Center of the search area!
         center = [0.0] * num_attrs
-        for val in record[:-1]: # Ignoring one point
+        for val in simplex[:-1]: # Ignoring one point
             for i, cen in enumerate(val.vals):
-                center[i] += cen / (len(record)-1)
+                center[i] += cen / (num_attrs-1)
 
         # Reflection
-        val_refl = [a + alpha * (a - b) for a, b in izip(center, record[-1].vals)]
+        val_refl = [a + alpha * (a - b) for a, b in izip(center, simplex[-1].vals)]
         group.set_values(val_refl)
         dist_refl = group.get_distance()
-        if record[0].dist <= dist_refl < record[-2].dist:
-            del record[-1]
-            record.append(Snapshot(dist=dist_refl, vals=val_refl))
+        if simplex[0].dist <= dist_refl < simplex[-2].dist:
+            del simplex[-1]
+            simplex.append(Snapshot(dist=dist_refl, vals=val_refl))
             continue
 
         # Expansion
-        if dist_refl < record[0].dist:
-            val_exp = [a + gamma * (a - b) for a, b in izip(center, record[-1].vals)]
+        if dist_refl < simplex[0].dist:
+            val_exp = [a + gamma * (a - b) for a, b in izip(center, simplex[-1].vals)]
             group.set_values(val_exp)
             dist_exp = group.get_distance()
-            del record[-1]
-            record.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
+            del simplex[-1]
+            simplex.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
             continue
 
         # Contraction
-        val_cont = [a + rho * (a - b) for a, b in izip(center, record[-1].vals)]
+        val_cont = [a + rho * (a - b) for a, b in izip(center, simplex[-1].vals)]
         group.set_values(val_cont)
         dist_cont = group.get_distance()
-        if dist_cont < record[-1].dist:
-            del record[-1]
-            record.append(Snapshot(dist=dist_cont, vals=val_cont))
+        if dist_cont < simplex[-1].dist:
+            del simplex[-1]
+            simplex.append(Snapshot(dist=dist_cont, vals=val_cont))
             continue
 
         # Reduction
-        best = record[0].vals
+        worst = simplex[0].vals
         new_record = []
-        for vals in record:
-            vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, best)]
+        for vals in simplex:
+            vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, worst)]
             group.set_values(vals_redux)
             dist_redux = group.get_distance()
             new_record.append(Snapshot(dist=dist_redux, vals=vals_redux))
-        record = new_record
+        simplex = new_record
 
     # Done!
-    yield record[0]
+    yield simplex[0]
 
 
 
