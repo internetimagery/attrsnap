@@ -150,7 +150,7 @@ def optim_random(group, step=0.01, limit=10, decay=0.1, threshold=1e-8):
 
 
 # https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
-def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_break=10):
+def optim_nelder_mead(group, step=0.01, limit=500, threshold=10e-8, no_improv_break=50):
     """ Search using Nelder Mead Optimization """
 
     # Initial values
@@ -177,11 +177,10 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
             prev_best = best
             yield simplex[0]
         else:
-            pass
-        #     no_improv += 1
-        # # Check if we haven't improved in a while...
-        # if no_improv >= no_improv_break:
-        #     break
+            no_improv += 1
+        # Check if we haven't improved in a while...
+        if no_improv >= no_improv_break:
+            break
 
         # Center of the search area!
         center = [sum(b) / num_attrs for b in izip(*(a.vals for a in simplex[:-1]))]
