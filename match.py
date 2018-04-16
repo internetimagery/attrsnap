@@ -173,7 +173,6 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
 
         # Check if we're better off.
         if best < prev_best - threshold:
-            print("IMPROVED")
             no_improv = 0
             prev_best = best
             yield simplex[0]
@@ -181,14 +180,10 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
             no_improv += 1
         # Check if we haven't improved in a while...
         if no_improv >= no_improv_break:
-            print("NO IMPROVE")
             break
 
         # Center of the search area!
-        center = [0.0] * num_attrs
-        for val in simplex[:-1]: # Ignoring one point
-            for i, cen in enumerate(val.vals):
-                center[i] += cen / (num_attrs-1)
+        center = [sum(b) / num_attrs for b in izip(*(a.vals for a in simplex[:-1]))]
 
         # Reflection
         val_refl = [a + alpha * (a - b) for a, b in izip(center, simplex[-1].vals)]
