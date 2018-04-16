@@ -156,15 +156,14 @@ def optim_nelder_mead(group, step=0.01, limit=500, threshold=10e-8, no_improv_br
     # Initial values
     no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
     simplex = [Snapshot(dist=prev_best, vals=start_vals)]
-    yield simplex[0]
     for i in xrange(num_attrs):
         vals = list(start_vals[:])
         vals[i] += step
         group.set_values(vals)
         simplex.append(Snapshot(dist=group.get_distance(), vals=vals))
 
-
     # Start walking!
+    yield simplex[0]
     for _ in xrange(limit):
 
         # Sort recorded values. Keep track of best.
