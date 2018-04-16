@@ -33,50 +33,6 @@ except NameError:
 
 Snapshot = collections.namedtuple("Snapshot", ["dist", "vals"]) # Single value construct
 
-class Vector(tuple):
-    """ Make vector operations cleaner """
-    __slots__ = ()
-    def __new__(cls, *pos):
-        return tuple.__new__(cls, pos[0] if len(pos) == 1 else pos)
-    def mul(lhs, rhs):
-        return lhs.__class__(a*b for a,b in izip(lhs, rhs))
-    def dot(lhs, rhs, zip=izip):
-        return sum(a*b for a,b in zip(lhs, rhs))
-    def square(s):
-        return s.__class__(a*a for a in s)
-    def length(s):
-        dot = s.dot(s)
-        return dot and (dot ** -0.5) * dot
-    def normalize(s):
-        mag = s.length()
-        return s.__class__(mag and a/mag for a in s)
-    def sqrt(s):
-        return s.__class__(a if a <=0 else (a ** -0.5)*a for a in s)
-    def __add__(lhs, rhs, zip=izip):
-        return lhs.__class__(a+b for a,b in zip(lhs, rhs))
-    def __radd__(rhs, lhs):
-        return rhs.__add__(lhs)
-    def __sub__(lhs, rhs, rev=False, zip=izip):
-        return lhs.__class__(a-b for a,b in zip(*(rhs, lhs) if rev else (lhs, rhs)))
-    def __rsub__(rhs, lhs):
-        return rhs.__sub__(rhs, lhs, True)
-    def __div__(lhs, rhs, rev=False, zip=izip):
-        return lhs.__class__(b and a/b for a,b in zip(*(rhs, lhs) if rev else (lhs, rhs)))
-    def __rdiv__(rhs, lhs):
-        return rhs.__sub__(rhs, lhs, True)
-    def __truediv__(lhs, rhs):
-        return lhs.__div__(rhs)
-    def __rtruediv__(rhs, lhs):
-        return rhs.__div__(lhs, True)
-    def __mul__(lhs, rhs, rev=False):
-        lhs, rhs = (rhs, lhs) if rev else (lhs, rhs)
-        try: # Scalar
-            return lhs.__class__(a*rhs for a in lhs)
-        except TypeError: # Dot product
-            return lhs.dot(rhs)
-    def __rmul__(rhs, lhs):
-        return rhs.__mul__(lhs, True)
-
 def form_heirarchy(grps):
     """ Sort groups into an efficient heirarchy """
     cache_dist = {g: g.get_distance() for g in grps} # Keep track of distance values
@@ -239,10 +195,10 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
 
 
     # Initialize variables
-    bias = Vector(group.get_bias())
-    velocity = momentum = Vector([0]*len(group))
+    bias = group.get_bias()
+    velocity = momentum = [0]*len(group)
     prev_dist = closest_dist = group.get_distance()
-    curr_values = closest_values = Vector(group.get_values())
+    curr_values = closest_values = group.get_values()
 
     yield Snapshot(dist=closest_dist, vals=closest_values)
 
@@ -257,8 +213,8 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
             rate *= 0.5
             resistance *= 0.5
             friction *= 0.5
-            velocity *= 0.5
-            momentum *= 0.5
+            velocity = [a*0.5 for a in velocity]
+            momentum = [a*0.5 for a in momentum]
         prev_dist = dist
 
         # Check if we are closer than ever before.
@@ -276,18 +232,21 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
             break
 
         # Check if we are sitting on a flat plateau.
-        gradient = Vector(group.get_gradient(rate*0.01))
-        if i and (gradient - prev_gradient).length() < 0.0000001:
-            if debug:
-                print("Gradient flat. Done.")
-            break
+        gradient = group.get_gradient(rate*0.01)
+        if i:
+            grad_diff = (a - b for a, b in izip(gradient, prev_gradient))
+            mag = sum(a*a for a in grad_diff)
+            length = mag and (mag ** -0.5) * mag
+            if length < 0.0000001:
+                if debug: print("Gradient flat. Done.")
+                break
         prev_gradient = gradient
 
         # Calculate our path
-        momentum = momentum*resistance + gradient.mul(bias)*(1-resistance)
-        velocity = velocity*friction + gradient.square()*(1-friction)
-        curr_values += momentum*-rate / velocity.sqrt()
-        momentum = Vector(group.bounds(momentum))
+        momentum = [a*resistance + b*c*(1-resistance) for a, b, c in izip(momentum, gradient, bias)]
+        velocity = [a*friction + b*b*(1-friction) for a, b in izip(velocity, gradient)]
+        curr_values = [a + b*-rate / (c if c <=0 else ((c ** -0.5)*c)) for a, b, c in izip(curr_values, momentum, velocity)]
+        momentum = group.bounds(momentum)
 
     if debug:
         print("Finished after {} steps".format(i))
