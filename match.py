@@ -236,7 +236,7 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
         if i:
             mag = sum(c*c for c in (a - b for a, b in izip(gradient, prev_gradient)))
             length = mag and (mag ** -0.5) * mag
-            if length < 0.0000001:
+            if length < 1e-8:
                 if debug: print("Gradient flat. Done.")
                 break
         prev_gradient = gradient
