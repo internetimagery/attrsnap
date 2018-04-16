@@ -150,7 +150,7 @@ def optim_random(group, step=0.01, limit=10, decay=0.1, threshold=1e-8):
 
 
 # https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
-def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_break=10, alpha=1.0, gamma=2.0, rho=-0.5, sigma=0.5):
+def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_break=10):
     """ Search using Nelder Mead Optimization """
 
     # Initial values
@@ -171,22 +171,23 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
         simplex.sort(key=lambda x: x.dist)
         best = simplex[0].dist
 
-        # Check if we're better off.
+        # # Check if we're better off.
         if best < prev_best - threshold:
             no_improv = 0
             prev_best = best
             yield simplex[0]
         else:
-            no_improv += 1
-        # Check if we haven't improved in a while...
-        if no_improv >= no_improv_break:
-            break
+            pass
+        #     no_improv += 1
+        # # Check if we haven't improved in a while...
+        # if no_improv >= no_improv_break:
+        #     break
 
         # Center of the search area!
         center = [sum(b) / num_attrs for b in izip(*(a.vals for a in simplex[:-1]))]
 
         # Reflection
-        val_refl = [a + alpha * (a - b) for a, b in izip(center, simplex[-1].vals)]
+        val_refl = [a + (a - b) for a, b in izip(center, simplex[-1].vals)]
         group.set_values(val_refl)
         dist_refl = group.get_distance()
         if simplex[0].dist <= dist_refl < simplex[-2].dist:
@@ -196,7 +197,7 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
 
         # Expansion
         if dist_refl < simplex[0].dist:
-            val_exp = [a + gamma * (a - b) for a, b in izip(center, simplex[-1].vals)]
+            val_exp = [a + 2 * (a - b) for a, b in izip(center, simplex[-1].vals)]
             group.set_values(val_exp)
             dist_exp = group.get_distance()
             del simplex[-1]
@@ -204,7 +205,7 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
             continue
 
         # Contraction
-        val_cont = [a + rho * (a - b) for a, b in izip(center, simplex[-1].vals)]
+        val_cont = [a + -0.5 * (a - b) for a, b in izip(center, simplex[-1].vals)]
         group.set_values(val_cont)
         dist_cont = group.get_distance()
         if dist_cont < simplex[-1].dist:
@@ -216,7 +217,7 @@ def optim_nelder_mead(group, step=0.01, limit=200, threshold=10e-8, no_improv_br
         best = simplex[0].vals
         new_simplex = []
         for vals in simplex:
-            vals_redux = [b + sigma * (a - b) for a, b in izip(vals.vals, best)]
+            vals_redux = [b + 0.5 * (a - b) for a, b in izip(vals.vals, best)]
             group.set_values(vals_redux)
             new_simplex.append(Snapshot(dist=group.get_distance(), vals=vals_redux))
         simplex = new_simplex
