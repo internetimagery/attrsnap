@@ -482,13 +482,13 @@ class Window(object):
             ann="Run retaget tool.")
         cmds.menu(l="Matching Algorithm")
         cmds.radioMenuItemCollection()
-        cmds.menuItem(l="Nelder Mead", rb=True, c=functools.partial(s.set_matcher, match.optim_nelder_mead),
+        cmds.menuItem(l="Nelder Mead", rb=False, c=functools.partial(s.set_matcher, match.optim_nelder_mead),
             ann="Use Nelder Mead Optimizer.")
-        cmds.menuItem(l="Adam", rb=False, c=functools.partial(s.set_matcher, match.optim_adam),
+        cmds.menuItem(l="Adam", rb=True, c=functools.partial(s.set_matcher, match.optim_adam),
             ann="Use Adam Optimizer.")
         cmds.menuItem(l="Random", rb=False, c=functools.partial(s.set_matcher, match.optim_random),
             ann="Use Random Optimizer.")
-        s.set_matcher(match.optim_nelder_mead) # Set default matcher
+        s.set_matcher(match.optim_adam) # Set default matcher
 
         try:
             s.tab_grp = cmds.tabLayout(
