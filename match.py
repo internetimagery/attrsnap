@@ -234,8 +234,7 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
         # Check if we are sitting on a flat plateau.
         gradient = group.get_gradient(rate*0.01)
         if i:
-            grad_diff = (a - b for a, b in izip(gradient, prev_gradient))
-            mag = sum(a*a for a in grad_diff)
+            mag = sum(c*c for c in (a - b for a, b in izip(gradient, prev_gradient)))
             length = mag and (mag ** -0.5) * mag
             if length < 0.0000001:
                 if debug: print("Gradient flat. Done.")
