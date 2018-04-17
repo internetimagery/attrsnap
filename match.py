@@ -112,70 +112,73 @@ def optim_nelder_mead(group, step=0.01, limit=500):
     # Initial values
     no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
     simplex = [Snapshot(dist=prev_best, vals=start_vals)]
-    for i in xrange(num_attrs):
-        vals = list(start_vals[:])
-        vals[i] += step
-        group.set_values(vals)
-        simplex.append(Snapshot(dist=group.get_distance(), vals=vals))
 
     # Start walking!
     yield simplex[0]
-    for _ in xrange(limit):
+    # for _ in xrange(2): # restart once to ensure we're good.
+    for _ in xrange(1): # restart once to ensure we're good.
+        # Build our shape
+        simplex = simplex[:1]
+        for i in xrange(num_attrs):
+            vals = list(simplex[0].vals[:])
+            vals[i] += step
+            group.set_values(vals)
+            simplex.append(Snapshot(dist=group.get_distance(), vals=vals))
+        for _ in xrange(limit):
+            # Sort recorded values. Keep track of best.
+            simplex.sort(key=lambda x: x.dist)
+            best = simplex[0].dist
 
-        # Sort recorded values. Keep track of best.
-        simplex.sort(key=lambda x: x.dist)
-        best = simplex[0].dist
+            # Update if we're better off.
+            if best < prev_best:
+                prev_best = best
+                yield simplex[0]
 
-        # Update if we're better off.
-        if best < prev_best:
-            prev_best = best
-            yield simplex[0]
+            # Check if we're not getting any closer.
+            # 1e-10 low quality, faster
+            # 1e-15 higher quality, slower
+            if simplex[-1].dist - simplex[0].dist < 1e-10:
+            # if simplex[-1].dist - simplex[0].dist < 1e-15:
+                break
 
-        # Check if we're not getting any closer.
-        # 1e-10 low quality, faster
-        # 1e-15 higher quality, slower
-        if simplex[-1].dist - simplex[0].dist < 1e-10:
-        # if simplex[-1].dist - simplex[0].dist < 1e-15:
-            break
+            # Pivot of the search area.
+            center = [sum(b) / num_attrs for b in izip(*(a.vals for a in simplex[:-1]))]
 
-        # Pivot of the search area.
-        center = [sum(b) / num_attrs for b in izip(*(a.vals for a in simplex[:-1]))]
+            # Reflection
+            val_refl = [a + (a - b) for a, b in izip(center, simplex[-1].vals)]
+            group.set_values(val_refl)
+            dist_refl = group.get_distance()
+            if simplex[0].dist <= dist_refl < simplex[-2].dist:
+                del simplex[-1]
+                simplex.append(Snapshot(dist=dist_refl, vals=val_refl))
+                continue
 
-        # Reflection
-        val_refl = [a + (a - b) for a, b in izip(center, simplex[-1].vals)]
-        group.set_values(val_refl)
-        dist_refl = group.get_distance()
-        if simplex[0].dist <= dist_refl < simplex[-2].dist:
-            del simplex[-1]
-            simplex.append(Snapshot(dist=dist_refl, vals=val_refl))
-            continue
+            # Expansion
+            if dist_refl < simplex[0].dist:
+                val_exp = [a + 2 * (a - b) for a, b in izip(center, simplex[-1].vals)]
+                group.set_values(val_exp)
+                dist_exp = group.get_distance()
+                del simplex[-1]
+                simplex.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
+                continue
 
-        # Expansion
-        if dist_refl < simplex[0].dist:
-            val_exp = [a + 2 * (a - b) for a, b in izip(center, simplex[-1].vals)]
-            group.set_values(val_exp)
-            dist_exp = group.get_distance()
-            del simplex[-1]
-            simplex.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
-            continue
+            # Contraction
+            val_cont = [a + -0.5 * (a - b) for a, b in izip(center, simplex[-1].vals)]
+            group.set_values(val_cont)
+            dist_cont = group.get_distance()
+            if dist_cont < simplex[-1].dist:
+                del simplex[-1]
+                simplex.append(Snapshot(dist=dist_cont, vals=val_cont))
+                continue
 
-        # Contraction
-        val_cont = [a + -0.5 * (a - b) for a, b in izip(center, simplex[-1].vals)]
-        group.set_values(val_cont)
-        dist_cont = group.get_distance()
-        if dist_cont < simplex[-1].dist:
-            del simplex[-1]
-            simplex.append(Snapshot(dist=dist_cont, vals=val_cont))
-            continue
-
-        # Reduction
-        best = simplex[0].vals
-        new_simplex = []
-        for vals in simplex:
-            vals_redux = [b + 0.5 * (a - b) for a, b in izip(vals.vals, best)]
-            group.set_values(vals_redux)
-            new_simplex.append(Snapshot(dist=group.get_distance(), vals=vals_redux))
-        simplex = new_simplex
+            # Reduction
+            best = simplex[0].vals
+            new_simplex = []
+            for vals in simplex:
+                vals_redux = [b + 0.5 * (a - b) for a, b in izip(vals.vals, best)]
+                group.set_values(vals_redux)
+                new_simplex.append(Snapshot(dist=group.get_distance(), vals=vals_redux))
+            simplex = new_simplex
 
     # Done!
     yield simplex[0]
