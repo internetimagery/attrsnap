@@ -131,8 +131,11 @@ def optim_nelder_mead(group, step=0.01, limit=500):
             prev_best = best
             yield simplex[0]
 
-        bbox = (abs(max(b) - min(b)) for b in izip(*(a.vals for a in simplex)))
-        if reduce(lambda x,y: x*y, bbox) < 1e-15:
+        # Check if we're not getting any closer.
+        # 1e-10 low quality, faster
+        # 1e-15 higher quality, slower
+        if simplex[-1].dist - simplex[0].dist < 1e-10:
+        # if simplex[-1].dist - simplex[0].dist < 1e-15:
             break
 
         # Pivot of the search area.
