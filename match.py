@@ -82,7 +82,7 @@ def form_heirarchy(grps):
                 new_sorted_grp.append(prev_grp)
     return new_sorted_grp
 
-def optim_random(group, step=0.01, limit=10, decay=0.1, threshold=1e-8):
+def optim_random(group, step=0.01, limit=10, threshold=1e-8):
     """ Optimize using random samples. """
     best = Snapshot(dist=group.get_distance(), vals=group.get_values())
     num_attrs = len(group)
@@ -91,22 +91,23 @@ def optim_random(group, step=0.01, limit=10, decay=0.1, threshold=1e-8):
     while True:
         prev_best = best
         for _ in xrange(step_limit):
-            candidate = [a + step * random.uniform(-2.0, 2.0) for a in best.vals]
+            candidate = [a + step * random.uniform(-1.0, 1.0) for a in best.vals]
             group.set_values(candidate)
             dist = group.get_distance()
             if dist < best.dist:
                 best = Snapshot(dist=dist, vals=candidate)
+                step *= 2
                 yield best
                 break
         else:
-            step *= decay
+            step *= 0.1
         if step < threshold:
             break
     yield best
 
 
 # https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
-def optim_nelder_mead(group, step=0.01, limit=500):
+def optim_nelder_mead(group, step=0.001, limit=500):
     """ Search using Nelder Mead Optimization """
 
     # Initial values
