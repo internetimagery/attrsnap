@@ -90,6 +90,7 @@ def optim_random(group, step=0.01, limit=10, threshold=1e-8):
     yield best
     while True:
         prev_best = best
+        # Look around at possible steps. Found a better one? Move over there and increase our confidence.
         for _ in xrange(step_limit):
             candidate = [a + step * random.uniform(-1.0, 1.0) for a in best.vals]
             group.set_values(candidate)
