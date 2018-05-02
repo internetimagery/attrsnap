@@ -156,17 +156,17 @@ class Group(object):
                 val -= 2 * step
             attr.set_value(val)
 
-    def get_gradient(s, precision=0.001):
+    def get_gradient(s, precision=0.001, log=math.log):
         """ Get gradient at current position. """
         result = []
-        dist = s.get_distance()
+        dist = s.get_distance(log)
         for attr in s.attributes:
             value = attr.get_value()
             new_val = value + precision
             if new_val > attr.max:
                 new_val = value - precision
             attr.set_value(new_val)
-            new_dist = s.get_distance()
+            new_dist = s.get_distance(log)
             result.append((new_dist - dist) / precision)
             dist = new_dist
         return result

@@ -7,9 +7,8 @@ import match
 def main():
 
     cmds.file(new=True, force=True)
-    for i in range(3):
+    for i in range(1):
         rand = lambda: tuple(random.randrange(-10,10) for _ in range(3))
-
 
         m1, _ = cmds.polySphere()
         m2 = cmds.group(em=True)
@@ -18,14 +17,16 @@ def main():
         cmds.xform(m1, t=rand())
         cmds.xform(m2, t=rand())
         cmds.setAttr(m2 + ".ty", 0)
-        cmds.setAttr(m1 + ".ty", -3)
-        cmds.setAttr(m3 + ".scaleX", 2)
-        cmds.setAttr(m3 + ".scaleZ", 6)
+        cmds.setAttr(m2 + ".tx", 0)
+        cmds.setAttr(m1 + ".tx", 0)
+        cmds.setAttr(m1 + ".ty", 0)
+        # cmds.setAttr(m1 + ".ty", -3)
 
         matcher = [match.optim_adam, match.optim_nelder_mead, match.optim_random][i]
         template = groups.Template(
             markers=[(m1, m2)],
-            attributes=[{"obj": m1, "attr": "tx"}, {"obj": m2, "attr": "tz"}])
+            attributes=[{"obj": m2, "attr": "tz"}])
+            # attributes=[{"obj": m1, "attr": "tx"}, {"obj": m2, "attr": "tz"}])
         grp = groups.Group(template)
 
         n1 = grp.markers[0].node1.get_position()
@@ -35,7 +36,7 @@ def main():
         cmds.autoKeyframe(state=False)
         print "="*20
         print "Running", matcher.__name__
-        for prog in match.match([template], matcher=matcher, start_frame=1, end_frame=120):
+        for prog in match.match([template], matcher=matcher):
             n1 = grp.markers[0].node1.get_position()
             n2 = grp.markers[0].node2.get_position()
             curve.add([n2[0], (n2-n1).length() ,n2[2]])
