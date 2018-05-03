@@ -127,7 +127,7 @@ class Group(object):
         scale = max_bias and 1 / max_bias
         return tuple(a*scale for a in raw_bias)
 
-    def get_distance(s, log=math.log):
+    def get_distance(s, adjust=math.log):
         """ Calculate a distance value from our markers """
         # Increase distance cost if out of bounds.
         cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
@@ -135,10 +135,10 @@ class Group(object):
 
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
-            cost += log(dist if dist > 0 else sys.float_info.min)
+            cost += adjust(dist if dist > 0 else sys.float_info.min)
         elif s.match_type == ROTATION:
             dist = sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
-            cost += log(dist if dist > 0 else sys.float_info.min, 1.2)
+            cost += adjust(dist if dist > 0 else sys.float_info.min, 1.2)
         else:
             raise RuntimeError("Distance type not supported.")
         return cost
@@ -156,17 +156,17 @@ class Group(object):
                 val -= 2 * step
             attr.set_value(val)
 
-    def get_gradient(s, precision=0.001, log=math.log):
+    def get_gradient(s, precision=0.001, adjust=math.log):
         """ Get gradient at current position. """
         result = []
-        dist = s.get_distance(log)
+        dist = s.get_distance(adjust)
         for attr in s.attributes:
             value = attr.get_value()
             new_val = value + precision
             if new_val > attr.max:
                 new_val = value - precision
             attr.set_value(new_val)
-            new_dist = s.get_distance(log)
+            new_dist = s.get_distance(adjust)
             result.append((new_dist - dist) / precision)
             dist = new_dist
         return result

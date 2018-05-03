@@ -257,31 +257,21 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
         print("Finished after {} steps".format(i))
     yield Snapshot(dist=closest_dist, vals=closest_values)
 
-def jump(grp):
+def linear_jump(grp):
     """ Attempt a straight jump towards the goal. Assuming a linear 1:1 attribute:distance ratio.
         If we are closer, begin otimization from this point. Else return to where we were.
-        Return whatever distance we end up at.
     """
-    tmp = lambda x, *_: x
+    linear = lambda x, *_: x # Don't warp our distance. Return it linear.
     old_values = grp.get_values()
-    old_dist = grp.get_distance(tmp)
-    gradient = grp.get_gradient(log=tmp)
-    new_values = [old_dist * 0.9 * b + a for a, b in izip(gradient, old_values)]
+    old_dist = grp.get_distance(adjust=linear)
+    gradient = grp.get_gradient(adjust=linear)
+    new_values = [old_dist * a * -1 + b for a, b in izip(gradient, old_values)]
     grp.set_values(new_values)
-    new_dist = grp.get_distance(tmp)
-    print(":"*20)
-    print("OLD: %s, NEW: %s" % (old_dist, new_dist))
-    print("old_values", old_values)
-    print("old_dist", old_dist)
-    print("gradient", gradient)
-    print("new_values", new_values)
-    print("new_dist", new_dist)
+    new_dist = grp.get_distance(adjust=linear)
     if new_dist < old_dist:
-        print("NEW DIST CLOSER!")
-        print("WAS: %s, NOW: %s" % (old_dist, new_dist))
-    print(":"*20)
-    grp.set_values(old_values)
-    return grp.get_distance()
+        print("Linear jump succeeded.")
+    else:
+        grp.set_values(old_values)
 
 def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, **kwargs):
     """
@@ -308,13 +298,13 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
             grp.clear_cache()
-            total_dist = jump(grp) # Set initial scale for progress updates
+            linear_jump(grp) # Make a quick attempt at linearly shortcutting our way there.
+            total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
                 progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step
             grp.keyframe(snapshot.vals)
-            print("FINAL VALS", snapshot.vals)
     calls = sum(a.get_calls() for a in grps)
     print("Match complete. Took,", time.time() - start_time)
     print("Used %s calls. %s calls per frame." % (calls, frames and calls / frames))
