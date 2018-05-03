@@ -261,7 +261,7 @@ def linear_jump(grp):
     """ Attempt a straight jump towards the goal. Assuming a linear 1:1 attribute:distance ratio.
         If we are closer, begin otimization from this point. Else return to where we were.
     """
-    linear = lambda x, *_: x # Don't warp our distance. Return it linear.
+    linear = lambda x, *_: x # Don't adjust our distance. Return it linear.
     old_values = grp.get_values()
     old_dist = grp.get_distance(adjust=linear)
     gradient = grp.get_gradient(adjust=linear)
@@ -298,7 +298,7 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
             grp.clear_cache()
-            linear_jump(grp) # Make a quick attempt at linearly shortcutting our way there.
+            if not i: linear_jump(grp) # Make a quick attempt at linearly shortcutting our way there.
             total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
