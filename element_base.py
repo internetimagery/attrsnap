@@ -22,10 +22,6 @@ class Attribute(object):
         """ Get current value """
         raise NotImplementedError
 
-    def get_bias(s):
-        """ Get bias value """
-        raise NotImplementedError
-
     def key(s, value):
         """ Keyframe value at current time """
         raise NotImplementedError
