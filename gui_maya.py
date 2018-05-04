@@ -98,15 +98,19 @@ class TextBox(Widget):
     """ Text box full of boxy text! """
     def __init__(s, parent, update, text="", **kwargs):
         Widget.__init__(s, cmds.textFieldGrp, "tx", tx=text, p=parent, tcc=update, bgc=BLACK, h=WIDGET_HEIGHT, **kwargs)
-        s.popup = cmds.popupMenu(p=s.gui, pmc=s.suggestions)
+        help = cmds.popupMenu(p=s.gui)
+        cmds.menuItem(l="Select", p=help, c=lambda _: cmds.select(s.value.split(".",1)[0]),
+            ann="Select the object in the scene.")
+        s.sugg = cmds.menuItem(l="Suggestions", sm=True, p=help, pmc=s.suggestions,
+            ann="Choose an alternate name from a list of similarly named objects.")
 
     def suggestions(s, *_):
         """ Find similarly named items """
-        children = cmds.popupMenu(s.popup, q=True, ia=True)
+        children = cmds.menu(s.sugg, q=True, ia=True)
         if children:
             cmds.deleteUI(children)
         for suggestion in utility.get_suggestion(s.value):
-            cmds.menuItem(l=suggestion, p=s.popup, c=functools.partial(s._set_val, suggestion))
+            cmds.menuItem(l=suggestion, p=s.sugg, c=functools.partial(s._set_val, suggestion))
     def _set_val(s, val, *_): s.value = val # TODO: Make this work with validation.
 
 class Attribute(object):
