@@ -120,13 +120,6 @@ class Group(object):
         for attr, new_val in izip(s.attributes, vals):
             attr.set_value(new_val)
 
-    def get_bias(s):
-        """ Get Bias vector """
-        raw_bias = [a.get_bias() for a in s.attributes]
-        max_bias = max(raw_bias)
-        scale = max_bias and 1 / max_bias
-        return tuple(a*scale for a in raw_bias)
-
     def get_distance(s, adjust=math.log):
         """ Calculate a distance value from our markers """
         # Increase distance cost if out of bounds.

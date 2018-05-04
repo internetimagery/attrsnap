@@ -201,7 +201,6 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
 
 
     # Initialize variables
-    bias = group.get_bias()
     velocity = momentum = [0]*len(group)
     prev_dist = closest_dist = group.get_distance()
     curr_values = closest_values = group.get_values()
@@ -248,7 +247,7 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
         prev_gradient = gradient
 
         # Calculate our path
-        momentum = [a*resistance + b*c*(1-resistance) for a, b, c in izip(momentum, gradient, bias)]
+        momentum = [a*resistance + b*(1-resistance) for a, b in izip(momentum, gradient)]
         velocity = [a*friction + b*b*(1-friction) for a, b in izip(velocity, gradient)]
         curr_values = [a + b*-rate / (1e-20 if c <=0 else ((c ** -0.5)*c)) for a, b, c in izip(curr_values, momentum, velocity)]
         momentum = group.bounds(momentum)

@@ -101,7 +101,7 @@ class TextBox(Widget):
 
 class Attribute(object):
     """ gui for single attribute """
-    def __init__(s, cols, update, delete, attribute="", min_=-9999, max_=9999, bias=1.0):
+    def __init__(s, cols, update, delete, attribute="", min_=-9999, max_=9999):
         s.attr = TextBox(cols[0], update, attribute)
         if utility.valid_attribute(attribute):
             limit = utility.attribute_range(attribute)
@@ -111,8 +111,7 @@ class Attribute(object):
                 max_ = limit[1]
         s.min = FloatBox(cols[1], update, min_)
         s.max = FloatBox(cols[2], update, max_)
-        s.bias = FloatBox(cols[3], update, bias)
-        s.trash = cmds.iconTextButton(p=cols[4], i="removeRenderable.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
+        s.trash = cmds.iconTextButton(p=cols[3], i="removeRenderable.png", st="iconOnly", c=delete, h=WIDGET_HEIGHT)
 
     def validate(s):
         """ Validate attribute exists and values are between limits """
@@ -123,25 +122,23 @@ class Attribute(object):
                 ok = False
             if max_ is not None and not s.max.validate(lambda x: max_ >= x and x > s.min.value):
                 ok = False
-            if not s.bias.validate(lambda x: x >= 0):
-                ok = False
         else:
             ok = False
         return ok
 
     def export(s):
         """ Return representation of data """
-        return s.attr.value, s.min.value, s.max.value, s.bias.value
+        return s.attr.value, s.min.value, s.max.value
 
     def remove(s):
         """ Remove element """
-        cmds.deleteUI([s.trash, s.attr.gui, s.min.gui, s.max.gui, s.bias.gui])
+        cmds.deleteUI([s.trash, s.attr.gui, s.min.gui, s.max.gui])
 
 class Attributes(object):
     """ Gui for attributes """
     def __init__(s, parent, update, attributes=None):
         s.update = update
-        columns = ["Name", "Min", "Max", "Bias", ""]
+        columns = ["Name", "Min", "Max", ""]
         rows = cmds.rowLayout(nc=len(columns), adj=1, p=parent)
         s.cols = []
         for col in columns:
@@ -151,15 +148,15 @@ class Attributes(object):
         s.attributes = []
         for attr in attributes or []:
             name = ".".join((attr["obj"], attr["attr"]))
-            args = [name, attr["min"], attr["max"], attr["bias"]]
+            args = [name, attr["min"], attr["max"]]
             s.add_attribute(*args)
 
-    def add_attribute(s, name, min_=-9999, max_=9999, bias=1.0):
+    def add_attribute(s, name, min_=-9999, max_=9999):
         """ Add a new attribute """
         for attr in s.attributes:
             if name == attr.attr.value:
                 return
-        attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name, min_, max_, bias)
+        attr = Attribute(s.cols, s.update, functools.partial(s.del_attribute, name), name, min_, max_)
         s.attributes.append(attr)
         s.update()
 
@@ -182,9 +179,9 @@ class Attributes(object):
     def export(s):
         """ Send out attributes """
         for at in s.attributes:
-            attr, min_, max_, bias = at.export()
+            attr, min_, max_ = at.export()
             obj, at = attr.rsplit(".", 1)
-            yield {"obj":obj, "attr":at, "min":min_, "max":max_, "bias":bias}
+            yield {"obj":obj, "attr":at, "min":min_, "max":max_}
 
 class Markers(object):
     """ Gui for markers """
