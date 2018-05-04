@@ -31,7 +31,12 @@ def save_prompt(templates):
 
 def get_suggestion(word):
     """ Get suggested object names """
-    return difflib.get_close_matches(word, cmds.ls())
+    parts = word.split(".", 1)
+    objs = difflib.get_close_matches(parts[0], cmds.ls())
+    if len(parts) == 2:
+        attrs = difflib.get_close_matches(parts[1], [b for a in objs for b in cmds.listAttr(a)])
+        objs = sorted(set(c for c in ("%s.%s" % (a,b) for a in objs for b in attrs) if valid_attribute(c)))
+    return objs
 
 def warn(message, popup=False):
     """ Provide a warning """
@@ -69,7 +74,7 @@ def valid_object(obj):
 def valid_attribute(attr):
     """ Check attribute is valid and exists """
     try:
-        return cmds.getAttr(attr, se=True)
+        return cmds.getAttr(attr, se=True) and cmds.getAttr(attr, type=True).startswith("double")
     except ValueError:
         return False
 
