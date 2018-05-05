@@ -17,6 +17,7 @@ import maya.utils as utils
 import maya.cmds as cmds
 import maya.mel as mel
 import collections
+import webbrowser
 import functools
 import threading
 import utility
@@ -499,6 +500,11 @@ class Window(object):
             ann="Use Adam Optimizer.")
         cmds.menuItem(l="Random", rb=False, c=functools.partial(s.set_matcher, match.optim_random),
             ann="Use Random Optimizer.")
+        cmds.menu(l="Help", hm=True)
+        cmds.menuItem(l="Website", c=lambda *_: webbrowser.open("http://internetimagery.com/code/attributesnap"),
+            ann="View tool homepage.")
+        cmds.menuItem(l="Github", c=lambda *_: webbrowser.open("https://github.com/internetimagery/attrsnap"),
+            ann="View project online.")
         s.set_matcher(match.optim_adam) # Set default matcher
 
         try:
