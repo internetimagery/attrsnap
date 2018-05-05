@@ -17,6 +17,7 @@ import maya.mel as mel
 import contextlib
 import difflib
 import groups
+import re
 
 def load_prompt():
     """ Prompt for load path """
@@ -111,6 +112,23 @@ def frame_walk(start, end):
         cmds.currentTime(frame)
         yield frame
     cmds.currentTime(origin)
+
+def move_to(group):
+    """ Quick and dirty hack. Move directly to marker location test. """
+    mapping = {"x":0,"X":0,"y":1,"Y":1,"z":2,"Z":2}
+    attrs = [str(a) for a in group]
+    trn_reg = re.compile(r"(t[xyz]|translate[XYZ])")
+    rot_reg = re.compile(r"(r[xyz]|rotate[XYZ])")
+    translates = [a for a in attrs if trn_reg.match(a.split(".",1)[-1])]
+    rotates = [a for a in attrs if rot_reg.match(a.split(".",1)[-1])]
+    if translates or rotates: # We have an attribute that uses standard translate / rotate. Lets go!
+        old_values = group.get_values()
+        old_dist = group.get_distance() # Record initial distance and values
+
+        for marker in group.markers:
+            marker_pos = cmds.xform(str(marker), q=True, t=True, ws=True)
+            attrs = [a for a in attrs]
+
 
 @contextlib.contextmanager
 def progress():

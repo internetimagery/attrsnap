@@ -297,6 +297,7 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
             grp.clear_cache()
+            if not i: utility.move_to(grp) # Hack for translates and rotates
             if not i: linear_jump(grp) # Make a quick attempt at linearly shortcutting our way there.
             total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist
