@@ -12,6 +12,7 @@
 # FITNESS FOR A PARTICULAR PURPOSE.
 # See the GNU General Public License for more details.
 
+from itertools import izip
 import maya.cmds as cmds
 import maya.mel as mel
 import contextlib
@@ -113,22 +114,29 @@ def frame_walk(start, end):
         yield frame
     cmds.currentTime(origin)
 
-def move_to(group):
+def hacky_snap(grp):
     """ Quick and dirty hack. Move directly to marker location test. """
-    mapping = {"x":0,"X":0,"y":1,"Y":1,"z":2,"Z":2}
-    attrs = [str(a) for a in group]
-    trn_reg = re.compile(r"(t[xyz]|translate[XYZ])")
-    rot_reg = re.compile(r"(r[xyz]|rotate[XYZ])")
-    translates = [a for a in attrs if trn_reg.match(a.split(".",1)[-1])]
-    rotates = [a for a in attrs if rot_reg.match(a.split(".",1)[-1])]
-    if translates or rotates: # We have an attribute that uses standard translate / rotate. Lets go!
-        old_values = group.get_values()
-        old_dist = group.get_distance() # Record initial distance and values
+    prefix = "t" if grp.match_type == groups.POSITION else "r" # This will need to expand if any other matching types are added...
+    attrs = [prefix + a for a in "xyz"]
+    kwargs = {"t":True} if grp.match_type == groups.POSITION else {"ro":True}
+    parts = [b if b in attrs else None for b in (cmds.attributeName(str(a), s=True) for a in grp)]
+    if not any(parts): return False # We don't have any attributes to snap
 
-        for marker in group.markers:
-            marker_pos = cmds.xform(str(marker), q=True, t=True, ws=True)
-            attrs = [a for a in attrs]
+    # Collect information
+    vals = grp.get_values()
+    dist = old_dist = grp.get_distance()
 
+    # Line up corresponding attributes to their markers and test distance.
+    for marker in (b for a in grp.markers for b in a):
+        pos = {a: b for a, b in izip(attrs, cmds.xform(marker, q=True, ws=True, **kwargs))}
+        new_vals = [vals[a] if b is None else pos[b] for a, b in enumerate(parts)]
+        grp.set_values(new_vals)
+        new_dist = grp.get_distance()
+        if new_dist < dist:
+            vals, dist = new_vals, new_dist
+
+    grp.set_values(vals) # Clean up after ourselves.
+    return dist != old_dist
 
 @contextlib.contextmanager
 def progress():
