@@ -132,7 +132,8 @@ def hacky_snap(grp):
         new_vals = [vals[a] if b is None else pos[b] for a, b in enumerate(parts)]
         grp.set_values(new_vals)
         new_dist = grp.get_distance()
-        if new_dist < dist:
+        if not new_dist: return True
+        elif new_dist < dist:
             vals, dist = new_vals, new_dist
 
     grp.set_values(vals) # Clean up after ourselves.

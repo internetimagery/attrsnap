@@ -267,10 +267,9 @@ def linear_jump(grp):
     new_values = [old_dist * a * -1 + b for a, b in izip(gradient, old_values)]
     grp.set_values(new_values)
     new_dist = grp.get_distance(adjust=linear)
-    if new_dist < old_dist:
-        print("Linear jump succeeded.")
-    else:
-        grp.set_values(old_values)
+    if new_dist < old_dist: return True
+    else: grp.set_values(old_values)
+    return False
 
 def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, **kwargs):
     """
@@ -290,15 +289,22 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
 
+    cont_hacky = {a: False for a in grps}
+    cont_linear = {a: False for a in grps}
+
     yield 0.0 # Kick us off
     frames = int((end_frame - start_frame) / sub_frame) + 1
     for i in range(frames):
         frame = i * sub_frame + start_frame
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
-            grp.clear_cache()
-            if not i: utility.hacky_snap(grp) # Hack for translates and rotates
-            if not i: linear_jump(grp) # Make a quick attempt at linearly shortcutting our way there.
+            # grp.clear_cache()
+            if not i or cont_hacky[grp]:
+                cont_hacky[grp] = success = utility.hacky_snap(grp)
+                if success: print("Direct Snap worked.") # Hack for translates and rotates
+            if not i or cont_linear[grp]:
+                cont_linear[grp] = success = linear_jump(grp)
+                if success: print("Linear Jump worked.") # Make a quick attempt at linearly shortcutting our way there.
             total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
