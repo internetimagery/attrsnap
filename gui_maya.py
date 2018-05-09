@@ -500,7 +500,8 @@ class Window(object):
             ann="Use Adam Optimizer.")
         cmds.menuItem(l="Random", rb=False, c=functools.partial(s.set_matcher, match.optim_random),
             ann="Use Random Optimizer.")
-        s.prepos = cmds.menuItem(l="Pre Position", cb=True,
+        cmds.menuItem(d=True)
+        s._prepos = cmds.menuItem(l="Pre Position", cb=True,
             ann="Attempt to position objects using small one-off methods before snapping.")
         cmds.menu(l="Help", hm=True)
         cmds.menuItem(l="Website", c=lambda *_: webbrowser.open("http://internetimagery.com/code/attributesnap"),
@@ -631,7 +632,7 @@ class Window(object):
         """ Run match! Woot """
         if s.idle:
             s.idle = False
-            prepos = cmds.menuItem(s.prepos, q=True, cb=True)
+            prepos = cmds.menuItem(s._prepos, q=True, cb=True)
             valid = [tab.export() for tab in s.tabs if tab.validate() and tab.is_active()]
             num_valid = len(valid)
             if not valid:
