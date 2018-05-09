@@ -271,13 +271,15 @@ def linear_jump(grp):
     else: grp.set_values(old_values)
     return False
 
-def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, **kwargs):
+def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, prepos=True, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
     start_frame (optional). Current frame if not given.
     end_frame (optional). Single frame if not provided else the full range.
     sub_frame (optional). Steps to take. 1.0 default.
+    matcher (optional). Optimizer to use. adam default.
+    prepos (optional). Pre position with small one off attempts to snap the marker before resorting to optimizer. True default.
     """
     start_time = time.time()
     start_frame = float(utility.get_frame()) if start_frame is None else float(start_frame)
@@ -299,12 +301,13 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
         utility.set_frame(frame)
         for j, grp in enumerate(grps):
             # grp.clear_cache()
-            if not i or cont_hacky[grp]:
-                cont_hacky[grp] = success = utility.hacky_snap(grp)
-                if success: print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
-            if not i or cont_linear[grp]:
-                cont_linear[grp] = success = linear_jump(grp)
-                if success: print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
+            if prepos:
+                if not i or cont_hacky[grp]:
+                    cont_hacky[grp] = success = utility.hacky_snap(grp)
+                    if success: print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
+                if not i or cont_linear[grp]:
+                    cont_linear[grp] = success = linear_jump(grp)
+                    if success: print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
             total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
