@@ -132,18 +132,14 @@ def hacky_snap(grp):
     dist = old_dist = grp.get_distance()
     try:
         for marker in (b for a in grp.markers for b in a):
-            print("Marker:", marker)
             # Snap objects to markers
             pos = cmds.xform(marker, q=True, ws=True, m=True)
             for obj in objs: cmds.xform(objs[obj], ws=True, m=pos)
             for attr, obj, at in parts: attr.set_value(cmds.getAttr(objs[obj]+"."+at))
             new_dist = grp.get_distance()
-            if new_dist < dist:
-                dist = new_dist
-                print("IMPROVEMENT!")
-
+            if new_dist < dist: dist, vals = new_dist, grp.get_values()
     finally:
-        if old_dist == dist: grp.set_values(vals) # Reset values
+        grp.set_values(vals) # Reset values
         grp.clear_cache() # Clean up cache, because we've messed with things manually
         cmds.delete(objs.values())
     return old_dist != dist
