@@ -116,15 +116,18 @@ def frame_walk(start, end):
 
 def hacky_snap(grp):
     """ Quick and dirty hack. Move directly to marker location test. """
-    prefix = "t" if grp.match_type == groups.POSITION else "r" # This will need to expand if any other matching types are added...
+    mt = grp.match_type
+    if mt != groups.POSITION and mt != groups.ROTATION:
+        cmds.warning("Hackysnap match type unrecognized.")
+        return False
+    prefix, query = "tt" if mt == groups.POSITION else ("r", "ro") # This will need to expand if any other matching types are added...
     attrs = [prefix + a for a in "xyz"]
-    query = "t" if grp.match_type == groups.POSITION else "ro"
     parts = [b for b in ((a, str(a).split(".",1)[0], cmds.attributeName(str(a), s=True)) for a in grp) if b[2] in attrs] # (attr, "obj", "attr")
     if not any(parts): return False # We don't have any attributes to snap
     objs = {a: None for _, a, _ in parts}
-    for obj in objs: # Create placeholder nulls
+    for i, obj in enumerate(objs): # Create placeholder nulls
         parent = cmds.listRelatives(obj, p=True)
-        objs[obj] = null = cmds.group(em=True, n="delete_me", **({"p":parent} if parent else {}))
+        objs[obj] = null = cmds.group(em=True, n="delete_me_%s" % i, **({"p":parent[0]} if parent else {}))
         cmds.xform(null, roo=cmds.xform(obj, q=True, roo=True))
 
     # Collect information
