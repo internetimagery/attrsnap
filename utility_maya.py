@@ -118,26 +118,35 @@ def hacky_snap(grp):
     """ Quick and dirty hack. Move directly to marker location test. """
     prefix = "t" if grp.match_type == groups.POSITION else "r" # This will need to expand if any other matching types are added...
     attrs = [prefix + a for a in "xyz"]
-    kwargs = {"t":True} if grp.match_type == groups.POSITION else {"ro":True}
-    parts = [b if b in attrs else None for b in (cmds.attributeName(str(a), s=True) for a in grp)]
+    query = "t" if grp.match_type == groups.POSITION else "ro"
+    parts = [b for b in ((a, str(a).split(".",1)[0], cmds.attributeName(str(a), s=True)) for a in grp) if b[2] in attrs] # (attr, "obj", "attr")
     if not any(parts): return False # We don't have any attributes to snap
+    objs = {a: None for _, a, _ in parts}
+    for obj in objs: # Create placeholder nulls
+        parent = cmds.listRelatives(obj, p=True)
+        objs[obj] = null = cmds.group(em=True, n="delete_me", **({"p":parent} if parent else {}))
+        cmds.xform(null, roo=cmds.xform(obj, q=True, roo=True))
 
     # Collect information
     vals = grp.get_values()
     dist = old_dist = grp.get_distance()
+    try:
+        for marker in (b for a in grp.markers for b in a):
+            print("Marker:", marker)
+            # Snap objects to markers
+            pos = cmds.xform(marker, q=True, ws=True, m=True)
+            for obj in objs: cmds.xform(objs[obj], ws=True, m=pos)
+            for attr, obj, at in parts: attr.set_value(cmds.getAttr(objs[obj]+"."+at))
+            new_dist = grp.get_distance()
+            if new_dist < dist:
+                dist = new_dist
+                print("IMPROVEMENT!")
 
-    # Line up corresponding attributes to their markers and test distance.
-    for marker in (b for a in grp.markers for b in a):
-        pos = {a: b for a, b in izip(attrs, cmds.xform(marker, q=True, ws=True, **kwargs))}
-        new_vals = [vals[a] if b is None else pos[b] for a, b in enumerate(parts)]
-        grp.set_values(new_vals)
-        new_dist = grp.get_distance()
-        if not new_dist: return True
-        elif new_dist < dist:
-            vals, dist = new_vals, new_dist
-
-    grp.set_values(vals) # Clean up after ourselves.
-    return dist != old_dist
+    finally:
+        if old_dist == dist: grp.set_values(vals) # Reset values
+        grp.clear_cache() # Clean up cache, because we've messed with things manually
+        cmds.delete(objs.values())
+    return old_dist != dist
 
 @contextlib.contextmanager
 def progress():
