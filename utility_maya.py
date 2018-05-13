@@ -158,6 +158,7 @@ def progress():
         cmds.progressBar(gMainProgressBar, edit=True, progress=val * 100)
 
     err = cmds.undoInfo(openChunk=True)
+    sel = cmds.sets()
     state = cmds.autoKeyframe(q=True, state=True)
     cmds.refresh(suspend=True) # Careful with this. Some depend nodes may not update as expected.
     cmds.autoKeyframe(state=False)
@@ -178,6 +179,8 @@ def progress():
         cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
         cmds.autoKeyframe(state=state)
         cmds.refresh(suspend=False)
+        cmds.select(sel)
+        cmds.delete(sel)
         cmds.undoInfo(closeChunk=True)
         if err:
             cmds.undo()
