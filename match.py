@@ -260,13 +260,12 @@ def linear_jump(grp):
     """ Attempt a straight jump towards the goal. Assuming a linear 1:1 attribute:distance ratio.
         If we are closer, begin otimization from this point. Else return to where we were.
     """
-    linear = lambda x, *_: x # Don't adjust our distance. Return it linear.
     old_values = grp.get_values()
-    old_dist = grp.get_distance(adjust=linear)
-    gradient = grp.get_gradient(adjust=linear)
+    old_dist = grp.get_distance(raw=True)
+    gradient = grp.get_gradient(raw=True)
     new_values = [old_dist * a * -1 + b for a, b in izip(gradient, old_values)]
     grp.set_values(new_values)
-    new_dist = grp.get_distance(adjust=linear)
+    new_dist = grp.get_distance(raw=True)
     if new_dist < old_dist: return True
     else: grp.set_values(old_values)
     return False

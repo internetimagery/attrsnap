@@ -120,7 +120,7 @@ class Group(object):
         for attr, new_val in izip(s.attributes, vals):
             attr.set_value(new_val)
 
-    def get_distance(s, adjust=math.log):
+    def get_distance(s, raw=False, warp=math.log):
         """ Calculate a distance value from our markers """
         # Increase distance cost if out of bounds.
         cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
@@ -128,12 +128,14 @@ class Group(object):
 
         if s.match_type == POSITION:
             dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
-            cost += adjust(dist if dist > 0 else sys.float_info.min)
         elif s.match_type == ROTATION:
             dist = sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
-            cost += adjust(dist if dist > 0 else sys.float_info.min, 1.2)
+            _warp, warp = warp, lambda x: _warp(x, 1.2)
         else:
             raise RuntimeError("Distance type not supported.")
+        if raw:
+            return dist
+        cost += warp(dist if dist > 0 else sys.float_info.min)
         return cost
 
     def keyframe(s, values):
@@ -149,17 +151,17 @@ class Group(object):
                 val -= 2 * step
             attr.set_value(val)
 
-    def get_gradient(s, precision=0.001, adjust=math.log):
+    def get_gradient(s, precision=0.001, raw=False):
         """ Get gradient at current position. """
         result = []
-        dist = s.get_distance(adjust)
+        dist = s.get_distance(raw)
         for attr in s.attributes:
             value = attr.get_value()
             new_val = value + precision
             if new_val > attr.max:
                 new_val = value - precision
             attr.set_value(new_val)
-            new_dist = s.get_distance(adjust)
+            new_dist = s.get_distance(raw)
             result.append((new_dist - dist) / precision)
             dist = new_dist
         return result
