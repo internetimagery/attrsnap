@@ -84,7 +84,7 @@ def form_heirarchy(grps):
 
 def optim_random(group, step=0.01, limit=10, threshold=1e-8):
     """ Optimize using random samples. """
-    best = Snapshot(dist=group.get_distance(), vals=group.get_values())
+    best = group.get_snapshot()
     num_attrs = len(group)
     step_limit = num_attrs * limit
     yield best
@@ -94,9 +94,9 @@ def optim_random(group, step=0.01, limit=10, threshold=1e-8):
         for _ in xrange(step_limit):
             candidate = [a + step * random.uniform(-1.0, 1.0) for a in best.vals]
             group.set_values(candidate)
-            dist = group.get_distance()
-            if dist < best.dist:
-                best = Snapshot(dist=dist, vals=candidate)
+            candidate_snapshot = group.get_snapshot()
+            if candidate_snapshot.dist < best.dist:
+                best = candidate_snapshot
                 step *= 2
                 yield best
                 break
@@ -112,8 +112,8 @@ def optim_nelder_mead(group, step=0.001, limit=500):
     """ Search using Nelder Mead Optimization """
 
     # Initial values
-    no_improv, num_attrs, start_vals, prev_best = 0, len(group), group.get_values(), group.get_distance()
-    simplex = [Snapshot(dist=prev_best, vals=start_vals)]
+    simplex = [group.get_snapshot()]
+    no_improv, num_attrs, prev_best = 0, len(group), simplex[0].warp
 
     # Start walking!
     yield simplex[0]
@@ -125,11 +125,11 @@ def optim_nelder_mead(group, step=0.001, limit=500):
             vals = list(simplex[0].vals[:])
             vals[i] += step
             group.set_values(vals)
-            simplex.append(Snapshot(dist=group.get_distance(), vals=vals))
+            simplex.append(group.get_snapshot())
         for _ in xrange(limit):
             # Sort recorded values. Keep track of best.
-            simplex.sort(key=lambda x: x.dist)
-            best = simplex[0].dist
+            simplex.sort(key=lambda x: x.warp)
+            best = simplex[0].warp
 
             # Update if we're better off.
             if best < prev_best:
@@ -139,7 +139,8 @@ def optim_nelder_mead(group, step=0.001, limit=500):
             # Check if we're not getting any closer.
             # 1e-10 low quality, faster
             # 1e-15 higher quality, slower
-            if simplex[-1].dist - simplex[0].dist < 1e-10:
+            # TODO: Revisit this with linear distance
+            if simplex[-1].warp - simplex[0].warp < 1e-10:
             # if simplex[-1].dist - simplex[0].dist < 1e-15:
                 break
 
@@ -149,28 +150,28 @@ def optim_nelder_mead(group, step=0.001, limit=500):
             # Reflection
             val_refl = [a + (a - b) for a, b in izip(center, simplex[-1].vals)]
             group.set_values(val_refl)
-            dist_refl = group.get_distance()
-            if simplex[0].dist <= dist_refl < simplex[-2].dist:
+            refl = group.get_snapshot()
+            if simplex[0].warp <= refl.warp < simplex[-2].warp:
                 del simplex[-1]
-                simplex.append(Snapshot(dist=dist_refl, vals=val_refl))
+                simplex.append(refl)
                 continue
 
             # Expansion
-            if dist_refl < simplex[0].dist:
+            if refl.warp < simplex[0].warp:
                 val_exp = [a + 2 * (a - b) for a, b in izip(center, simplex[-1].vals)]
                 group.set_values(val_exp)
-                dist_exp = group.get_distance()
+                exp = group.get_snapshot()
                 del simplex[-1]
-                simplex.append(Snapshot(dist=dist_exp, vals=val_exp) if dist_exp < dist_refl else Snapshot(dist=dist_refl, vals=val_refl))
+                simplex.append(exp if exp.warp < relf.warp else refl)
                 continue
 
             # Contraction
             val_cont = [a + -0.5 * (a - b) for a, b in izip(center, simplex[-1].vals)]
             group.set_values(val_cont)
-            dist_cont = group.get_distance()
-            if dist_cont < simplex[-1].dist:
+            cont = group.get_snapshot()
+            if cont.warp < simplex[-1].warp:
                 del simplex[-1]
-                simplex.append(Snapshot(dist=dist_cont, vals=val_cont))
+                simplex.append(cont)
                 continue
 
             # Reduction
@@ -179,7 +180,7 @@ def optim_nelder_mead(group, step=0.001, limit=500):
             for vals in simplex:
                 vals_redux = [b + 0.5 * (a - b) for a, b in izip(vals.vals, best)]
                 group.set_values(vals_redux)
-                new_simplex.append(Snapshot(dist=group.get_distance(), vals=vals_redux))
+                new_simplex.append(group.get_snapshot())
             simplex = new_simplex
 
     # Done!
@@ -202,32 +203,31 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
 
     # Initialize variables
     velocity = momentum = [0]*len(group)
-    prev_dist = closest_dist = group.get_distance()
-    curr_values = closest_values = group.get_values()
+    prev = closest = group.get_snapshot()
+    curr_values = closest.vals
 
-    yield Snapshot(dist=closest_dist, vals=closest_values)
+    yield closest
 
     # GO!
     for i in xrange(limit):
         group.set_values(curr_values)
+        current = group.get_snapshot()
 
         # Check if we have overshot our target.
         # If so, reduce our sample rate and our momentum, so we can turn faster.
-        dist = group.get_distance()
-        if dist > prev_dist:
+        if current.warp > prev.warp:
             rate *= 0.5
             resistance *= 0.5
             friction *= 0.5
             velocity = [a*0.5 for a in velocity]
             momentum = [a*0.5 for a in momentum]
-        prev_dist = dist
+        prev = current
 
         # Check if we are closer than ever before.
         # Record it if so.
-        if dist < closest_dist:
-            closest_dist = dist
-            closest_values = curr_values
-            yield Snapshot(dist=closest_dist, vals=closest_values)
+        if current.warp < closest.warp:
+            closest = current
+            yield closest
 
         # Check if we are stable enough to stop.
         # If rate is low enough we're not going to move anywhere anyway...
@@ -254,17 +254,17 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
 
     if debug:
         print("Finished after {} steps".format(i))
-    yield Snapshot(dist=closest_dist, vals=closest_values)
+    yield closest
 
 def linear_jump(grp):
     """ Attempt a straight jump towards the goal. Assuming a linear 1:1 attribute:distance ratio.
         If we are closer, begin otimization from this point. Else return to where we were.
     """
-    old_snapshot = Snapshot(dist=grp.get_distance(raw=True), vals=grp.get_values())
+    old_snapshot = grp.get_snapshot()
     gradient = grp.get_gradient(raw=True)
     new_values = [old_snapshot.dist * a * -1 + b for a, b in izip(gradient, old_snapshot.vals)]
     grp.set_values(new_values)
-    new_snapshot = Snapshot(dist=grp.get_distance(raw=True), vals=new_values)
+    new_snapshot = grp.get_snapshot()
     if new_snapshot.dist < old_snapshot.dist: return new_snapshot
     else: grp.set_values(old_snapshot.vals)
     return None

@@ -13,6 +13,7 @@
 # See the GNU General Public License for more details.
 
 from __future__ import print_function, division
+import collections
 import element
 import json
 import math
@@ -25,6 +26,8 @@ except NameError:
 
 POSITION = 0
 ROTATION = 1
+
+Snapshot = collections.namedtuple("Snapshot", ["dist", "vals", "warp"])
 
 def save(templates, file_path):
     """ Export a list of groups into a file """
@@ -120,22 +123,23 @@ class Group(object):
         for attr, new_val in izip(s.attributes, vals):
             attr.set_value(new_val)
 
-    def get_distance(s, raw=False, warp=math.log):
-        """ Calculate a distance value from our markers """
+    def get_distance(s):
+        """ Calculate linear distance between markers """
+        if s.match_type == POSITION:
+            return sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
+        elif s.match_type == ROTATION:
+            return sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
+        else:
+            raise RuntimeError("Distance type not supported.")
+
+    def warp_distance(s, dist, log=math.log):
+        """ Warp distance value for faster convergeance """
         # Increase distance cost if out of bounds.
         cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
             for b, c in izip((a.get_value() for a in s.attributes), s.attributes))
-
-        if s.match_type == POSITION:
-            dist = sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
-        elif s.match_type == ROTATION:
-            dist = sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
-            _warp, warp = warp, lambda x: _warp(x, 1.2)
-        else:
-            raise RuntimeError("Distance type not supported.")
-        if raw:
-            return dist
-        cost += warp(dist if dist > 0 else sys.float_info.min)
+        if s.match_type == ROTATION:
+            _log, log = log, lambda x: _log(x, 1.2)
+        cost += log(dist if dist > 0 else sys.float_info.min)
         return cost
 
     def keyframe(s, values):
@@ -151,17 +155,18 @@ class Group(object):
                 val -= 2 * step
             attr.set_value(val)
 
-    def get_gradient(s, precision=0.001, raw=False):
+    def get_gradient(s, precision=0.001):
         """ Get gradient at current position. """
         result = []
-        dist = s.get_distance(raw)
+        raw=True
+        dist = s.get_distance()
         for attr in s.attributes:
             value = attr.get_value()
             new_val = value + precision
             if new_val > attr.max:
                 new_val = value - precision
             attr.set_value(new_val)
-            new_dist = s.get_distance(raw)
+            new_dist = s.get_distance()
             result.append((new_dist - dist) / precision)
             dist = new_dist
         return result
@@ -169,6 +174,13 @@ class Group(object):
     def bounds(s, vals):
         """ Fit values into range limitation """
         return (at.min if v < at.min else at.max if v > at.max else v for v, at in izip(vals, s.attributes))
+
+    def get_snapshot(s, warp=math.log):
+        """ Get position and distance as snapshot """
+        dist = s.get_distance()
+        warp = s.warp_distance(dist)
+        vals = s.get_values()
+        return Snapshot(dist=dist, warp=warp, vals=vals)
 
     def __len__(s):
         return len(s.attributes)
