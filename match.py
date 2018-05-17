@@ -260,17 +260,16 @@ def linear_jump(grp):
     """ Attempt a straight jump towards the goal. Assuming a linear 1:1 attribute:distance ratio.
         If we are closer, begin otimization from this point. Else return to where we were.
     """
-    old_values = grp.get_values()
-    old_dist = grp.get_distance(raw=True)
+    old_snapshot = Snapshot(dist=grp.get_distance(raw=True), vals=grp.get_values())
     gradient = grp.get_gradient(raw=True)
-    new_values = [old_dist * a * -1 + b for a, b in izip(gradient, old_values)]
+    new_values = [old_snapshot.dist * a * -1 + b for a, b in izip(gradient, old_snapshot.vals)]
     grp.set_values(new_values)
-    new_dist = grp.get_distance(raw=True)
-    if new_dist < old_dist: return True
-    else: grp.set_values(old_values)
-    return False
+    new_snapshot = Snapshot(dist=grp.get_distance(raw=True), vals=new_values)
+    if new_snapshot.dist < old_snapshot.dist: return new_snapshot
+    else: grp.set_values(old_snapshot.vals)
+    return None
 
-def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, prepos=True, match=1e-10, **kwargs):
+def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, prepos=True, match_tolerance=1e-10, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
@@ -302,16 +301,16 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
             # grp.clear_cache()
             if prepos:
                 if not i or cont_hacky[grp]:
-                    cont_hacky[grp] = success = utility.hacky_snap(grp)
-                    if success and grp.get_distance(raw=True) < match:
+                    cont_hacky[grp] = snapshot = utility.hacky_snap(grp)
+                    if snapshot and grp.get_distance(raw=True) < match_tolerance:
                         print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
-                        grp.keyframe(grp.get_values())
+                        grp.keyframe(snapshot.vals)
                         continue
                 if not i or cont_linear[grp]:
-                    cont_linear[grp] = success = linear_jump(grp)
-                    if success and grp.get_distance(raw=True) < match:
+                    cont_linear[grp] = snapshot = linear_jump(grp)
+                    if snapshot and grp.get_distance(raw=True) < match_tolerance:
                         print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
-                        grp.keyframe(grp.get_values())
+                        grp.keyframe(snapshot.vals)
                         continue
             total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist

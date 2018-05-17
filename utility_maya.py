@@ -18,6 +18,7 @@ import maya.mel as mel
 import contextlib
 import difflib
 import groups
+import match
 import re
 
 def load_prompt():
@@ -119,7 +120,7 @@ def hacky_snap(grp):
     mt = grp.match_type
     if mt != groups.POSITION and mt != groups.ROTATION:
         cmds.warning("Hackysnap match type unrecognized.")
-        return False
+        return None
     prefix, query = "tt" if mt == groups.POSITION else ("r", "ro") # This will need to expand if any other matching types are added...
     attrs = [prefix + a for a in "xyz"]
     parts = [b for b in ((a, str(a).split(".",1)[0], cmds.attributeName(str(a), s=True)) for a in grp) if b[2] in attrs] # (attr, "obj", "attr")
@@ -131,21 +132,20 @@ def hacky_snap(grp):
         cmds.xform(null, roo=cmds.xform(obj, q=True, roo=True))
 
     # Collect information
-    vals = grp.get_values()
-    dist = old_dist = grp.get_distance()
+    original_snapshot = old_snapshot = match.Snapshot(dist=grp.get_distance(), vals=grp.get_values())
     try:
         for marker in (b for a in grp.markers for b in a):
             # Snap objects to markers
             pos = cmds.xform(marker, q=True, ws=True, m=True)
             for obj in objs: cmds.xform(objs[obj], ws=True, m=pos)
             for attr, obj, at in parts: attr.set_value(cmds.getAttr(objs[obj]+"."+at))
-            new_dist = grp.get_distance()
-            if new_dist < dist: dist, vals = new_dist, grp.get_values()
+            new_snapshot = match.Snapshot(dist=grp.get_distance(), vals=grp.get_values())
+            if new_snapshot.dist < old_snapshot.dist: old_snapshot = new_snapshot
     finally:
-        grp.set_values(vals) # Reset values
+        grp.set_values(old_snapshot.vals) # Reset values
         grp.clear_cache() # Clean up cache, because we've messed with things manually
         cmds.delete(objs.values())
-    return old_dist != dist
+    return old_snapshot if old_snapshot.dist != original_snapshot.dist else None
 
 @contextlib.contextmanager
 def progress():
