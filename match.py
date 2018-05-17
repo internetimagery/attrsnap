@@ -31,8 +31,6 @@ except NameError:
 # Reference:
 # https://cs231n.github.io/neural-networks-3/#gradcheck
 
-Snapshot = collections.namedtuple("Snapshot", ["dist", "vals"]) # Single value construct
-
 def form_heirarchy(grps):
     """ Sort groups into an efficient heirarchy """
     cache_dist = {g: g.get_distance() for g in grps} # Keep track of distance values
@@ -162,7 +160,7 @@ def optim_nelder_mead(group, step=0.001, limit=500):
                 group.set_values(val_exp)
                 exp = group.get_snapshot()
                 del simplex[-1]
-                simplex.append(exp if exp.warp < relf.warp else refl)
+                simplex.append(exp if exp.warp < refl.warp else refl)
                 continue
 
             # Contraction
@@ -261,7 +259,7 @@ def linear_jump(grp):
         If we are closer, begin otimization from this point. Else return to where we were.
     """
     old_snapshot = grp.get_snapshot()
-    gradient = grp.get_gradient(raw=True)
+    gradient = grp.get_gradient()
     new_values = [old_snapshot.dist * a * -1 + b for a, b in izip(gradient, old_snapshot.vals)]
     grp.set_values(new_values)
     new_snapshot = grp.get_snapshot()

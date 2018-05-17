@@ -18,7 +18,6 @@ import maya.mel as mel
 import contextlib
 import difflib
 import groups
-import match
 import re
 
 def load_prompt():
@@ -132,14 +131,14 @@ def hacky_snap(grp):
         cmds.xform(null, roo=cmds.xform(obj, q=True, roo=True))
 
     # Collect information
-    original_snapshot = old_snapshot = match.Snapshot(dist=grp.get_distance(), vals=grp.get_values())
+    original_snapshot = old_snapshot = grp.get_snapshot()
     try:
         for marker in (b for a in grp.markers for b in a):
             # Snap objects to markers
             pos = cmds.xform(marker, q=True, ws=True, m=True)
             for obj in objs: cmds.xform(objs[obj], ws=True, m=pos)
             for attr, obj, at in parts: attr.set_value(cmds.getAttr(objs[obj]+"."+at))
-            new_snapshot = match.Snapshot(dist=grp.get_distance(), vals=grp.get_values())
+            new_snapshot = grp.get_snapshot()
             if new_snapshot.dist < old_snapshot.dist: old_snapshot = new_snapshot
     finally:
         grp.set_values(old_snapshot.vals) # Reset values
