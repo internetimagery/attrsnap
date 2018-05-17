@@ -179,8 +179,9 @@ def progress():
         cmds.progressBar(gMainProgressBar, edit=True, endProgress=True)
         cmds.autoKeyframe(state=state)
         cmds.refresh(suspend=False)
-        cmds.select(sel)
-        cmds.delete(sel)
+        if cmds.objExists(sel):
+            cmds.select(sel)
+            cmds.delete(sel)
         cmds.undoInfo(closeChunk=True)
         if err:
             cmds.undo()
