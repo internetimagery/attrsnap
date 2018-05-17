@@ -270,7 +270,7 @@ def linear_jump(grp):
     else: grp.set_values(old_values)
     return False
 
-def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, prepos=True, **kwargs):
+def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, prepos=True, match=1e-10, **kwargs):
     """
     Match groups across frames.
     update. function run updating matching progress.
@@ -303,10 +303,16 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
             if prepos:
                 if not i or cont_hacky[grp]:
                     cont_hacky[grp] = success = utility.hacky_snap(grp)
-                    if success: print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
+                    if success and grp.get_distance(raw=True) < match:
+                        print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
+                        grp.keyframe(grp.get_values())
+                        continue
                 if not i or cont_linear[grp]:
                     cont_linear[grp] = success = linear_jump(grp)
-                    if success: print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
+                    if success and grp.get_distance(raw=True) < match:
+                        print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
+                        grp.keyframe(grp.get_values())
+                        continue
             total_dist = grp.get_distance() # Set initial scale for progress updates
             total_scale = total_dist or 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
