@@ -599,6 +599,7 @@ class Window(object):
             if selected in tab.layout:
                 template = tab.export()
                 template.enabled = False
+                template.name += "_dup"
                 s.new_group(template)
                 return
 
