@@ -263,9 +263,9 @@ def linear_jump(grp):
     new_values = [old_snapshot.dist * a * -1 + b for a, b in izip(gradient, old_snapshot.vals)]
     grp.set_values(new_values)
     new_snapshot = grp.get_snapshot()
-    if new_snapshot.dist < old_snapshot.dist: return new_snapshot
+    if new_snapshot.dist < old_snapshot.dist: return True
     else: grp.set_values(old_snapshot.vals)
-    return None
+    return False
 
 def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=optim_adam, prepos=True, match_tolerance=1e-10, **kwargs):
     """
@@ -299,19 +299,16 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
             # grp.clear_cache()
             if prepos:
                 if not i or cont_hacky[grp]:
-                    cont_hacky[grp] = snapshot = utility.hacky_snap(grp)
-                    if snapshot and grp.get_distance() < match_tolerance:
-                        print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
-                        grp.keyframe(snapshot.vals)
-                        continue
+                    cont_hacky[grp] = success = utility.hacky_snap(grp)
+                    if success: print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
                 if not i or cont_linear[grp]:
-                    cont_linear[grp] = snapshot = linear_jump(grp)
-                    if snapshot and grp.get_distance() < match_tolerance:
-                        print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
-                        grp.keyframe(snapshot.vals)
-                        continue
-            total_dist = grp.get_distance() # Set initial scale for progress updates
-            total_scale = total_dist and 1.0 / total_dist
+                    cont_linear[grp] = success = linear_jump(grp)
+                    if success: print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
+            snapshot = grp.get_snapshot()
+            if snapshot.dist < match_tolerance: # If we are so close we don't need to match
+                grp.keyframe(snapshot.vals)
+                continue
+            total_scale = snapshot.dist and 1.0 / snapshot.dist
             for snapshot in matcher(grp, **kwargs):
                 progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step

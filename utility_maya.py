@@ -119,7 +119,7 @@ def hacky_snap(grp):
     mt = grp.match_type
     if mt != groups.POSITION and mt != groups.ROTATION:
         cmds.warning("Hackysnap match type unrecognized.")
-        return None
+        return False
     prefix, query = "tt" if mt == groups.POSITION else ("r", "ro") # This will need to expand if any other matching types are added...
     attrs = [prefix + a for a in "xyz"]
     parts = [b for b in ((a, str(a).split(".",1)[0], cmds.attributeName(str(a), s=True)) for a in grp) if b[2] in attrs] # (attr, "obj", "attr")
@@ -144,7 +144,7 @@ def hacky_snap(grp):
         grp.set_values(old_snapshot.vals) # Reset values
         grp.clear_cache() # Clean up cache, because we've messed with things manually
         cmds.delete(objs.values())
-    return old_snapshot if old_snapshot.dist != original_snapshot.dist else None
+    return old_snapshot.dist < original_snapshot.dist
 
 @contextlib.contextmanager
 def progress():
