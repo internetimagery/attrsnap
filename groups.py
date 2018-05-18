@@ -27,7 +27,7 @@ except NameError:
 POSITION = 0
 ROTATION = 1
 
-Snapshot = collections.namedtuple("Snapshot", ["dist", "vals", "warp"])
+Snapshot = collections.namedtuple("Snapshot", ["dist", "vals", "cost"])
 
 def save(templates, file_path):
     """ Export a list of groups into a file """
@@ -132,7 +132,7 @@ class Group(object):
         else:
             raise RuntimeError("Distance type not supported.")
 
-    def warp_distance(s, dist, log=math.log):
+    def cost_distance(s, dist, log=math.log):
         """ Warp distance value to improve convergeance """
         # Increase distance cost if out of bounds.
         cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
@@ -177,9 +177,9 @@ class Group(object):
     def get_snapshot(s, warp=math.log):
         """ Get position and distance as snapshot """
         dist = s.get_distance()
-        warp = s.warp_distance(dist)
+        cost = s.cost_distance(dist)
         vals = s.get_values()
-        return Snapshot(dist=dist, warp=warp, vals=vals)
+        return Snapshot(dist=dist, cost=cost, vals=vals)
 
     def __len__(s):
         return len(s.attributes)

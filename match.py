@@ -111,7 +111,7 @@ def optim_nelder_mead(group, step=0.001, limit=500):
 
     # Initial values
     simplex = [group.get_snapshot()]
-    no_improv, num_attrs, prev_best = 0, len(group), simplex[0].warp
+    no_improv, num_attrs, prev_best = 0, len(group), simplex[0].cost
 
     # Start walking!
     yield simplex[0]
@@ -126,8 +126,8 @@ def optim_nelder_mead(group, step=0.001, limit=500):
             simplex.append(group.get_snapshot())
         for _ in xrange(limit):
             # Sort recorded values. Keep track of best.
-            simplex.sort(key=lambda x: x.warp)
-            best = simplex[0].warp
+            simplex.sort(key=lambda x: x.cost)
+            best = simplex[0].cost
 
             # Update if we're better off.
             if best < prev_best:
@@ -138,7 +138,7 @@ def optim_nelder_mead(group, step=0.001, limit=500):
             # 1e-10 low quality, faster
             # 1e-15 higher quality, slower
             # TODO: Revisit this with linear distance
-            if simplex[-1].warp - simplex[0].warp < 1e-10:
+            if simplex[-1].cost - simplex[0].cost < 1e-10:
             # if simplex[-1].dist - simplex[0].dist < 1e-15:
                 break
 
@@ -149,25 +149,25 @@ def optim_nelder_mead(group, step=0.001, limit=500):
             val_refl = [a + (a - b) for a, b in izip(center, simplex[-1].vals)]
             group.set_values(val_refl)
             refl = group.get_snapshot()
-            if simplex[0].warp <= refl.warp < simplex[-2].warp:
+            if simplex[0].cost <= refl.cost < simplex[-2].cost:
                 del simplex[-1]
                 simplex.append(refl)
                 continue
 
             # Expansion
-            if refl.warp < simplex[0].warp:
+            if refl.cost < simplex[0].cost:
                 val_exp = [a + 2 * (a - b) for a, b in izip(center, simplex[-1].vals)]
                 group.set_values(val_exp)
                 exp = group.get_snapshot()
                 del simplex[-1]
-                simplex.append(exp if exp.warp < refl.warp else refl)
+                simplex.append(exp if exp.cost < refl.cost else refl)
                 continue
 
             # Contraction
             val_cont = [a + -0.5 * (a - b) for a, b in izip(center, simplex[-1].vals)]
             group.set_values(val_cont)
             cont = group.get_snapshot()
-            if cont.warp < simplex[-1].warp:
+            if cont.cost < simplex[-1].cost:
                 del simplex[-1]
                 simplex.append(cont)
                 continue
@@ -213,7 +213,7 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
 
         # Check if we have overshot our target.
         # If so, reduce our sample rate and our momentum, so we can turn faster.
-        if current.warp > prev.warp:
+        if current.cost > prev.cost:
             rate *= 0.5
             resistance *= 0.5
             friction *= 0.5
@@ -223,7 +223,7 @@ def optim_adam(group, rate=0.8, resistance=0.8, friction=0.9, tolerance=1e-6, li
 
         # Check if we are closer than ever before.
         # Record it if so.
-        if current.warp < closest.warp:
+        if current.cost < closest.cost:
             closest = current
             yield closest
 
