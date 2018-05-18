@@ -301,10 +301,10 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
             if prepos:
                 if not i or cont_hacky[grp]:
                     cont_hacky[grp] = success = utility.hacky_snap(grp)
-                    if success: print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
+                    if not i and success: print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
                 if not i or cont_linear[grp]:
                     cont_linear[grp] = success = linear_jump(grp)
-                    if success: print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
+                    if not i and success: print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
             total_dist = grp.get_distance()
             total_scale = total_dist and 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
