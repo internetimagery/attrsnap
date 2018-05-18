@@ -126,9 +126,9 @@ class Group(object):
     def get_distance(s):
         """ Calculate linear distance between markers """
         if s.match_type == POSITION:
-            return sum(a.get_pos_distance() for a in s.markers) / len(s.markers)
+            return abs(sum(a.get_pos_distance() for a in s.markers) / len(s.markers))
         elif s.match_type == ROTATION:
-            return sum(a.get_rot_distance() for a in s.markers) / len(s.markers)
+            return abs(sum(a.get_rot_distance() for a in s.markers) / len(s.markers))
         else:
             raise RuntimeError("Distance type not supported.")
 
