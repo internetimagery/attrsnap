@@ -133,13 +133,13 @@ class Group(object):
             raise RuntimeError("Distance type not supported.")
 
     def warp_distance(s, dist, log=math.log):
-        """ Warp distance value for faster convergeance """
+        """ Warp distance value to improve convergeance """
         # Increase distance cost if out of bounds.
         cost = sum(abs(b - c.min) if b < c.min else abs(b - c.max) if b > c.max else 0
             for b, c in izip((a.get_value() for a in s.attributes), s.attributes))
-        if s.match_type == ROTATION:
+        if s.match_type == ROTATION: # Adjust log for rotation
             _log, log = log, lambda x: _log(x, 1.2)
-        cost += log(dist if dist > 0 else sys.float_info.min)
+        cost += log(dist or sys.float_info.min)
         return cost
 
     def keyframe(s, values):
@@ -147,7 +147,7 @@ class Group(object):
         for at, val in izip(s.attributes, s.bounds(values)):
             at.key(val)
 
-    def shift(s, step=0.001):
+    def shift(s, step=1e-3):
         """ Shift location a little. """
         for attr in s.attributes:
             val = attr.get_value() + step
@@ -155,10 +155,9 @@ class Group(object):
                 val -= 2 * step
             attr.set_value(val)
 
-    def get_gradient(s, precision=0.001):
+    def get_gradient(s, precision=1e-5):
         """ Get gradient at current position. """
         result = []
-        raw=True
         dist = s.get_distance()
         for attr in s.attributes:
             value = attr.get_value()
