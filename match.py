@@ -300,18 +300,18 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
             if prepos:
                 if not i or cont_hacky[grp]:
                     cont_hacky[grp] = snapshot = utility.hacky_snap(grp)
-                    if snapshot and grp.get_distance(raw=True) < match_tolerance:
+                    if snapshot and grp.get_distance() < match_tolerance:
                         print("Direct Snapped %s." % grp.name) # Hack for translates and rotates
                         grp.keyframe(snapshot.vals)
                         continue
                 if not i or cont_linear[grp]:
                     cont_linear[grp] = snapshot = linear_jump(grp)
-                    if snapshot and grp.get_distance(raw=True) < match_tolerance:
+                    if snapshot and grp.get_distance() < match_tolerance:
                         print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
                         grp.keyframe(snapshot.vals)
                         continue
             total_dist = grp.get_distance() # Set initial scale for progress updates
-            total_scale = total_dist or 1.0 / total_dist
+            total_scale = total_dist and 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
                 progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step
