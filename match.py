@@ -287,6 +287,7 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
     print("Match order: {}".format(", ".join(a.get_name() for a in grps)))
     group_step = 1 / len(grps)
 
+    # Continue prepositioning while successful.
     cont_hacky = {a: False for a in grps}
     cont_linear = {a: False for a in grps}
 
@@ -304,12 +305,10 @@ def match(templates, start_frame=None, end_frame=None, sub_frame=1.0, matcher=op
                 if not i or cont_linear[grp]:
                     cont_linear[grp] = success = linear_jump(grp)
                     if success: print("Linear Jumpped %s." % grp.name) # Make a quick attempt at linearly shortcutting our way there.
-            snapshot = grp.get_snapshot()
-            if snapshot.dist < match_tolerance: # If we are so close we don't need to match
-                grp.keyframe(snapshot.vals)
-                continue
-            total_scale = snapshot.dist and 1.0 / snapshot.dist
+            total_dist = grp.get_distance()
+            total_scale = total_dist and 1.0 / total_dist
             for snapshot in matcher(grp, **kwargs):
+                if snapshot.dist < match_tolerance: break
                 progress = 1 - snapshot.dist * total_scale
                 yield progress * group_step + j * group_step
             grp.keyframe(snapshot.vals)
