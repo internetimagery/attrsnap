@@ -15,9 +15,9 @@
 import gui
 import utility
 
-def main():
+def main(templates=None):
     """ Main window """
-    gui.Window()
+    gui.Window(templates)
 
 def mini(templates):
     """ Shotcut mini window prefilled """
