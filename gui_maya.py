@@ -162,8 +162,8 @@ class Attributes(object):
             s.cols.append(c)
         s.attributes = []
         for attr in attributes or []:
-            name = ".".join((attr["obj"], attr["attr"]))
-            args = [name, attr["min"], attr["max"]]
+            name = ".".join((attr.get("obj", ""), attr.get("attr", "")))
+            args = [name, attr.get("min", -9999), attr.get("max", 9999)]
             s.add_attribute(*args)
 
     def add_attribute(s, name, min_=-9999, max_=9999):
