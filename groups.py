@@ -81,6 +81,13 @@ class WrapMarkerSet(element.Marker_Set):
     def get_calls(s):
         return s._num_calls
 
+# Format:
+    # name = "string"
+    # enabled = True/False
+    # match_type = POSITION/ROTATION
+    # markers = [("string", "string")]
+    # attributes = [{"obj": "string", "attr": "string", "min": int, "max": int}]
+
 class Template(object):
     """ Hold information, for transfer """
     def __init__(s, name="Group", enabled=True, match_type=POSITION, markers=None, attributes=None):
