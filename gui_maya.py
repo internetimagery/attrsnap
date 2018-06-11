@@ -283,7 +283,10 @@ class Tab(object):
         # pane = cmds.paneLayout(configuration="vertical2", p=s.layout)
         markers = cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Get Snapping Objects from Selection", c=lambda _: s.markers.add(*utility.get_selection(2)),
-        ann="Select two objects in the scene that you wish to be moved/rotated closer together.\nIt is recommended to only use one group.")
+        ann="Select two objects in the scene that you wish to become closer together.\nRight click for more options.")
+        cmds.popupMenu()
+        cmds.menuItem(l="Create and add locator with single selected object.", c=s.add_locator)
+
         # scr = cmds.scrollLayout(cr=True)
         # s.markers = Marker_List(scr, s.validate, template.markers)
         s.markers = Marker_List(markers, s.validate, template.markers)
@@ -291,6 +294,7 @@ class Tab(object):
         cmds.columnLayout(adj=True, p=pane)
         cmds.button(l="Add Attribute from Channelbox", c=lambda _: [s.attributes.add_attribute(a) for a in utility.get_attribute()],
         ann="Highlight attributes in the channelbox, and click the button to add them.")
+
         attributes = cmds.columnLayout(adj=True, bgc=BLACK)
         s.attributes = Attributes(attributes, s.validate, template.attributes)
         # -----
@@ -310,6 +314,13 @@ class Tab(object):
         s.ready = True
         s.validate()
         s.enable(template.enabled)
+
+    def add_locator(s, *_):
+        """ Create and add a locator """
+        sel, = utility.get_selection(1)
+        loc, = cmds.spaceLocator(n="Marker_%s_Locator" % sel)
+        s.markers.add(sel, loc)
+        cmds.select(loc)
 
     def rename(s):
         """ Prompt rename """
