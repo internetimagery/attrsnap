@@ -102,7 +102,7 @@ class TextBox(Widget):
         help = cmds.popupMenu(p=s.gui)
         cmds.menuItem(l="Select", p=help, c=lambda _: cmds.select(s.value.split(".",1)[0]),
             ann="Select the object in the scene.")
-        s.sugg = cmds.menuItem(l="Suggestions", sm=True, p=help, pmc=s.suggestions,
+        s.sugg = cmds.menuItem(l="Similar", sm=True, p=help, pmc=s.suggestions,
             ann="Choose an alternate name from a list of similarly named objects.")
 
     def suggestions(s, *_):
