@@ -320,6 +320,9 @@ class Tab(object):
         sel, = utility.get_selection(1)
         loc, = cmds.spaceLocator(n="Marker_%s_Locator" % sel)
         s.markers.add(sel, loc)
+        attr = "translate" if s.get_type() == groups.POSITION else "rotate"
+        for ax in "XYZ":
+            s.attributes.add_attribute("%s.%s%s" % (loc, attr, ax))
         cmds.select(loc)
 
     def rename(s):
