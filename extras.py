@@ -48,15 +48,17 @@ class Match(object):
         s._type = groups.POSITION
     def using(s, *attrs):
         split = (a.rsplit(".", 1) for a in attrs)
-        s.atts = [{"obj":a, "attr":b} for a, b in split]
+        s.attrs = [{"obj":a, "attr":b} for a, b in split]
+        return s
     def position(s, Fstart=None, Fend=None):
         s._go(Fstart, Fend, groups.POSITION)
     def rotation(s, Fstart=None, Fend=None):
         s._go(Fstart, Fend, groups.ROTATION)
     def _go(s, Fstart, Fend, type_):
         template = groups.Template(
-            name="Match",
             match_type=type_,
             markers=s.markers,
             attributes=s.attrs)
-        match.match(template, start_frame=Fstart, end_frame=Fend)
+        with utility.progress() as prog:
+            for progress in match.match([template], start_frame=Fstart, end_frame=Fend):
+                prog(progress)
