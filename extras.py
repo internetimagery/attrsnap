@@ -1,5 +1,8 @@
 # Extra functionality for niche situations
 
+import groups
+import utility
+import match
 
 def FROM_TO_Namespace(path=None):
     """ Load match file. Replace "FROM:" and "TO:"
@@ -7,8 +10,6 @@ def FROM_TO_Namespace(path=None):
         Maya specific.
     """
     import gui_maya as gui
-    import utility_maya as utility
-    import groups
 
     selection = utility.get_selection(2)
     if path:
@@ -32,3 +33,30 @@ def FROM_TO_Namespace(path=None):
     fix = gui.Fixer(templates, winFactory)
     if not fix.missing:
         winFactory(templates)
+
+class Match(object):
+    """ Nicely reading matching ie:
+    Match("obj1", "obj2").using("attr1.tx").position()
+    Match(["obj1", "obj2"]).using("attr1.tx").rotation(1, 123)
+    """
+    def __init__(s, mkr1, *mkr2):
+        if mkr2:
+            s.markers = [(mkr1, mkr2[0])]
+        else:
+            s.markers = mkr1
+        s.attrs = []
+        s._type = groups.POSITION
+    def using(s, *attrs):
+        split = (a.rsplit(".", 1) for a in attrs)
+        s.atts = [{"obj":a, "attr":b} for a, b in split]
+    def position(s, Fstart=None, Fend=None):
+        s._go(Fstart, Fend, groups.POSITION)
+    def rotation(s, Fstart=None, Fend=None):
+        s._go(Fstart, Fend, groups.ROTATION)
+    def _go(s, Fstart, Fend, type_):
+        template = groups.Template(
+            name="Match",
+            match_type=type_,
+            markers=s.markers,
+            attributes=s.attrs)
+        match.match(template, start_frame=Fstart, end_frame=Fend)
