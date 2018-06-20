@@ -69,6 +69,16 @@ def get_attribute():
         for c in cmds.channelBox("mainChannelBox", q=True, **{"%sol"%a:True})
         if cmds.attributeQuery(b, n=c, ex=True))
 
+def get_matrix(obj):
+    """ Get matrix in worldspace (specifically to work with faces/vertex etc) """
+    mtx = cmds.xform(obj, q=True, ws=True, m=True)
+    pos = list(zip(*[iter(cmds.xform(obj, q=True, t=True, ws=True))]*3))
+    pos_num = len(pos)
+    total = reduce(lambda x, y: (a+b for a,b in zip(x, y)) ,pos)
+    for i, val in enumerate(a/pos_num for a in total):
+        mtx[i+12] = val
+    return mtx
+
 def valid_object(obj):
     """ Check object is valid and exists """
     return cmds.objExists(obj)
@@ -130,7 +140,7 @@ def hacky_snap(grp):
     try:
         for marker in (b for a in grp.markers for b in a):
             # Snap objects to markers
-            pos = cmds.xform(marker, q=True, ws=True, m=True)
+            pos = get_matrix(marker)
             for obj in objs: cmds.xform(objs[obj], ws=True, m=pos)
             for attr, obj, at in parts: attr.set_value(cmds.getAttr(objs[obj]+"."+at))
             new_snapshot = grp.get_snapshot()
