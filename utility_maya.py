@@ -116,12 +116,7 @@ def frame_walk(start, end):
 
 def hacky_snap(grp):
     """ Quick and dirty hack. Move directly to marker location test. """
-    mt = grp.match_type
-    if mt != groups.POSITION and mt != groups.ROTATION:
-        cmds.warning("Hackysnap match type unrecognized.")
-        return False
-    prefix, query = "tt" if mt == groups.POSITION else ("r", "ro") # This will need to expand if any other matching types are added...
-    attrs = [prefix + a for a in "xyz"]
+    attrs = [a+b for a in "tr" for b in "xyz"]
     parts = [b for b in ((a, str(a).split(".",1)[0], cmds.attributeName(str(a), s=True)) for a in grp) if b[2] in attrs] # (attr, "obj", "attr")
     if not any(parts): return False # We don't have any attributes to snap
     objs = {a: None for _, a, _ in parts}
